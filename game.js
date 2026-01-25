@@ -36,9 +36,45 @@ function getHelsinkiDate() {
     return getRealHelsinkiDate();
 }
 
+// Validate date string format (YYYY-MM-DD)
+function isValidDateString(dateString) {
+    if (!dateString || typeof dateString !== 'string') return false;
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(dateString)) return false;
+    
+    // Parse the date components to validate
+    const parts = dateString.split('-');
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const day = parseInt(parts[2], 10);
+    
+    // Basic validation: month 1-12, day 1-31, reasonable year
+    if (month < 1 || month > 12 || day < 1 || day > 31 || year < 2000 || year > 2100) {
+        return false;
+    }
+    
+    // Create date and check if it's valid (handles invalid dates like 2026-13-45)
+    const date = new Date(year, month - 1, day);
+    return date.getFullYear() === year && 
+           date.getMonth() === month - 1 && 
+           date.getDate() === day;
+}
+
 // Increment date by one day (YYYY-MM-DD format)
 function incrementDate(dateString) {
+    // Basic format check first
+    if (!dateString || typeof dateString !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        console.error('Invalid date string format:', dateString);
+        return dateString; // Return original if invalid format
+    }
+    
+    // Try to increment - if it fails, the date object will be invalid
     const date = new Date(dateString + 'T00:00:00');
+    if (isNaN(date.getTime())) {
+        console.error('Invalid date:', dateString);
+        return dateString; // Return original if invalid
+    }
+    
     date.setDate(date.getDate() + 1);
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -48,7 +84,19 @@ function incrementDate(dateString) {
 
 // Decrement date by one day (YYYY-MM-DD format)
 function decrementDate(dateString) {
+    // Basic format check first
+    if (!dateString || typeof dateString !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        console.error('Invalid date string format:', dateString);
+        return dateString; // Return original if invalid format
+    }
+    
+    // Try to decrement - if it fails, the date object will be invalid
     const date = new Date(dateString + 'T00:00:00');
+    if (isNaN(date.getTime())) {
+        console.error('Invalid date:', dateString);
+        return dateString; // Return original if invalid
+    }
+    
     date.setDate(date.getDate() - 1);
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -76,9 +124,19 @@ function findTodayPuzzle() {
 // Initialize game
 function initGame() {
     // Initialize debug date override from localStorage if it exists
-    const savedDebugDate = localStorage.getItem('verble_debug_date');
-    if (savedDebugDate) {
-        debugDateOverride = savedDebugDate;
+    try {
+        const savedDebugDate = localStorage.getItem('verble_debug_date');
+        if (savedDebugDate) {
+            // Basic format validation - be lenient to avoid breaking functionality
+            if (/^\d{4}-\d{2}-\d{2}$/.test(savedDebugDate)) {
+                debugDateOverride = savedDebugDate;
+            } else {
+                // Invalid format, clear it
+                localStorage.removeItem('verble_debug_date');
+            }
+        }
+    } catch (error) {
+        console.error('Error reading debug date from localStorage:', error);
     }
     
     currentPuzzle = findTodayPuzzle();
@@ -98,29 +156,39 @@ function initGame() {
     document.getElementById('dateDisplay').textContent = puzzleDate;
 
     // Try to load saved state
-    const savedState = localStorage.getItem(`verble_${puzzleDate}`);
-    
-    if (savedState) {
-        try {
-            const parsed = JSON.parse(savedState);
-            gameState = {
-                adjective: parsed.adjective || currentPuzzle.adjective,
-                noun: parsed.noun || currentPuzzle.noun,
-                remainingAdjective: parsed.remainingAdjective || currentPuzzle.adjective,
-                remainingNoun: parsed.remainingNoun || currentPuzzle.noun,
-                health: parsed.health !== undefined ? parsed.health : 10,
-                injuries: parsed.injuries || 0,
-                moves: parsed.moves || 0,
-                history: parsed.history || [],
-                isWon: parsed.isWon || false,
-                isLost: parsed.isLost || false,
-                puzzleDate: puzzleDate
-            };
-        } catch (e) {
-            console.error('Error loading saved state:', e);
+    try {
+        const savedState = localStorage.getItem(`verble_${puzzleDate}`);
+        
+        if (savedState) {
+            try {
+                const parsed = JSON.parse(savedState);
+                // Validate parsed data structure
+                if (parsed && typeof parsed === 'object') {
+                    gameState = {
+                        adjective: parsed.adjective || currentPuzzle.adjective,
+                        noun: parsed.noun || currentPuzzle.noun,
+                        remainingAdjective: parsed.remainingAdjective || currentPuzzle.adjective,
+                        remainingNoun: parsed.remainingNoun || currentPuzzle.noun,
+                        health: parsed.health !== undefined ? parsed.health : 10,
+                        injuries: parsed.injuries || 0,
+                        moves: parsed.moves || 0,
+                        history: Array.isArray(parsed.history) ? parsed.history : [],
+                        isWon: parsed.isWon || false,
+                        isLost: parsed.isLost || false,
+                        puzzleDate: puzzleDate
+                    };
+                } else {
+                    resetGameState();
+                }
+            } catch (e) {
+                console.error('Error parsing saved state:', e);
+                resetGameState();
+            }
+        } else {
             resetGameState();
         }
-    } else {
+    } catch (error) {
+        console.error('Error reading from localStorage:', error);
         resetGameState();
     }
 
@@ -147,7 +215,18 @@ function resetGameState() {
 
 // Save game state to localStorage
 function saveGameState() {
-    localStorage.setItem(`verble_${gameState.puzzleDate}`, JSON.stringify(gameState));
+    try {
+        const key = `verble_${gameState.puzzleDate}`;
+        const value = JSON.stringify(gameState);
+        localStorage.setItem(key, value);
+    } catch (error) {
+        if (error.name === 'QuotaExceededError') {
+            console.error('localStorage quota exceeded. Game state not saved.');
+            // Could show user-friendly message here
+        } else {
+            console.error('Error saving game state:', error);
+        }
+    }
 }
 
 // Update display - show actual puzzle letters (not underscores)
@@ -214,8 +293,9 @@ function processVerb(verb) {
     }
 
     const result = [];
-    let newAdjective = gameState.remainingAdjective;
-    let newNoun = gameState.remainingNoun;
+    // Use arrays to track remaining letters with their positions
+    let adjArray = gameState.remainingAdjective.split('');
+    let nounArray = gameState.remainingNoun.split('');
     let newHealth = gameState.health;
     let newInjuries = gameState.injuries;
 
@@ -224,39 +304,27 @@ function processVerb(verb) {
         const letter = verb[i];
         let found = false;
 
-        // Create combined puzzle string for searching (adjective + space + noun)
-        const combinedPuzzle = newAdjective + ' ' + newNoun;
-        const adjLength = newAdjective.length;
-        
-        // Search combined puzzle left-to-right for this letter
-        for (let j = 0; j < combinedPuzzle.length; j++) {
-            if (combinedPuzzle[j] === letter) {
+        // Search adjective first (left-to-right in combined puzzle)
+        for (let j = 0; j < adjArray.length; j++) {
+            if (adjArray[j] === letter) {
+                // Found in adjective - remove this specific occurrence
+                adjArray.splice(j, 1);
                 found = true;
-                
-                // Determine which word the letter is in
-                if (j < adjLength) {
-                    // Letter is in adjective - remove first occurrence from adjective
-                    const adjArray = newAdjective.split('');
-                    const adjLetterIndex = adjArray.indexOf(letter);
-                    if (adjLetterIndex !== -1) {
-                        adjArray.splice(adjLetterIndex, 1);
-                        newAdjective = adjArray.join('');
-                    }
-                } else if (j > adjLength) {
-                    // Letter is in noun (j > adjLength accounts for the space)
-                    // Find the position in the noun (subtract adjLength + 1 for the space)
-                    const nounPos = j - adjLength - 1;
-                    const nounArray = newNoun.split('');
-                    // Find first occurrence of letter in noun
-                    const nounLetterIndex = nounArray.indexOf(letter);
-                    if (nounLetterIndex !== -1) {
-                        nounArray.splice(nounLetterIndex, 1);
-                        newNoun = nounArray.join('');
-                    }
-                }
-                
                 result.push('🟩');
-                break; // Only remove first occurrence, then move to next verb letter
+                break;
+            }
+        }
+
+        // If not found in adjective, search noun
+        if (!found) {
+            for (let j = 0; j < nounArray.length; j++) {
+                if (nounArray[j] === letter) {
+                    // Found in noun - remove this specific occurrence
+                    nounArray.splice(j, 1);
+                    found = true;
+                    result.push('🟩');
+                    break;
+                }
             }
         }
 
@@ -269,8 +337,8 @@ function processVerb(verb) {
     }
 
     // Update game state
-    gameState.remainingAdjective = newAdjective;
-    gameState.remainingNoun = newNoun;
+    gameState.remainingAdjective = adjArray.join('');
+    gameState.remainingNoun = nounArray.join('');
     gameState.health = newHealth;
     gameState.injuries = newInjuries;
     gameState.moves++;
@@ -279,8 +347,9 @@ function processVerb(verb) {
         result: result.join('')
     });
 
-    // Check win condition (noun fully removed - all letters, not just non-spaces)
-    if (newNoun.replace(/\s/g, '') === '') {
+    // Check win condition (noun fully removed - only noun matters, not adjective)
+    // Remove any whitespace and check if noun is empty
+    if (gameState.remainingNoun.replace(/\s/g, '') === '') {
         gameState.isWon = true;
     }
 
@@ -300,17 +369,28 @@ function loadHistory() {
     container.innerHTML = '';
 
     if (gameState.history.length === 0) {
-        container.innerHTML = '<p style="color: #666; text-align: center;">No moves yet</p>';
+        const emptyMsg = document.createElement('p');
+        emptyMsg.textContent = 'No moves yet';
+        emptyMsg.style.color = '#8080a4';
+        emptyMsg.style.textAlign = 'center';
+        container.appendChild(emptyMsg);
         return;
     }
 
     gameState.history.forEach(item => {
         const div = document.createElement('div');
         div.className = 'history-item';
-        div.innerHTML = `
-            <span class="history-verb">${item.verb}</span>
-            <span class="history-emoji">${item.result}</span>
-        `;
+        
+        const verbSpan = document.createElement('span');
+        verbSpan.className = 'history-verb';
+        verbSpan.textContent = item.verb;
+        
+        const emojiSpan = document.createElement('span');
+        emojiSpan.className = 'history-emoji';
+        emojiSpan.textContent = item.result;
+        
+        div.appendChild(verbSpan);
+        div.appendChild(emojiSpan);
         container.appendChild(div);
     });
 }
@@ -323,11 +403,17 @@ function showGameOver() {
 
     if (gameState.isWon) {
         gameOverDiv.className = 'game-over win';
-        const monsterName = gameState.noun;
-        gameOverText.textContent = `${monsterName} defeated! 🎉`;
+        gameOverDiv.style.display = 'block';
+        const puzzleName = `${gameState.adjective} ${gameState.noun}`;
+        const actions = gameState.moves;
+        const damage = gameState.injuries;
+        
+        // Single sentence win message
+        gameOverText.textContent = `You defeated the ${puzzleName} in ${actions} action${actions !== 1 ? 's' : ''} taking ${damage} damage.`;
         shareBtn.style.display = 'inline-block';
     } else if (gameState.isLost) {
         gameOverDiv.className = 'game-over lose';
+        gameOverDiv.style.display = 'block';
         gameOverText.textContent = 'You failed to slay the monster! 😢';
         shareBtn.style.display = 'inline-block';
     } else {
@@ -344,7 +430,7 @@ function generateShareText() {
     const injuries = gameState.injuries;
     const monsterName = gameState.noun;
     
-    let text = `Verble ${puzzleDate}\n`;
+    let text = `MIGHTIER ${puzzleDate}\n`;
     if (gameState.isWon) {
         text += `${monsterName} defeated! ${moves} moves, ${injuries} injuries\n\n`;
     } else {
@@ -413,29 +499,39 @@ function loadPuzzle(puzzle) {
     document.getElementById('dateDisplay').textContent = puzzleDate;
 
     // Try to load saved state
-    const savedState = localStorage.getItem(`verble_${puzzleDate}`);
-    
-    if (savedState) {
-        try {
-            const parsed = JSON.parse(savedState);
-            gameState = {
-                adjective: parsed.adjective || puzzle.adjective,
-                noun: parsed.noun || puzzle.noun,
-                remainingAdjective: parsed.remainingAdjective || puzzle.adjective,
-                remainingNoun: parsed.remainingNoun || puzzle.noun,
-                health: parsed.health !== undefined ? parsed.health : 10,
-                injuries: parsed.injuries || 0,
-                moves: parsed.moves || 0,
-                history: parsed.history || [],
-                isWon: parsed.isWon || false,
-                isLost: parsed.isLost || false,
-                puzzleDate: puzzleDate
-            };
-        } catch (e) {
-            console.error('Error loading saved state:', e);
+    try {
+        const savedState = localStorage.getItem(`verble_${puzzleDate}`);
+        
+        if (savedState) {
+            try {
+                const parsed = JSON.parse(savedState);
+                // Validate parsed data structure
+                if (parsed && typeof parsed === 'object') {
+                    gameState = {
+                        adjective: parsed.adjective || puzzle.adjective,
+                        noun: parsed.noun || puzzle.noun,
+                        remainingAdjective: parsed.remainingAdjective || puzzle.adjective,
+                        remainingNoun: parsed.remainingNoun || puzzle.noun,
+                        health: parsed.health !== undefined ? parsed.health : 10,
+                        injuries: parsed.injuries || 0,
+                        moves: parsed.moves || 0,
+                        history: Array.isArray(parsed.history) ? parsed.history : [],
+                        isWon: parsed.isWon || false,
+                        isLost: parsed.isLost || false,
+                        puzzleDate: puzzleDate
+                    };
+                } else {
+                    resetGameState();
+                }
+            } catch (e) {
+                console.error('Error parsing saved state:', e);
+                resetGameState();
+            }
+        } else {
             resetGameState();
         }
-    } else {
+    } catch (error) {
+        console.error('Error reading from localStorage:', error);
         resetGameState();
     }
 
@@ -450,7 +546,11 @@ function handleRetry() {
     if (!currentPuzzle) return;
     
     // Clear saved state for current puzzle
-    localStorage.removeItem(`verble_${currentPuzzle.date}`);
+    try {
+        localStorage.removeItem(`verble_${currentPuzzle.date}`);
+    } catch (error) {
+        console.error('Error removing from localStorage:', error);
+    }
     
     // Reset game state
     resetGameState();
@@ -468,7 +568,11 @@ function handleRetry() {
 // Reset debug date override (for returning to real date)
 function resetDebugDate() {
     debugDateOverride = null;
-    localStorage.removeItem('verble_debug_date');
+    try {
+        localStorage.removeItem('verble_debug_date');
+    } catch (error) {
+        console.error('Error removing debug date from localStorage:', error);
+    }
     initGame();
 }
 
@@ -491,14 +595,22 @@ function handlePrevious() {
     if (prevPuzzle) {
         // Set debug date override to the previous date
         debugDateOverride = prevDate;
-        localStorage.setItem('verble_debug_date', prevDate);
+        try {
+            localStorage.setItem('verble_debug_date', prevDate);
+        } catch (error) {
+            console.error('Error saving debug date to localStorage:', error);
+        }
         
         // Load the puzzle for that date
         loadPuzzle(prevPuzzle);
     } else {
         // Still go back the date even if no puzzle exists
         debugDateOverride = prevDate;
-        localStorage.setItem('verble_debug_date', prevDate);
+        try {
+            localStorage.setItem('verble_debug_date', prevDate);
+        } catch (error) {
+            console.error('Error saving debug date to localStorage:', error);
+        }
         
         // Re-initialize to show "No puzzle yet" message
         initGame();
@@ -516,14 +628,22 @@ function handleNext() {
     if (nextPuzzle) {
         // Set debug date override to the next date
         debugDateOverride = nextDate;
-        localStorage.setItem('verble_debug_date', nextDate);
+        try {
+            localStorage.setItem('verble_debug_date', nextDate);
+        } catch (error) {
+            console.error('Error saving debug date to localStorage:', error);
+        }
         
         // Load the puzzle for that date
         loadPuzzle(nextPuzzle);
     } else {
         // Still advance the date even if no puzzle exists
         debugDateOverride = nextDate;
-        localStorage.setItem('verble_debug_date', nextDate);
+        try {
+            localStorage.setItem('verble_debug_date', nextDate);
+        } catch (error) {
+            console.error('Error saving debug date to localStorage:', error);
+        }
         
         // Re-initialize to show "No puzzle yet" message
         initGame();
