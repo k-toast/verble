@@ -3,11 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verble</title>
+    <title>Verble - Daily Word Puzzle</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div class="container">
+        <header>
+            <h1>Verble</h1>
+            <div class="date-display" id="dateDisplay"></div>
+        </header>
+
+        <div id="noPuzzleMessage" class="no-puzzle" style="display: none;">
+            <p>No puzzle yet</p>
+        </div>
+
+        <div id="gameContainer" style="display: none;">
+            <div class="puzzle-display">
+                <div class="puzzle-text" id="puzzleText"></div>
+            </div>
+
+            <div class="stats">
+                <div class="stat">
+                    <span class="stat-label">Health:</span>
+                    <span class="stat-value" id="healthValue">10</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Injuries:</span>
+                    <span class="stat-value" id="injuriesValue">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Moves:</span>
+                    <span class="stat-value" id="movesValue">0</span>
+                </div>
+            </div>
+
+            <div class="input-section">
+                <input 
+                    type="text" 
+                    id="verbInput" 
+                    placeholder="Enter a verb (2-20 letters)"
+                    maxlength="20"
+                    autocomplete="off"
+                >
+                <button id="submitBtn">Submit</button>
+            </div>
+
+            <div class="history-section">
+                <h2>Move History</h2>
+                <div id="historyContainer"></div>
+            </div>
+
+            <div id="gameOverMessage" class="game-over" style="display: none;">
+                <p id="gameOverText"></p>
+                <button id="shareBtn" style="display: none;">Share</button>
+            </div>
+        </div>
+    </div>
+
     <script src="game.js"></script>
 </body>
 </html>
-

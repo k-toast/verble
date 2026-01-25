@@ -1,2 +1,248 @@
-/* Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    color: #333;
+}
+
+.container {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    padding: 30px;
+    max-width: 600px;
+    width: 100%;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+h1 {
+    font-size: 2.5em;
+    color: #667eea;
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.date-display {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.no-puzzle {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+    font-size: 1.2em;
+}
+
+.puzzle-display {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 30px;
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.puzzle-text {
+    font-size: 2em;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: #333;
+    font-family: 'Courier New', monospace;
+    line-height: 1.5;
+}
+
+.stats {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.stat {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-radius: 10px;
+    text-align: center;
+    flex: 1;
+    min-width: 100px;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.85em;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.5em;
+    font-weight: 700;
+    color: #667eea;
+}
+
+.input-section {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+#verbInput {
+    flex: 1;
+    padding: 15px;
+    font-size: 1.1em;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    text-transform: uppercase;
+    font-family: 'Courier New', monospace;
+}
+
+#verbInput:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+#verbInput:disabled {
+    background: #f0f0f0;
+    cursor: not-allowed;
+}
+
+#submitBtn {
+    padding: 15px 30px;
+    font-size: 1.1em;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+#submitBtn:hover:not(:disabled) {
+    background: #5568d3;
+}
+
+#submitBtn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.history-section {
+    margin-bottom: 20px;
+}
+
+.history-section h2 {
+    font-size: 1.2em;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.history-item {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.history-verb {
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+    min-width: 120px;
+}
+
+.history-emoji {
+    font-size: 1.2em;
+    letter-spacing: 2px;
+}
+
+.game-over {
+    text-align: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    margin-top: 20px;
+}
+
+.game-over p {
+    font-size: 1.3em;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.game-over.win p {
+    color: #28a745;
+}
+
+.game-over.lose p {
+    color: #dc3545;
+}
+
+#shareBtn {
+    padding: 12px 25px;
+    font-size: 1em;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+#shareBtn:hover {
+    background: #5568d3;
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 20px;
+    }
+
+    h1 {
+        font-size: 2em;
+    }
+
+    .puzzle-text {
+        font-size: 1.5em;
+    }
+
+    .stats {
+        flex-direction: column;
+    }
+
+    .stat {
+        width: 100%;
+    }
+
+    .input-section {
+        flex-direction: column;
+    }
+
+    #submitBtn {
+        width: 100%;
+    }
+
+    .history-verb {
+        min-width: 80px;
+        font-size: 0.9em;
+    }
+}
