@@ -48,6 +48,26 @@ h1 {
     font-size: 1.2em;
 }
 
+.no-puzzle p {
+    margin-bottom: 20px;
+}
+
+.reset-btn {
+    padding: 12px 25px;
+    font-size: 1em;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+.reset-btn:hover {
+    background: #5568d3;
+}
+
 .puzzle-display {
     background: #f8f9fa;
     border-radius: 10px;
@@ -141,6 +161,55 @@ h1 {
 #submitBtn:disabled {
     background: #ccc;
     cursor: not-allowed;
+}
+
+.control-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+    justify-content: center;
+}
+
+#prevBtn,
+#retryBtn,
+#nextBtn {
+    padding: 12px 25px;
+    font-size: 1em;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+#prevBtn:hover:not(:disabled),
+#retryBtn:hover:not(:disabled),
+#nextBtn:hover:not(:disabled) {
+    background: #5a6268;
+}
+
+#prevBtn {
+    background: #17a2b8;
+}
+
+#prevBtn:hover:not(:disabled) {
+    background: #138496;
+}
+
+#prevBtn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+#nextBtn {
+    background: #17a2b8;
+}
+
+#nextBtn:hover {
+    background: #138496;
 }
 
 .history-section {
@@ -244,5 +313,15 @@ h1 {
     .history-verb {
         min-width: 80px;
         font-size: 0.9em;
+    }
+
+    .control-buttons {
+        flex-direction: column;
+    }
+
+    #prevBtn,
+    #retryBtn,
+    #nextBtn {
+        width: 100%;
     }
 }
