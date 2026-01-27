@@ -4,8 +4,7 @@ let gameState = {
     noun: '',
     remainingAdjective: '',
     remainingNoun: '',
-    health: 10,
-    injuries: 0,
+    quality: 10,
     moves: 0,
     history: [],
     isWon: false,
@@ -15,7 +14,8 @@ let gameState = {
 
 let puzzles = [];
 let currentPuzzle = null;
-let debugDateOverride = null; // For debugging: overrides the current date
+let debugDateOverride = null;
+let countdownInterval = null;
 
 // Get real Helsinki timezone date string (YYYY-MM-DD) - without debug override
 function getRealHelsinkiDate() {
@@ -28,7 +28,6 @@ function getRealHelsinkiDate() {
 }
 
 // Get Helsinki timezone date string (YYYY-MM-DD)
-// Uses debugDateOverride if set (for testing/debugging)
 function getHelsinkiDate() {
     if (debugDateOverride) {
         return debugDateOverride;
@@ -42,18 +41,15 @@ function isValidDateString(dateString) {
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(dateString)) return false;
     
-    // Parse the date components to validate
     const parts = dateString.split('-');
     const year = parseInt(parts[0], 10);
     const month = parseInt(parts[1], 10);
     const day = parseInt(parts[2], 10);
     
-    // Basic validation: month 1-12, day 1-31, reasonable year
     if (month < 1 || month > 12 || day < 1 || day > 31 || year < 2000 || year > 2100) {
         return false;
     }
     
-    // Create date and check if it's valid (handles invalid dates like 2026-13-45)
     const date = new Date(year, month - 1, day);
     return date.getFullYear() === year && 
            date.getMonth() === month - 1 && 
@@ -62,17 +58,15 @@ function isValidDateString(dateString) {
 
 // Increment date by one day (YYYY-MM-DD format)
 function incrementDate(dateString) {
-    // Basic format check first
     if (!dateString || typeof dateString !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
         console.error('Invalid date string format:', dateString);
-        return dateString; // Return original if invalid format
+        return dateString;
     }
     
-    // Try to increment - if it fails, the date object will be invalid
     const date = new Date(dateString + 'T00:00:00');
     if (isNaN(date.getTime())) {
         console.error('Invalid date:', dateString);
-        return dateString; // Return original if invalid
+        return dateString;
     }
     
     date.setDate(date.getDate() + 1);
@@ -84,17 +78,15 @@ function incrementDate(dateString) {
 
 // Decrement date by one day (YYYY-MM-DD format)
 function decrementDate(dateString) {
-    // Basic format check first
     if (!dateString || typeof dateString !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
         console.error('Invalid date string format:', dateString);
-        return dateString; // Return original if invalid format
+        return dateString;
     }
     
-    // Try to decrement - if it fails, the date object will be invalid
     const date = new Date(dateString + 'T00:00:00');
     if (isNaN(date.getTime())) {
         console.error('Invalid date:', dateString);
-        return dateString; // Return original if invalid
+        return dateString;
     }
     
     date.setDate(date.getDate() - 1);
@@ -121,18 +113,24 @@ function findTodayPuzzle() {
     return puzzles.find(p => p.date === today);
 }
 
+// Format date for display (M/D/YYYY)
+function formatDateDisplay(dateString) {
+    const parts = dateString.split('-');
+    const month = parseInt(parts[1], 10);
+    const day = parseInt(parts[2], 10);
+    const year = parts[0];
+    return `${month}/${day}/${year}`;
+}
+
 // Initialize game
 function initGame() {
-    // Initialize debug date override from localStorage if it exists
     try {
-        const savedDebugDate = localStorage.getItem('verble_debug_date');
+        const savedDebugDate = localStorage.getItem('dishle_debug_date');
         if (savedDebugDate) {
-            // Basic format validation - be lenient to avoid breaking functionality
             if (/^\d{4}-\d{2}-\d{2}$/.test(savedDebugDate)) {
                 debugDateOverride = savedDebugDate;
             } else {
-                // Invalid format, clear it
-                localStorage.removeItem('verble_debug_date');
+                localStorage.removeItem('dishle_debug_date');
             }
         }
     } catch (error) {
@@ -144,8 +142,8 @@ function initGame() {
     if (!currentPuzzle) {
         document.getElementById('noPuzzleMessage').style.display = 'block';
         document.getElementById('gameContainer').style.display = 'none';
-        // Still update button state even if no puzzle
         updatePreviousButtonState();
+        startCountdownTimer();
         return;
     }
 
@@ -153,24 +151,26 @@ function initGame() {
     document.getElementById('gameContainer').style.display = 'block';
 
     const puzzleDate = currentPuzzle.date;
-    document.getElementById('dateDisplay').textContent = puzzleDate;
+    document.getElementById('dateDisplay').textContent = formatDateDisplay(puzzleDate);
+    
+    // Display the full dish name
+    const dishName = `${currentPuzzle.adjective} ${currentPuzzle.noun}`;
+    document.getElementById('dishName').textContent = dishName;
 
     // Try to load saved state
     try {
-        const savedState = localStorage.getItem(`verble_${puzzleDate}`);
+        const savedState = localStorage.getItem(`dishle_${puzzleDate}`);
         
         if (savedState) {
             try {
                 const parsed = JSON.parse(savedState);
-                // Validate parsed data structure
                 if (parsed && typeof parsed === 'object') {
                     gameState = {
                         adjective: parsed.adjective || currentPuzzle.adjective,
                         noun: parsed.noun || currentPuzzle.noun,
                         remainingAdjective: parsed.remainingAdjective || currentPuzzle.adjective,
                         remainingNoun: parsed.remainingNoun || currentPuzzle.noun,
-                        health: parsed.health !== undefined ? parsed.health : 10,
-                        injuries: parsed.injuries || 0,
+                        quality: parsed.quality !== undefined ? parsed.quality : (parsed.health !== undefined ? parsed.health : 10),
                         moves: parsed.moves || 0,
                         history: Array.isArray(parsed.history) ? parsed.history : [],
                         isWon: parsed.isWon || false,
@@ -194,7 +194,8 @@ function initGame() {
 
     gameState.puzzleDate = puzzleDate;
     updateDisplay();
-    loadHistory();
+    loadRecipe();
+    startCountdownTimer();
 }
 
 function resetGameState() {
@@ -203,8 +204,7 @@ function resetGameState() {
         noun: currentPuzzle.noun,
         remainingAdjective: currentPuzzle.adjective,
         remainingNoun: currentPuzzle.noun,
-        health: 10,
-        injuries: 0,
+        quality: 10,
         moves: 0,
         history: [],
         isWon: false,
@@ -216,32 +216,26 @@ function resetGameState() {
 // Save game state to localStorage
 function saveGameState() {
     try {
-        const key = `verble_${gameState.puzzleDate}`;
+        const key = `dishle_${gameState.puzzleDate}`;
         const value = JSON.stringify(gameState);
         localStorage.setItem(key, value);
     } catch (error) {
         if (error.name === 'QuotaExceededError') {
             console.error('localStorage quota exceeded. Game state not saved.');
-            // Could show user-friendly message here
         } else {
             console.error('Error saving game state:', error);
         }
     }
 }
 
-// Update display - show actual puzzle letters (not underscores)
+// Update display
 function updateDisplay() {
-    // Show the actual remaining puzzle with letters visible
     const puzzleDisplay = `${gameState.remainingAdjective} ${gameState.remainingNoun}`;
     document.getElementById('puzzleText').textContent = puzzleDisplay;
 
-    // Update stats
-    document.getElementById('healthValue').textContent = gameState.health;
-    document.getElementById('injuriesValue').textContent = gameState.injuries;
-    document.getElementById('movesValue').textContent = gameState.moves;
+    document.getElementById('qualityValue').textContent = gameState.quality;
 
-    // Update input state
-    const input = document.getElementById('verbInput');
+    const input = document.getElementById('ingredientInput');
     const submitBtn = document.getElementById('submitBtn');
     
     if (gameState.isWon || gameState.isLost) {
@@ -251,10 +245,8 @@ function updateDisplay() {
     } else {
         input.disabled = false;
         submitBtn.disabled = false;
-        document.getElementById('gameOverMessage').style.display = 'none';
     }
 
-    // Update Previous button state
     updatePreviousButtonState();
 }
 
@@ -266,159 +258,154 @@ function updatePreviousButtonState() {
     const currentDate = getHelsinkiDate();
     const realToday = getRealHelsinkiDate();
     
-    // Disable if we're on today's real date (not debug date)
     if (currentDate === realToday) {
         prevBtn.disabled = true;
         return;
     }
 
-    // Check if there's a puzzle for the previous date
     const prevDate = decrementDate(currentDate);
     const prevPuzzle = puzzles.find(p => p.date === prevDate);
     
-    // Disable if no puzzle exists for previous date
     prevBtn.disabled = !prevPuzzle;
 }
 
-// Process a verb - letters match against combined puzzle left-to-right
-function processVerb(verb) {
+// Process an ingredient - letters match against combined puzzle left-to-right
+function processIngredient(ingredient) {
     if (gameState.isWon || gameState.isLost) return;
 
-    verb = verb.toUpperCase().trim();
+    ingredient = ingredient.toUpperCase().trim();
     
-    // Validate: 2-20 letters, A-Z only
-    if (!/^[A-Z]{2,20}$/.test(verb)) {
-        alert('Please enter a verb with 2-20 letters (A-Z only)');
+    if (!/^[A-Z]{2,20}$/.test(ingredient)) {
+        alert('Please enter an ingredient with 2-20 letters (A-Z only)');
         return;
     }
 
     const result = [];
-    // Use arrays to track remaining letters with their positions
     let adjArray = gameState.remainingAdjective.split('');
     let nounArray = gameState.remainingNoun.split('');
-    let newHealth = gameState.health;
-    let newInjuries = gameState.injuries;
+    let newQuality = gameState.quality;
 
-    // Process each letter of the verb left-to-right
-    for (let i = 0; i < verb.length; i++) {
-        const letter = verb[i];
+    for (let i = 0; i < ingredient.length; i++) {
+        const letter = ingredient[i];
         let found = false;
 
-        // Search adjective first (left-to-right in combined puzzle)
         for (let j = 0; j < adjArray.length; j++) {
             if (adjArray[j] === letter) {
-                // Found in adjective - remove this specific occurrence
                 adjArray.splice(j, 1);
                 found = true;
-                result.push('🟩');
+                result.push({ letter: letter, match: true });
                 break;
             }
         }
 
-        // If not found in adjective, search noun
         if (!found) {
             for (let j = 0; j < nounArray.length; j++) {
                 if (nounArray[j] === letter) {
-                    // Found in noun - remove this specific occurrence
                     nounArray.splice(j, 1);
                     found = true;
-                    result.push('🟩');
+                    result.push({ letter: letter, match: true });
                     break;
                 }
             }
         }
 
         if (!found) {
-            // Injury - letter not found in puzzle
-            newHealth--;
-            newInjuries++;
-            result.push('🟥');
+            newQuality--;
+            result.push({ letter: letter, match: false });
         }
     }
 
-    // Update game state
     gameState.remainingAdjective = adjArray.join('');
     gameState.remainingNoun = nounArray.join('');
-    gameState.health = newHealth;
-    gameState.injuries = newInjuries;
+    gameState.quality = newQuality;
     gameState.moves++;
     gameState.history.push({
-        verb: verb,
-        result: result.join('')
+        ingredient: ingredient,
+        result: result
     });
 
-    // Check win condition (noun fully removed - only noun matters, not adjective)
-    // Remove any whitespace and check if noun is empty
     if (gameState.remainingNoun.replace(/\s/g, '') === '') {
         gameState.isWon = true;
     }
 
-    // Check lose condition (health <= 0)
-    if (newHealth <= 0) {
+    if (newQuality <= 0) {
         gameState.isLost = true;
     }
 
     saveGameState();
     updateDisplay();
-    loadHistory();
+    loadRecipe();
 }
 
-// Load and display history
-function loadHistory() {
-    const container = document.getElementById('historyContainer');
+// Load and display recipe (history) - always show 6 slots in 2x3 grid
+function loadRecipe() {
+    const container = document.getElementById('recipeContainer');
     container.innerHTML = '';
 
-    if (gameState.history.length === 0) {
-        const emptyMsg = document.createElement('p');
-        emptyMsg.textContent = 'No moves yet';
-        emptyMsg.style.color = '#8080a4';
-        emptyMsg.style.textAlign = 'center';
-        container.appendChild(emptyMsg);
-        return;
-    }
+    const maxSlots = 6;
 
-    gameState.history.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'history-item';
+    for (let i = 0; i < maxSlots; i++) {
+        const slotDiv = document.createElement('div');
+        slotDiv.className = 'recipe-slot';
         
-        const verbSpan = document.createElement('span');
-        verbSpan.className = 'history-verb';
-        verbSpan.textContent = item.verb;
+        if (i < gameState.history.length) {
+            // Filled slot with ingredient
+            const item = gameState.history[i];
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'recipe-item';
+            
+            item.result.forEach(letterData => {
+                const box = document.createElement('div');
+                box.className = 'letter-box ' + (letterData.match ? 'match' : 'miss');
+                box.textContent = letterData.letter;
+                itemDiv.appendChild(box);
+            });
+            
+            slotDiv.appendChild(itemDiv);
+        }
+        // Empty slots remain empty (just the background rectangle)
         
-        const emojiSpan = document.createElement('span');
-        emojiSpan.className = 'history-emoji';
-        emojiSpan.textContent = item.result;
-        
-        div.appendChild(verbSpan);
-        div.appendChild(emojiSpan);
-        container.appendChild(div);
-    });
+        container.appendChild(slotDiv);
+    }
 }
 
-// Show game over message
+// Show game over message as modal
 function showGameOver() {
-    const gameOverDiv = document.getElementById('gameOverMessage');
-    const gameOverText = document.getElementById('gameOverText');
-    const shareBtn = document.getElementById('shareBtn');
-
     if (gameState.isWon) {
-        gameOverDiv.className = 'game-over win';
-        gameOverDiv.style.display = 'block';
-        const puzzleName = `${gameState.adjective} ${gameState.noun}`;
-        const actions = gameState.moves;
-        const damage = gameState.injuries;
+        const dishName = `${gameState.adjective} ${gameState.noun}`;
+        const ingredients = gameState.moves;
         
-        // Single sentence win message
-        gameOverText.textContent = `You defeated the ${puzzleName} in ${actions} action${actions !== 1 ? 's' : ''} taking ${damage} damage.`;
-        shareBtn.style.display = 'inline-block';
+        const content = `
+            <p style="text-align: center; margin-bottom: 20px;">You prepared the ${dishName} with ${ingredients} ingredient${ingredients !== 1 ? 's' : ''}!</p>
+            <div style="text-align: center;">
+                <button id="modalShareBtn" style="padding: 10px 20px; font-size: 1em; background: #535373; color: #e6e6ec; border: 1px solid #535373; cursor: pointer; font-weight: 500;">Share</button>
+            </div>
+        `;
+        openModal('Victory!', content);
+        
+        // Add share button listener
+        setTimeout(() => {
+            const modalShareBtn = document.getElementById('modalShareBtn');
+            if (modalShareBtn) {
+                modalShareBtn.addEventListener('click', handleShare);
+            }
+        }, 0);
     } else if (gameState.isLost) {
-        gameOverDiv.className = 'game-over lose';
-        gameOverDiv.style.display = 'block';
-        gameOverText.textContent = 'You failed to slay the monster! 😢';
-        shareBtn.style.display = 'inline-block';
-    } else {
-        gameOverDiv.style.display = 'none';
-        shareBtn.style.display = 'none';
+        const content = `
+            <p style="text-align: center; margin-bottom: 20px;">The dish was ruined!</p>
+            <div style="text-align: center;">
+                <button id="modalShareBtn" style="padding: 10px 20px; font-size: 1em; background: #535373; color: #e6e6ec; border: 1px solid #535373; cursor: pointer; font-weight: 500;">Share</button>
+            </div>
+        `;
+        openModal('Game Over', content);
+        
+        // Add share button listener
+        setTimeout(() => {
+            const modalShareBtn = document.getElementById('modalShareBtn');
+            if (modalShareBtn) {
+                modalShareBtn.addEventListener('click', handleShare);
+            }
+        }, 0);
     }
 }
 
@@ -427,18 +414,19 @@ function generateShareText() {
     const result = gameState.isWon ? 'Win' : 'Loss';
     const puzzleDate = gameState.puzzleDate;
     const moves = gameState.moves;
-    const injuries = gameState.injuries;
-    const monsterName = gameState.noun;
+    const qualityLost = 10 - gameState.quality;
+    const dishName = gameState.noun;
     
-    let text = `MIGHTIER ${puzzleDate}\n`;
+    let text = `dishle ${formatDateDisplay(puzzleDate)}\n`;
     if (gameState.isWon) {
-        text += `${monsterName} defeated! ${moves} moves, ${injuries} injuries\n\n`;
+        text += `${dishName} prepared! ${moves} ingredients, Quality: ${gameState.quality}/10\n\n`;
     } else {
-        text += `${result} - ${moves} moves, ${injuries} injuries\n\n`;
+        text += `${result} - ${moves} ingredients, Quality: ${gameState.quality}/10\n\n`;
     }
     
     gameState.history.forEach(item => {
-        text += `${item.verb} ${item.result}\n`;
+        const boxes = item.result.map(r => r.match ? '🟩' : '🟥').join('');
+        text += `${boxes}\n`;
     });
 
     return text;
@@ -452,7 +440,6 @@ function handleShare() {
         navigator.clipboard.writeText(shareText).then(() => {
             alert('Results copied to clipboard!');
         }).catch(() => {
-            // Fallback
             copyToClipboardFallback(shareText);
         });
     } else {
@@ -476,44 +463,30 @@ function copyToClipboardFallback(text) {
     document.body.removeChild(textarea);
 }
 
-// Find next puzzle based on current puzzle date
-function findNextPuzzle() {
-    if (!currentPuzzle || puzzles.length === 0) return null;
-    
-    const currentDate = currentPuzzle.date;
-    const currentIndex = puzzles.findIndex(p => p.date === currentDate);
-    
-    if (currentIndex === -1 || currentIndex === puzzles.length - 1) {
-        return null; // No next puzzle
-    }
-    
-    return puzzles[currentIndex + 1];
-}
-
 // Load a specific puzzle
 function loadPuzzle(puzzle) {
     if (!puzzle) return;
     
     currentPuzzle = puzzle;
     const puzzleDate = puzzle.date;
-    document.getElementById('dateDisplay').textContent = puzzleDate;
+    document.getElementById('dateDisplay').textContent = formatDateDisplay(puzzleDate);
+    
+    const dishName = `${puzzle.adjective} ${puzzle.noun}`;
+    document.getElementById('dishName').textContent = dishName;
 
-    // Try to load saved state
     try {
-        const savedState = localStorage.getItem(`verble_${puzzleDate}`);
+        const savedState = localStorage.getItem(`dishle_${puzzleDate}`);
         
         if (savedState) {
             try {
                 const parsed = JSON.parse(savedState);
-                // Validate parsed data structure
                 if (parsed && typeof parsed === 'object') {
                     gameState = {
                         adjective: parsed.adjective || puzzle.adjective,
                         noun: parsed.noun || puzzle.noun,
                         remainingAdjective: parsed.remainingAdjective || puzzle.adjective,
                         remainingNoun: parsed.remainingNoun || puzzle.noun,
-                        health: parsed.health !== undefined ? parsed.health : 10,
-                        injuries: parsed.injuries || 0,
+                        quality: parsed.quality !== undefined ? parsed.quality : (parsed.health !== undefined ? parsed.health : 10),
                         moves: parsed.moves || 0,
                         history: Array.isArray(parsed.history) ? parsed.history : [],
                         isWon: parsed.isWon || false,
@@ -537,7 +510,7 @@ function loadPuzzle(puzzle) {
 
     gameState.puzzleDate = puzzleDate;
     updateDisplay();
-    loadHistory();
+    loadRecipe();
     updatePreviousButtonState();
 }
 
@@ -545,31 +518,28 @@ function loadPuzzle(puzzle) {
 function handleRetry() {
     if (!currentPuzzle) return;
     
-    // Clear saved state for current puzzle
     try {
-        localStorage.removeItem(`verble_${currentPuzzle.date}`);
+        localStorage.removeItem(`dishle_${currentPuzzle.date}`);
     } catch (error) {
         console.error('Error removing from localStorage:', error);
     }
     
-    // Reset game state
     resetGameState();
     updateDisplay();
-    loadHistory();
+    loadRecipe();
     
-    // Re-enable input
-    const input = document.getElementById('verbInput');
+    const input = document.getElementById('ingredientInput');
     const submitBtn = document.getElementById('submitBtn');
     input.disabled = false;
     submitBtn.disabled = false;
     input.focus();
 }
 
-// Reset debug date override (for returning to real date)
+// Reset debug date override
 function resetDebugDate() {
     debugDateOverride = null;
     try {
-        localStorage.removeItem('verble_debug_date');
+        localStorage.removeItem('dishle_debug_date');
     } catch (error) {
         console.error('Error removing debug date from localStorage:', error);
     }
@@ -581,73 +551,108 @@ function handleResetToToday() {
     resetDebugDate();
 }
 
-// Handle previous button - goes back one day
+// Handle previous button
 function handlePrevious() {
     const prevBtn = document.getElementById('prevBtn');
-    if (prevBtn && prevBtn.disabled) return; // Don't proceed if disabled
+    if (prevBtn && prevBtn.disabled) return;
 
     const currentDate = getHelsinkiDate();
     const prevDate = decrementDate(currentDate);
     
-    // Check if a puzzle exists for the previous date
     const prevPuzzle = puzzles.find(p => p.date === prevDate);
     
     if (prevPuzzle) {
-        // Set debug date override to the previous date
         debugDateOverride = prevDate;
         try {
-            localStorage.setItem('verble_debug_date', prevDate);
+            localStorage.setItem('dishle_debug_date', prevDate);
         } catch (error) {
             console.error('Error saving debug date to localStorage:', error);
         }
         
-        // Load the puzzle for that date
         loadPuzzle(prevPuzzle);
     } else {
-        // Still go back the date even if no puzzle exists
         debugDateOverride = prevDate;
         try {
-            localStorage.setItem('verble_debug_date', prevDate);
+            localStorage.setItem('dishle_debug_date', prevDate);
         } catch (error) {
             console.error('Error saving debug date to localStorage:', error);
         }
         
-        // Re-initialize to show "No puzzle yet" message
         initGame();
     }
 }
 
-// Handle next button - advances the date by one day
+// Handle next button
 function handleNext() {
     const currentDate = getHelsinkiDate();
     const nextDate = incrementDate(currentDate);
     
-    // Check if a puzzle exists for the next date
     const nextPuzzle = puzzles.find(p => p.date === nextDate);
     
     if (nextPuzzle) {
-        // Set debug date override to the next date
         debugDateOverride = nextDate;
         try {
-            localStorage.setItem('verble_debug_date', nextDate);
+            localStorage.setItem('dishle_debug_date', nextDate);
         } catch (error) {
             console.error('Error saving debug date to localStorage:', error);
         }
         
-        // Load the puzzle for that date
         loadPuzzle(nextPuzzle);
     } else {
-        // Still advance the date even if no puzzle exists
         debugDateOverride = nextDate;
         try {
-            localStorage.setItem('verble_debug_date', nextDate);
+            localStorage.setItem('dishle_debug_date', nextDate);
         } catch (error) {
             console.error('Error saving debug date to localStorage:', error);
         }
         
-        // Re-initialize to show "No puzzle yet" message
         initGame();
     }
+}
+
+// Countdown timer to midnight Helsinki time
+function startCountdownTimer() {
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+    }
+    
+    function updateCountdown() {
+        const now = new Date();
+        const helsinkiNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Helsinki' }));
+        
+        // Get midnight Helsinki time tomorrow
+        const midnightHelsinki = new Date(helsinkiNow);
+        midnightHelsinki.setDate(midnightHelsinki.getDate() + 1);
+        midnightHelsinki.setHours(0, 0, 0, 0);
+        
+        const diff = midnightHelsinki - helsinkiNow;
+        
+        if (diff <= 0) {
+            document.getElementById('countdownTimer').textContent = '00:00';
+            return;
+        }
+        
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        const display = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        document.getElementById('countdownTimer').textContent = display;
+    }
+    
+    updateCountdown();
+    countdownInterval = setInterval(updateCountdown, 1000);
+}
+
+// Modal functions
+function openModal(title, content) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalContent').innerHTML = content || '<p style="color: #8080a4; text-align: center;">Coming soon...</p>';
+    document.getElementById('modalOverlay').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('modalOverlay').style.display = 'none';
 }
 
 // Event listeners
@@ -655,14 +660,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadPuzzles();
     initGame();
 
-    const input = document.getElementById('verbInput');
+    const input = document.getElementById('ingredientInput');
     const submitBtn = document.getElementById('submitBtn');
-    const shareBtn = document.getElementById('shareBtn');
 
     submitBtn.addEventListener('click', () => {
-        const verb = input.value.trim();
-        if (verb) {
-            processVerb(verb);
+        const ingredient = input.value.trim();
+        if (ingredient) {
+            processIngredient(ingredient);
             input.value = '';
             input.focus();
         }
@@ -674,14 +678,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Only allow A-Z letters
     input.addEventListener('input', (e) => {
         e.target.value = e.target.value.replace(/[^A-Za-z]/g, '').toUpperCase();
     });
 
-    shareBtn.addEventListener('click', handleShare);
-
-    // Previous, Retry and Next buttons
+    // Navigation buttons
     const prevBtn = document.getElementById('prevBtn');
     const retryBtn = document.getElementById('retryBtn');
     const nextBtn = document.getElementById('nextBtn');
@@ -695,4 +696,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (resetToTodayBtn) {
         resetToTodayBtn.addEventListener('click', handleResetToToday);
     }
+
+    // Modal buttons
+    document.getElementById('helpBtn').addEventListener('click', () => {
+        openModal('Help', '');
+    });
+    
+    document.getElementById('statsBtn').addEventListener('click', () => {
+        openModal('Stats', '');
+    });
+    
+    document.getElementById('infoBtn').addEventListener('click', () => {
+        openModal('About', '');
+    });
+    
+    document.getElementById('modalClose').addEventListener('click', closeModal);
+    
+    document.getElementById('modalOverlay').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('modalOverlay')) {
+            closeModal();
+        }
+    });
+    
+    // Close modal on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
 });
