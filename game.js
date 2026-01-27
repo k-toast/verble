@@ -567,7 +567,7 @@ function handleRetry() {
     const submitBtn = document.getElementById('submitBtn');
     input.disabled = false;
     submitBtn.disabled = false;
-    input.focus();
+    // Don't auto-focus input - let user tap when ready (avoids mobile keyboard popup)
 }
 
 // Reset debug date override
@@ -757,6 +757,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             closeModal();
+        }
+    });
+
+    // Handle mobile keyboard open/close - snap viewport back when keyboard closes
+    if (window.visualViewport) {
+        let pendingUpdate = false;
+        
+        window.visualViewport.addEventListener('resize', () => {
+            if (pendingUpdate) return;
+            pendingUpdate = true;
+            
+            requestAnimationFrame(() => {
+                pendingUpdate = false;
+                // Force layout recalculation when viewport changes (keyboard open/close)
+                document.body.style.height = `${window.visualViewport.height}px`;
+                // Scroll to top to ensure content is positioned correctly
+                window.scrollTo(0, 0);
+            });
+        });
+        
+        // Also handle scroll events from Visual Viewport (some browsers use this)
+        window.visualViewport.addEventListener('scroll', () => {
+            window.scrollTo(0, 0);
+        });
+    }
+
+    // Blur input when tapping outside to close keyboard
+    document.addEventListener('touchstart', (e) => {
+        const input = document.getElementById('ingredientInput');
+        if (document.activeElement === input && !e.target.closest('.input-section')) {
+            input.blur();
         }
     });
 });

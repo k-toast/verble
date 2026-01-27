@@ -27,7 +27,7 @@ body {
     font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background: var(--paper);
     height: 100dvh; /* dynamic viewport height handles mobile browser chrome */
-    min-height: 100dvh;
+    min-height: 0; /* allow shrinking when JS sets explicit height */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -35,6 +35,12 @@ body {
     padding: 20px;
     color: var(--ink-primary);
     overflow: hidden;
+    /* Prevent iOS bounce/overscroll */
+    overscroll-behavior: none;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    left: 0;
 }
 
 /* ==========================================================================
