@@ -663,7 +663,7 @@ footer {
 
     #ingredientInput {
         padding: 10px 12px;
-        font-size: 0.9em;
+        font-size: 16px; /* Must be 16px+ to prevent iOS auto-zoom on focus */
     }
 
     #submitBtn {

@@ -703,7 +703,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (ingredient) {
             processIngredient(ingredient);
             input.value = '';
-            input.focus();
+            // Don't auto-focus - let user tap when ready (prevents iOS keyboard flicker)
         }
     });
 
@@ -762,19 +762,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Handle mobile keyboard open/close - snap viewport back when keyboard closes
     if (window.visualViewport) {
-        let pendingUpdate = false;
+        let initialHeight = window.innerHeight;
+        let keyboardOpen = false;
         
         window.visualViewport.addEventListener('resize', () => {
-            if (pendingUpdate) return;
-            pendingUpdate = true;
+            const currentHeight = window.visualViewport.height;
+            const heightDiff = initialHeight - currentHeight;
             
-            requestAnimationFrame(() => {
-                pendingUpdate = false;
-                // Force layout recalculation when viewport changes (keyboard open/close)
-                document.body.style.height = `${window.visualViewport.height}px`;
-                // Scroll to top to ensure content is positioned correctly
-                window.scrollTo(0, 0);
-            });
+            // Keyboard is likely open if viewport shrunk significantly (>150px)
+            if (heightDiff > 150) {
+                keyboardOpen = true;
+                document.body.style.height = `${currentHeight}px`;
+            } else if (keyboardOpen) {
+                // Keyboard just closed - remove inline style to let CSS 100dvh take over
+                keyboardOpen = false;
+                document.body.style.height = '';
+                // Small delay to let iOS finish its animation, then ensure scroll position
+                setTimeout(() => {
+                    window.scrollTo(0, 0);
+                }, 100);
+            }
+            
+            window.scrollTo(0, 0);
         });
         
         // Also handle scroll events from Visual Viewport (some browsers use this)
