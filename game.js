@@ -153,9 +153,9 @@ function initGame() {
     const puzzleDate = currentPuzzle.date;
     document.getElementById('dateDisplay').textContent = formatDateDisplay(puzzleDate);
     
-    // Display the full dish name
+    // Display the full dish name in quotes
     const dishName = `${currentPuzzle.adjective} ${currentPuzzle.noun}`;
-    document.getElementById('dishName').textContent = dishName;
+    document.getElementById('dishName').textContent = `"${dishName}"`;
 
     // Try to load saved state
     try {
@@ -230,8 +230,8 @@ function saveGameState() {
 
 // Update display
 function updateDisplay() {
-    const puzzleDisplay = `${gameState.remainingAdjective} ${gameState.remainingNoun}`;
-    document.getElementById('puzzleText').textContent = puzzleDisplay;
+    const puzzleText = document.getElementById('puzzleText');
+    puzzleText.innerHTML = `<span class="puzzle-adjective">${gameState.remainingAdjective}</span> <span class="puzzle-noun">${gameState.remainingNoun}</span>`;
 
     document.getElementById('qualityValue').textContent = gameState.quality;
 
@@ -288,30 +288,37 @@ function processIngredient(ingredient) {
     for (let i = 0; i < ingredient.length; i++) {
         const letter = ingredient[i];
         let found = false;
+        let foundInNoun = false;
 
+        // First check adjective
         for (let j = 0; j < adjArray.length; j++) {
             if (adjArray[j] === letter) {
                 adjArray.splice(j, 1);
                 found = true;
-                result.push({ letter: letter, match: true });
+                foundInNoun = false;
                 break;
             }
         }
 
+        // Then check noun if not found in adjective
         if (!found) {
             for (let j = 0; j < nounArray.length; j++) {
                 if (nounArray[j] === letter) {
                     nounArray.splice(j, 1);
                     found = true;
-                    result.push({ letter: letter, match: true });
+                    foundInNoun = true;
                     break;
                 }
             }
         }
 
-        if (!found) {
+        if (found) {
+            // 'match' = found in noun (green), 'neutral' = found in adjective (grey)
+            result.push({ letter: letter, status: foundInNoun ? 'match' : 'neutral' });
+        } else {
+            // 'miss' = not found anywhere, costs quality (red)
             newQuality--;
-            result.push({ letter: letter, match: false });
+            result.push({ letter: letter, status: 'miss' });
         }
     }
 
@@ -348,6 +355,12 @@ function loadRecipe() {
         const slotDiv = document.createElement('div');
         slotDiv.className = 'recipe-slot';
         
+        // Add number
+        const numberDiv = document.createElement('div');
+        numberDiv.className = 'recipe-number';
+        numberDiv.textContent = `${i + 1}.`;
+        slotDiv.appendChild(numberDiv);
+        
         if (i < gameState.history.length) {
             // Filled slot with ingredient
             const item = gameState.history[i];
@@ -356,14 +369,27 @@ function loadRecipe() {
             
             item.result.forEach(letterData => {
                 const box = document.createElement('div');
-                box.className = 'letter-box ' + (letterData.match ? 'match' : 'miss');
+                // Support both old format (match: true/false) and new format (status: 'match'/'neutral'/'miss')
+                let statusClass;
+                if (letterData.status) {
+                    statusClass = letterData.status; // 'match', 'neutral', or 'miss'
+                } else {
+                    // Legacy support for old saved games
+                    statusClass = letterData.match ? 'match' : 'miss';
+                }
+                box.className = 'letter-box ' + statusClass;
                 box.textContent = letterData.letter;
                 itemDiv.appendChild(box);
             });
             
             slotDiv.appendChild(itemDiv);
+        } else {
+            // Empty slot with placeholder
+            const placeholder = document.createElement('div');
+            placeholder.className = 'recipe-placeholder';
+            placeholder.textContent = '???';
+            slotDiv.appendChild(placeholder);
         }
-        // Empty slots remain empty (just the background rectangle)
         
         container.appendChild(slotDiv);
     }
@@ -425,7 +451,16 @@ function generateShareText() {
     }
     
     gameState.history.forEach(item => {
-        const boxes = item.result.map(r => r.match ? '🟩' : '🟥').join('');
+        const boxes = item.result.map(r => {
+            // Support both old format (match: true/false) and new format (status)
+            if (r.status) {
+                if (r.status === 'match') return '🟩';
+                if (r.status === 'neutral') return '⬜';
+                return '🟥';
+            }
+            // Legacy support
+            return r.match ? '🟩' : '🟥';
+        }).join('');
         text += `${boxes}\n`;
     });
 
@@ -472,7 +507,7 @@ function loadPuzzle(puzzle) {
     document.getElementById('dateDisplay').textContent = formatDateDisplay(puzzleDate);
     
     const dishName = `${puzzle.adjective} ${puzzle.noun}`;
-    document.getElementById('dishName').textContent = dishName;
+    document.getElementById('dishName').textContent = `"${dishName}"`;
 
     try {
         const savedState = localStorage.getItem(`dishle_${puzzleDate}`);

@@ -1,3 +1,22 @@
+/* ==========================================================================
+   VERBLE — NYTimes-Elegant Editorial Design
+   Color System (LOCKED)
+   ========================================================================== */
+
+:root {
+    --ink-primary:    #251d29;
+    --ink-secondary:  #433d4c;
+    --neutral-mid:    #778299;
+    --neutral-light:  #9caebb;
+    --semantic-neg:   #fbcdcd;
+    --semantic-pos:   #d4e4d1;
+    --paper:          #ffffff;
+}
+
+/* ==========================================================================
+   Reset & Base
+   ========================================================================== */
+
 * {
     margin: 0;
     padding: 0;
@@ -6,27 +25,33 @@
 
 body {
     font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: #e2d9ea;
+    background: var(--paper);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 20px;
-    color: #120e23;
+    color: var(--ink-primary);
 }
 
+/* ==========================================================================
+   Container — No decorative borders, no radius, no shadow
+   ========================================================================== */
+
 .container {
-    background: #fffff5;
-    border: 3px solid #5a265e;
+    background: var(--paper);
     padding: 40px;
     max-width: 600px;
     width: 100%;
     display: flex;
     flex-direction: column;
-    border-radius: 20px;
-    box-shadow: 0 8px 32px rgba(90, 38, 94, 0.15);
+    border-radius: 0;
 }
+
+/* ==========================================================================
+   Header — Typography-based hierarchy
+   ========================================================================== */
 
 header {
     text-align: center;
@@ -34,31 +59,34 @@ header {
 }
 
 h1 {
-    font-family: 'Baloo 2', cursive;
-    font-size: 4.8em;
-    color: #ba6156;
+    font-family: 'Outfit', sans-serif;
+    font-size: 3.2em;
+    color: var(--ink-primary);
     margin-bottom: 8px;
     font-weight: 700;
-    letter-spacing: 0.01em;
+    letter-spacing: -0.02em;
+    text-transform: lowercase;
 }
 
-.date-display {
-    color: #636686;
+.date-line {
+    color: var(--ink-secondary);
     font-size: 0.9em;
     font-weight: 400;
-    margin-bottom: 4px;
 }
 
 .dish-name {
-    color: #8d2d4e;
-    font-size: 1.1em;
-    font-weight: 600;
+    color: var(--ink-secondary);
+    font-weight: 400;
 }
+
+/* ==========================================================================
+   No Puzzle State
+   ========================================================================== */
 
 .no-puzzle {
     text-align: center;
     padding: 50px 20px;
-    color: #636686;
+    color: var(--ink-secondary);
     font-size: 1.1em;
     flex: 1;
 }
@@ -70,51 +98,73 @@ h1 {
 .reset-btn {
     padding: 12px 24px;
     font-size: 1em;
-    background: #ba6156;
-    color: #fffff5;
-    border: none;
-    border-radius: 10px;
+    background: var(--paper);
+    color: var(--ink-primary);
+    border: 1px solid var(--ink-primary);
+    border-radius: 6px;
     cursor: pointer;
     font-weight: 600;
-    transition: background 0.2s, transform 0.1s;
+    transition: border-color 0.2s;
 }
 
 .reset-btn:hover {
-    background: #8d2d4e;
-    transform: translateY(-2px);
+    border-color: var(--ink-secondary);
 }
 
-/* Puzzle Section */
+.reset-btn:active {
+    box-shadow: inset 0 1px 2px rgba(37, 29, 41, 0.1);
+}
+
+/* ==========================================================================
+   Puzzle Section
+   ========================================================================== */
+
 .puzzle-section {
     margin-bottom: 25px;
 }
 
 .puzzle-label {
     text-align: center;
-    color: #b48894;
-    font-size: 0.9em;
+    color: var(--ink-secondary);
+    font-size: 0.85em;
     margin-bottom: 12px;
     font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
 }
 
 .puzzle-display {
-    background: #ffce95;
+    background: var(--paper);
     padding: 25px 20px;
     text-align: center;
-    border-radius: 14px;
-    border: 2px solid #f2a65e;
+    border-radius: 4px;
+    border: 1px solid var(--neutral-mid);
 }
 
 .puzzle-text {
     font-size: 1.8em;
-    font-weight: 700;
     letter-spacing: 0.08em;
-    color: #120e23;
+    color: var(--ink-primary);
     font-family: 'Outfit', sans-serif;
     line-height: 1.4;
 }
 
-/* Input Section */
+/* Adjective: lighter weight, secondary color — not the target */
+.puzzle-adjective {
+    font-weight: 400;
+    color: var(--ink-secondary);
+}
+
+/* Noun: bold, primary color — the victory target */
+.puzzle-noun {
+    font-weight: 700;
+    color: var(--ink-primary);
+}
+
+/* ==========================================================================
+   Input Section
+   ========================================================================== */
+
 .input-section {
     display: flex;
     gap: 10px;
@@ -125,30 +175,29 @@ h1 {
     flex: 1;
     padding: 14px 18px;
     font-size: 1em;
-    border: 2px solid #8c88a5;
-    border-radius: 10px;
+    border: 1px solid var(--neutral-mid);
+    border-radius: 4px;
     text-transform: uppercase;
     font-family: 'Outfit', sans-serif;
-    background: #fffff5;
-    color: #120e23;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    background: var(--paper);
+    color: var(--ink-primary);
+    transition: border-color 0.2s;
 }
 
 #ingredientInput::placeholder {
-    color: #8c88a5;
+    color: var(--neutral-mid);
     text-transform: none;
-    font-style: italic;
+    font-style: normal;
 }
 
 #ingredientInput:focus {
     outline: none;
-    border-color: #5a265e;
-    box-shadow: 0 0 0 3px rgba(90, 38, 94, 0.15);
+    border-color: var(--ink-primary);
 }
 
 #ingredientInput:disabled {
-    background: #e2d9ea;
-    border-color: #8c88a5;
+    background: var(--paper);
+    border-color: var(--neutral-light);
     cursor: not-allowed;
     opacity: 0.5;
 }
@@ -156,62 +205,84 @@ h1 {
 #submitBtn {
     padding: 14px 28px;
     font-size: 1em;
-    background: #f2a65e;
-    color: #120e23;
-    border: none;
+    background: var(--paper);
+    color: var(--ink-primary);
+    border: 1px solid var(--ink-primary);
     cursor: pointer;
-    font-weight: 700;
-    transition: background 0.2s, transform 0.1s;
-    border-radius: 25px;
+    font-weight: 600;
+    transition: border-color 0.2s;
+    border-radius: 6px;
 }
 
 #submitBtn:hover:not(:disabled) {
-    background: #ba6156;
-    color: #fffff5;
-    transform: translateY(-2px);
+    border-color: var(--ink-secondary);
+}
+
+#submitBtn:active:not(:disabled) {
+    box-shadow: inset 0 1px 2px rgba(37, 29, 41, 0.1);
 }
 
 #submitBtn:disabled {
-    background: #8c88a5;
-    color: #e2d9ea;
+    background: var(--paper);
+    color: var(--neutral-mid);
+    border-color: var(--neutral-mid);
     cursor: not-allowed;
-    opacity: 0.6;
+    opacity: 0.5;
 }
 
-/* Recipe Section */
+/* ==========================================================================
+   Recipe Section
+   ========================================================================== */
+
 .recipe-section {
     margin-bottom: 25px;
 }
 
 .recipe-section h2 {
-    font-size: 1.1em;
+    font-size: 0.85em;
     margin-bottom: 15px;
-    color: #5a265e;
+    color: var(--ink-primary);
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
 }
 
 #recipeContainer {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .recipe-slot {
-    background: #eacebd;
-    border-radius: 12px;
-    padding: 12px;
-    min-height: 65px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 12px;
+    padding: 8px 0;
+}
+
+.recipe-number {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--ink-secondary);
+    min-width: 24px;
 }
 
 .recipe-item {
     display: flex;
     gap: 3px;
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: flex-start;
 }
+
+.recipe-placeholder {
+    color: var(--neutral-mid);
+    font-size: 0.9em;
+    font-weight: 400;
+}
+
+/* ==========================================================================
+   Letter Tiles — Mechanical, systemic
+   ========================================================================== */
 
 .letter-box {
     width: 32px;
@@ -220,31 +291,44 @@ h1 {
     align-items: center;
     justify-content: center;
     font-size: 0.9em;
-    font-weight: 700;
+    font-weight: 600;
     font-family: 'Outfit', sans-serif;
-    border-radius: 6px;
-    background: #fffff5;
-    color: #120e23;
-    border: 1px solid #b48894;
+    border-radius: 4px;
+    background: var(--paper);
+    color: var(--ink-primary);
+    border: 1px solid var(--neutral-mid);
 }
 
+/* Match state: letter found in NOUN (target) — muted green */
 .letter-box.match {
-    background: #10d275;
-    color: #fffff5;
-    border-color: #10d275;
+    background: var(--semantic-pos);
+    color: var(--ink-primary);
+    border: none;
+    font-weight: 700;
 }
 
+/* Neutral state: letter found in ADJECTIVE — grey */
+.letter-box.neutral {
+    background: var(--neutral-light);
+    color: var(--ink-primary);
+    border: none;
+}
+
+/* Miss state: letter NOT found anywhere, costs quality — red */
 .letter-box.miss {
-    background: #8d2d4e;
-    color: #fffff5;
-    border-color: #8d2d4e;
+    background: var(--semantic-neg);
+    color: var(--ink-primary);
+    border: none;
 }
 
-/* Quality Display */
+/* ==========================================================================
+   Quality Display
+   ========================================================================== */
+
 .quality-display {
     text-align: center;
-    font-size: 1.4em;
-    color: #5a265e;
+    font-size: 1.2em;
+    color: var(--ink-primary);
     padding-top: 20px;
     font-weight: 600;
 }
@@ -252,40 +336,47 @@ h1 {
 #shareBtn {
     padding: 12px 24px;
     font-size: 1em;
-    background: #10d275;
-    color: #fffff5;
-    border: none;
-    border-radius: 10px;
+    background: var(--paper);
+    color: var(--ink-primary);
+    border: 1px solid var(--ink-primary);
+    border-radius: 6px;
     cursor: pointer;
     font-weight: 600;
-    transition: background 0.2s, transform 0.1s;
+    transition: border-color 0.2s;
+    margin-top: 15px;
 }
 
 #shareBtn:hover {
-    background: #007899;
-    transform: translateY(-2px);
+    border-color: var(--ink-secondary);
 }
 
-/* Footer */
+#shareBtn:active {
+    box-shadow: inset 0 1px 2px rgba(37, 29, 41, 0.1);
+}
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+
 footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding-top: 20px;
     margin-top: 20px;
-    border-top: 2px solid #eacebd;
+    border-top: 1px solid var(--neutral-mid);
     gap: 15px;
 }
 
 .footer-left {
-    color: #636686;
+    color: var(--ink-secondary);
     font-size: 0.85em;
     flex: 1;
 }
 
 #countdownTimer {
     font-weight: 600;
-    color: #5a265e;
+    color: var(--ink-primary);
 }
 
 .footer-center {
@@ -293,30 +384,38 @@ footer {
     gap: 8px;
 }
 
+/* ==========================================================================
+   Navigation Buttons — Editorial, not playful
+   ========================================================================== */
+
 .nav-btn {
     width: 38px;
     height: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #473b78;
-    color: #fffff5;
-    border: none;
+    background: var(--paper);
+    color: var(--ink-primary);
+    border: 1px solid var(--neutral-mid);
     cursor: pointer;
     font-size: 1em;
-    font-weight: 700;
-    transition: background 0.2s, transform 0.1s;
-    border-radius: 50%;
+    font-weight: 600;
+    transition: border-color 0.2s;
+    border-radius: 4px;
 }
 
 .nav-btn:hover:not(:disabled) {
-    background: #5a265e;
-    transform: translateY(-2px);
+    border-color: var(--ink-primary);
+}
+
+.nav-btn:active:not(:disabled) {
+    box-shadow: inset 0 1px 2px rgba(37, 29, 41, 0.1);
 }
 
 .nav-btn:disabled {
-    background: #8c88a5;
-    color: #e2d9ea;
+    background: var(--paper);
+    color: var(--neutral-mid);
+    border-color: var(--neutral-light);
     cursor: not-allowed;
     opacity: 0.5;
 }
@@ -328,35 +427,45 @@ footer {
     justify-content: flex-end;
 }
 
+/* ==========================================================================
+   Icon Buttons — No colored backgrounds, editorial
+   ========================================================================== */
+
 .icon-btn {
     width: 38px;
     height: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #007899;
-    color: #fffff5;
-    border: none;
+    background: var(--paper);
+    color: var(--ink-primary);
+    border: 1px solid var(--neutral-mid);
     cursor: pointer;
     font-size: 1em;
-    font-weight: 700;
-    transition: background 0.2s, transform 0.1s;
-    border-radius: 50%;
+    font-weight: 600;
+    transition: border-color 0.2s;
+    border-radius: 4px;
 }
 
 .icon-btn:hover {
-    background: #10d275;
-    transform: translateY(-2px);
+    border-color: var(--ink-primary);
 }
 
-/* Modal */
+.icon-btn:active {
+    box-shadow: inset 0 1px 2px rgba(37, 29, 41, 0.1);
+}
+
+/* ==========================================================================
+   Modal — Restrained, no decorative borders
+   ========================================================================== */
+
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(18, 14, 35, 0.7);
+    background: rgba(37, 29, 41, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -364,14 +473,13 @@ footer {
 }
 
 .modal {
-    background: #fffff5;
-    border: 3px solid #5a265e;
-    border-radius: 20px;
+    background: var(--paper);
+    border: 1px solid var(--neutral-mid);
+    border-radius: 4px;
     width: 90%;
     max-width: 400px;
     max-height: 80vh;
     overflow-y: auto;
-    box-shadow: 0 12px 40px rgba(90, 38, 94, 0.25);
 }
 
 .modal-header {
@@ -379,19 +487,19 @@ footer {
     align-items: center;
     justify-content: space-between;
     padding: 18px 24px;
-    border-bottom: 2px solid #eacebd;
+    border-bottom: 1px solid var(--neutral-mid);
 }
 
 .modal-header h3 {
-    font-size: 1.2em;
+    font-size: 1.1em;
     font-weight: 600;
-    color: #5a265e;
+    color: var(--ink-primary);
 }
 
 .modal-close {
     background: none;
     border: none;
-    color: #8c88a5;
+    color: var(--ink-secondary);
     font-size: 1.6em;
     cursor: pointer;
     padding: 0;
@@ -400,24 +508,26 @@ footer {
 }
 
 .modal-close:hover {
-    color: #8d2d4e;
+    color: var(--ink-primary);
 }
 
 .modal-content {
     padding: 24px;
-    color: #120e23;
+    color: var(--ink-primary);
     min-height: 100px;
 }
 
-/* Responsive */
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
 @media (max-width: 600px) {
     .container {
         padding: 25px 20px;
-        border-radius: 16px;
     }
 
     h1 {
-        font-size: 3.5em;
+        font-size: 2.6em;
     }
 
     .puzzle-text {
