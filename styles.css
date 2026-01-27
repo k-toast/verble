@@ -26,13 +26,15 @@
 body {
     font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background: var(--paper);
-    min-height: 100vh;
+    height: 100dvh; /* dynamic viewport height handles mobile browser chrome */
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 20px;
     color: var(--ink-primary);
+    overflow: hidden;
 }
 
 /* ==========================================================================
@@ -44,9 +46,24 @@ body {
     padding: 40px;
     max-width: 600px;
     width: 100%;
+    height: 100%;
+    max-height: calc(100dvh - 40px); /* account for body padding */
     display: flex;
     flex-direction: column;
     border-radius: 0;
+    overflow: hidden;
+}
+
+/* ==========================================================================
+   Game Container — Flex wrapper for viewport fitting
+   ========================================================================== */
+
+#gameContainer {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0; /* allows flex children to shrink below content size */
+    overflow: hidden;
 }
 
 /* ==========================================================================
@@ -56,11 +73,12 @@ body {
 header {
     text-align: center;
     margin-bottom: 30px;
+    flex-shrink: 0; /* header doesn't compress */
 }
 
 h1 {
     font-family: 'Outfit', sans-serif;
-    font-size: 3.2em;
+    font-size: clamp(2em, 8vw, 3.2em); /* fluid: min 2em, preferred 8vw, max 3.2em */
     color: var(--ink-primary);
     margin-bottom: 8px;
     font-weight: 700;
@@ -121,6 +139,7 @@ h1 {
 
 .puzzle-section {
     margin-bottom: 25px;
+    flex-shrink: 0; /* puzzle display doesn't compress */
 }
 
 .puzzle-label {
@@ -142,7 +161,7 @@ h1 {
 }
 
 .puzzle-text {
-    font-size: 1.8em;
+    font-size: clamp(1.1em, 4vw, 1.8em); /* fluid: min 1.1em, preferred 4vw, max 1.8em */
     letter-spacing: 0.08em;
     color: var(--ink-primary);
     font-family: 'Outfit', sans-serif;
@@ -169,6 +188,7 @@ h1 {
     display: flex;
     gap: 10px;
     margin-bottom: 30px;
+    flex-shrink: 0; /* input section doesn't compress */
 }
 
 #ingredientInput {
@@ -236,6 +256,10 @@ h1 {
 
 .recipe-section {
     margin-bottom: 25px;
+    flex: 1; /* takes remaining space */
+    min-height: 0; /* allows shrinking below content size */
+    display: flex;
+    flex-direction: column;
 }
 
 .recipe-section h2 {
@@ -251,6 +275,9 @@ h1 {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    flex: 1;
+    min-height: 0; /* allows container to shrink */
+    overflow-y: auto; /* scrollable fallback if content overflows */
 }
 
 .recipe-slot {
@@ -331,6 +358,7 @@ h1 {
     color: var(--ink-primary);
     padding-top: 20px;
     font-weight: 600;
+    flex-shrink: 0; /* quality display doesn't compress */
 }
 
 #shareBtn {
@@ -363,9 +391,10 @@ footer {
     align-items: center;
     justify-content: space-between;
     padding-top: 20px;
-    margin-top: 20px;
+    margin-top: auto; /* push to bottom */
     border-top: 1px solid var(--neutral-mid);
     gap: 15px;
+    flex-shrink: 0; /* footer doesn't compress */
 }
 
 .footer-left {
@@ -549,12 +578,12 @@ footer {
     }
 
     #recipeContainer {
-        gap: 10px;
+        gap: 6px;
     }
 
     .recipe-slot {
-        padding: 10px;
-        min-height: 55px;
+        padding: 6px 0;
+        min-height: auto;
     }
 
     footer {
@@ -574,5 +603,203 @@ footer {
 
     .footer-right {
         order: 2;
+    }
+}
+
+/* ==========================================================================
+   Small Phones — Aggressive scaling for short/narrow screens
+   ========================================================================== */
+
+@media (max-width: 480px), (max-height: 700px) {
+    body {
+        padding: 10px;
+    }
+
+    .container {
+        padding: 15px;
+        max-height: calc(100dvh - 20px);
+    }
+
+    header {
+        margin-bottom: 15px;
+    }
+
+    h1 {
+        font-size: 2em;
+        margin-bottom: 4px;
+    }
+
+    .date-line {
+        font-size: 0.8em;
+    }
+
+    .puzzle-section {
+        margin-bottom: 15px;
+    }
+
+    .puzzle-label {
+        font-size: 0.75em;
+        margin-bottom: 8px;
+    }
+
+    .puzzle-display {
+        padding: 12px 10px;
+    }
+
+    .puzzle-text {
+        font-size: 1.1em;
+    }
+
+    .input-section {
+        margin-bottom: 15px;
+        gap: 8px;
+    }
+
+    #ingredientInput {
+        padding: 10px 12px;
+        font-size: 0.9em;
+    }
+
+    #submitBtn {
+        padding: 10px 20px;
+        font-size: 0.9em;
+    }
+
+    .recipe-section {
+        margin-bottom: 10px;
+    }
+
+    .recipe-section h2 {
+        font-size: 0.75em;
+        margin-bottom: 8px;
+    }
+
+    #recipeContainer {
+        gap: 4px;
+    }
+
+    .recipe-slot {
+        padding: 4px 0;
+        gap: 8px;
+    }
+
+    .recipe-number {
+        font-size: 0.8em;
+        min-width: 20px;
+    }
+
+    .recipe-item {
+        gap: 2px;
+    }
+
+    .letter-box {
+        width: 22px;
+        height: 22px;
+        font-size: 0.7em;
+        border-radius: 3px;
+    }
+
+    .recipe-placeholder {
+        font-size: 0.8em;
+    }
+
+    .quality-display {
+        font-size: 1em;
+        padding-top: 10px;
+    }
+
+    footer {
+        padding-top: 10px;
+        gap: 10px;
+    }
+
+    .footer-left {
+        font-size: 0.75em;
+    }
+
+    .nav-btn,
+    .icon-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9em;
+    }
+}
+
+/* ==========================================================================
+   Very Small Screens — Extra compact for tiny phones
+   ========================================================================== */
+
+@media (max-height: 600px) {
+    body {
+        padding: 5px;
+    }
+
+    .container {
+        padding: 10px;
+        max-height: calc(100dvh - 10px);
+    }
+
+    header {
+        margin-bottom: 10px;
+    }
+
+    h1 {
+        font-size: 1.8em;
+        margin-bottom: 2px;
+    }
+
+    .puzzle-section {
+        margin-bottom: 10px;
+    }
+
+    .puzzle-display {
+        padding: 8px;
+    }
+
+    .puzzle-text {
+        font-size: 1em;
+    }
+
+    .input-section {
+        margin-bottom: 10px;
+    }
+
+    #ingredientInput,
+    #submitBtn {
+        padding: 8px 10px;
+    }
+
+    .recipe-section h2 {
+        margin-bottom: 5px;
+    }
+
+    #recipeContainer {
+        gap: 2px;
+    }
+
+    .recipe-slot {
+        padding: 2px 0;
+    }
+
+    .letter-box {
+        width: 20px;
+        height: 20px;
+        font-size: 0.65em;
+    }
+
+    .quality-display {
+        padding-top: 8px;
+        font-size: 0.9em;
+    }
+
+    footer {
+        padding-top: 8px;
+    }
+
+    .nav-btn,
+    .icon-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 0.8em;
     }
 }
