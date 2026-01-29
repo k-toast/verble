@@ -11,6 +11,7 @@
     --semantic-neg:   #fbcdcd;
     --semantic-pos:   #d4e4d1;
     --paper:          #ffffff;
+    --adjective-gold: #D08080; /* light red, clean and soft, readable on white */
 }
 
 /* ==========================================================================
@@ -174,16 +175,16 @@ h1 {
     line-height: 1.4;
 }
 
-/* Adjective: lighter weight, secondary color — not the target */
+/* Adjective: lighter weight, muted gold — not the target */
 .puzzle-adjective {
     font-weight: 400;
-    color: var(--ink-secondary);
+    color: var(--adjective-gold);
 }
 
-/* Noun: bold, primary color — the victory target */
+/* Noun: bold, grey — the victory target */
 .puzzle-noun {
     font-weight: 700;
-    color: var(--ink-primary);
+    color: var(--neutral-mid);
 }
 
 /* ==========================================================================
@@ -291,6 +292,7 @@ h1 {
     align-items: center;
     gap: 12px;
     padding: 8px 0;
+    min-height: 48px; /* reserve space so layout doesn't shift when filling slots */
 }
 
 .recipe-number {
@@ -332,26 +334,27 @@ h1 {
     border: 1px solid var(--neutral-mid);
 }
 
-/* Match state: letter found in NOUN (target) — muted green */
-.letter-box.match {
-    background: var(--semantic-pos);
+/* Adjective state: letter found in ADJECTIVE — same muted red */
+.letter-box.adj {
+    background: var(--adjective-gold);
     color: var(--ink-primary);
     border: none;
     font-weight: 700;
 }
 
-/* Neutral state: letter found in ADJECTIVE — grey */
-.letter-box.neutral {
+/* Noun state: letter found in NOUN — grey */
+.letter-box.noun {
     background: var(--neutral-light);
     color: var(--ink-primary);
     border: none;
 }
 
-/* Miss state: letter NOT found anywhere, costs quality — red */
-.letter-box.miss {
-    background: var(--semantic-neg);
+/* Plain state: letter NOT found anywhere — no box, plain text */
+.letter-box.plain {
+    background: transparent;
     color: var(--ink-primary);
     border: none;
+    box-shadow: none;
 }
 
 /* ==========================================================================
@@ -365,6 +368,10 @@ h1 {
     padding-top: 20px;
     font-weight: 600;
     flex-shrink: 0; /* quality display doesn't compress */
+}
+
+.quality-star {
+    color: var(--adjective-gold);
 }
 
 #shareBtn {
@@ -569,6 +576,15 @@ footer {
         font-size: 1.4em;
     }
 
+    .puzzle-adjective-letter {
+        width: 1.85em;
+        height: 1.85em;
+    }
+
+    .puzzle-adjective-char {
+        font-size: 0.58em;
+    }
+
     .input-section {
         flex-direction: column;
     }
@@ -589,7 +605,7 @@ footer {
 
     .recipe-slot {
         padding: 6px 0;
-        min-height: auto;
+        min-height: 40px;
     }
 
     footer {
@@ -656,6 +672,19 @@ footer {
         font-size: 1.1em;
     }
 
+    .puzzle-adjective-letter {
+        width: 1.75em;
+        height: 1.75em;
+    }
+
+    .puzzle-adjective-char {
+        font-size: 0.56em;
+    }
+
+    .puzzle-adjective {
+        gap: 0 0.15em;
+    }
+
     .input-section {
         margin-bottom: 15px;
         gap: 8px;
@@ -687,6 +716,7 @@ footer {
     .recipe-slot {
         padding: 4px 0;
         gap: 8px;
+        min-height: 34px;
     }
 
     .recipe-number {
@@ -766,6 +796,19 @@ footer {
         font-size: 1em;
     }
 
+    .puzzle-adjective-letter {
+        width: 1.7em;
+        height: 1.7em;
+    }
+
+    .puzzle-adjective-char {
+        font-size: 0.54em;
+    }
+
+    .puzzle-adjective {
+        gap: 0 0.12em;
+    }
+
     .input-section {
         margin-bottom: 10px;
     }
@@ -785,6 +828,7 @@ footer {
 
     .recipe-slot {
         padding: 2px 0;
+        min-height: 28px;
     }
 
     .letter-box {

@@ -4,11 +4,12 @@ let gameState = {
     noun: '',
     remainingAdjective: '',
     remainingNoun: '',
-    quality: 10,
+    quality: 1,
     moves: 0,
     history: [],
     isWon: false,
     isLost: false,
+    isElegant: false,
     puzzleDate: ''
 };
 
@@ -125,12 +126,12 @@ function formatDateDisplay(dateString) {
 // Initialize game
 function initGame() {
     try {
-        const savedDebugDate = localStorage.getItem('dishle_debug_date');
+        const savedDebugDate = localStorage.getItem('dish_of_the_day_debug_date');
         if (savedDebugDate) {
             if (/^\d{4}-\d{2}-\d{2}$/.test(savedDebugDate)) {
                 debugDateOverride = savedDebugDate;
             } else {
-                localStorage.removeItem('dishle_debug_date');
+                localStorage.removeItem('dish_of_the_day_debug_date');
             }
         }
     } catch (error) {
@@ -159,7 +160,7 @@ function initGame() {
 
     // Try to load saved state
     try {
-        const savedState = localStorage.getItem(`dishle_${puzzleDate}`);
+        const savedState = localStorage.getItem(`dish_of_the_day_${puzzleDate}`);
         
         if (savedState) {
             try {
@@ -170,11 +171,12 @@ function initGame() {
                         noun: parsed.noun || currentPuzzle.noun,
                         remainingAdjective: parsed.remainingAdjective || currentPuzzle.adjective,
                         remainingNoun: parsed.remainingNoun || currentPuzzle.noun,
-                        quality: parsed.quality !== undefined ? parsed.quality : (parsed.health !== undefined ? parsed.health : 10),
+                        quality: parsed.quality !== undefined ? parsed.quality : (parsed.health !== undefined ? parsed.health : 1),
                         moves: parsed.moves || 0,
                         history: Array.isArray(parsed.history) ? parsed.history : [],
                         isWon: parsed.isWon || false,
                         isLost: parsed.isLost || false,
+                        isElegant: parsed.isElegant || false,
                         puzzleDate: puzzleDate
                     };
                 } else {
@@ -204,11 +206,12 @@ function resetGameState() {
         noun: currentPuzzle.noun,
         remainingAdjective: currentPuzzle.adjective,
         remainingNoun: currentPuzzle.noun,
-        quality: 10,
+        quality: 1,
         moves: 0,
         history: [],
         isWon: false,
         isLost: false,
+        isElegant: false,
         puzzleDate: currentPuzzle.date
     };
 }
@@ -216,7 +219,7 @@ function resetGameState() {
 // Save game state to localStorage
 function saveGameState() {
     try {
-        const key = `dishle_${gameState.puzzleDate}`;
+        const key = `dish_of_the_day_${gameState.puzzleDate}`;
         const value = JSON.stringify(gameState);
         localStorage.setItem(key, value);
     } catch (error) {
@@ -233,7 +236,7 @@ function updateDisplay() {
     const puzzleText = document.getElementById('puzzleText');
     puzzleText.innerHTML = `<span class="puzzle-adjective">${gameState.remainingAdjective}</span> <span class="puzzle-noun">${gameState.remainingNoun}</span>`;
 
-    document.getElementById('qualityValue').textContent = gameState.quality;
+    document.getElementById('qualityValue').textContent = `${gameState.quality}-star`;
 
     const input = document.getElementById('ingredientInput');
     const submitBtn = document.getElementById('submitBtn');
@@ -288,14 +291,15 @@ function processIngredient(ingredient) {
     for (let i = 0; i < ingredient.length; i++) {
         const letter = ingredient[i];
         let found = false;
-        let foundInNoun = false;
+        let foundInAdjective = false;
 
         // First check adjective
         for (let j = 0; j < adjArray.length; j++) {
             if (adjArray[j] === letter) {
                 adjArray.splice(j, 1);
                 found = true;
-                foundInNoun = false;
+                foundInAdjective = true;
+                newQuality++;
                 break;
             }
         }
@@ -306,19 +310,18 @@ function processIngredient(ingredient) {
                 if (nounArray[j] === letter) {
                     nounArray.splice(j, 1);
                     found = true;
-                    foundInNoun = true;
+                    foundInAdjective = false;
                     break;
                 }
             }
         }
 
         if (found) {
-            // 'match' = found in noun (green), 'neutral' = found in adjective (grey)
-            result.push({ letter: letter, status: foundInNoun ? 'match' : 'neutral' });
+            // 'adj' = found in adjective (green), 'noun' = found in noun (grey)
+            result.push({ letter: letter, status: foundInAdjective ? 'adj' : 'noun' });
         } else {
-            // 'miss' = not found anywhere, costs quality (red)
-            newQuality--;
-            result.push({ letter: letter, status: 'miss' });
+            // 'plain' = not found anywhere, no effect
+            result.push({ letter: letter, status: 'plain' });
         }
     }
 
@@ -331,11 +334,18 @@ function processIngredient(ingredient) {
         result: result
     });
 
-    if (gameState.remainingNoun.replace(/\s/g, '') === '') {
+    // Elegant win: both adjective and noun fully removed — only case that ends early (before 5)
+    // Normal win: noun fully removed after 5 ingredients (adjective optional)
+    // Lose: 5 ingredients used and noun not fully removed
+    const adjEmpty = gameState.remainingAdjective.replace(/\s/g, '') === '';
+    const nounEmpty = gameState.remainingNoun.replace(/\s/g, '') === '';
+    if (adjEmpty && nounEmpty) {
         gameState.isWon = true;
-    }
-
-    if (newQuality <= 0) {
+        gameState.isElegant = true; // Both gone = elegant, ends early
+    } else if (nounEmpty && gameState.moves === 5) {
+        gameState.isWon = true;
+        gameState.isElegant = false; // Noun gone at 5 ingredients = normal win
+    } else if (gameState.moves === 5) {
         gameState.isLost = true;
     }
 
@@ -344,12 +354,12 @@ function processIngredient(ingredient) {
     loadRecipe();
 }
 
-// Load and display recipe (history) - always show 6 slots in 2x3 grid
+// Load and display recipe (history) - always show 5 slots
 function loadRecipe() {
     const container = document.getElementById('recipeContainer');
     container.innerHTML = '';
 
-    const maxSlots = 6;
+    const maxSlots = 5;
 
     for (let i = 0; i < maxSlots; i++) {
         const slotDiv = document.createElement('div');
@@ -369,14 +379,7 @@ function loadRecipe() {
             
             item.result.forEach(letterData => {
                 const box = document.createElement('div');
-                // Support both old format (match: true/false) and new format (status: 'match'/'neutral'/'miss')
-                let statusClass;
-                if (letterData.status) {
-                    statusClass = letterData.status; // 'match', 'neutral', or 'miss'
-                } else {
-                    // Legacy support for old saved games
-                    statusClass = letterData.match ? 'match' : 'miss';
-                }
+                const statusClass = letterData.status || 'plain'; // 'adj', 'noun', or 'plain'
                 box.className = 'letter-box ' + statusClass;
                 box.textContent = letterData.letter;
                 itemDiv.appendChild(box);
@@ -400,14 +403,25 @@ function showGameOver() {
     if (gameState.isWon) {
         const dishName = `${gameState.adjective} ${gameState.noun}`;
         const ingredients = gameState.moves;
+        const quality = gameState.quality;
+        
+        let title;
+        let message;
+        if (gameState.isElegant) {
+            title = 'An elegant dish!';
+            message = `You prepared the ${dishName} using only ${ingredients} ingredient${ingredients !== 1 ? 's' : ''} with ${quality}-star quality.`;
+        } else {
+            title = 'An excellent dish!';
+            message = `You prepared the ${dishName} with ${quality}-star quality.`;
+        }
         
         const content = `
-            <p style="text-align: center; margin-bottom: 20px;">You prepared the ${dishName} with ${ingredients} ingredient${ingredients !== 1 ? 's' : ''}!</p>
+            <p style="text-align: center; margin-bottom: 20px;">${message}</p>
             <div style="text-align: center;">
                 <button id="modalShareBtn" style="padding: 10px 20px; font-size: 1em; background: #535373; color: #e6e6ec; border: 1px solid #535373; cursor: pointer; font-weight: 500;">Share</button>
             </div>
         `;
-        openModal('Victory!', content);
+        openModal(title, content);
         
         // Add share button listener
         setTimeout(() => {
@@ -418,12 +432,12 @@ function showGameOver() {
         }, 0);
     } else if (gameState.isLost) {
         const content = `
-            <p style="text-align: center; margin-bottom: 20px;">The dish was ruined!</p>
+            <p style="text-align: center; margin-bottom: 20px;">The dish, she is ruined. Try again tomorrow.</p>
             <div style="text-align: center;">
                 <button id="modalShareBtn" style="padding: 10px 20px; font-size: 1em; background: #535373; color: #e6e6ec; border: 1px solid #535373; cursor: pointer; font-weight: 500;">Share</button>
             </div>
         `;
-        openModal('Game Over', content);
+        openModal('Oof!', content);
         
         // Add share button listener
         setTimeout(() => {
@@ -440,26 +454,22 @@ function generateShareText() {
     const result = gameState.isWon ? 'Win' : 'Loss';
     const puzzleDate = gameState.puzzleDate;
     const moves = gameState.moves;
-    const qualityLost = 10 - gameState.quality;
+    const quality = gameState.quality;
     const dishName = gameState.noun;
     
-    let text = `dishle ${formatDateDisplay(puzzleDate)}\n`;
+    let text = `dish of the day ${formatDateDisplay(puzzleDate)}\n`;
     if (gameState.isWon) {
-        text += `${dishName} prepared! ${moves} ingredients, Quality: ${gameState.quality}/10\n\n`;
+        text += `${dishName} prepared! ${moves} ingredients, Quality: ${quality}\n\n`;
     } else {
-        text += `${result} - ${moves} ingredients, Quality: ${gameState.quality}/10\n\n`;
+        text += `${result} - ${moves} ingredients, Quality: ${quality}\n\n`;
     }
     
     gameState.history.forEach(item => {
         const boxes = item.result.map(r => {
-            // Support both old format (match: true/false) and new format (status)
-            if (r.status) {
-                if (r.status === 'match') return '🟩';
-                if (r.status === 'neutral') return '⬜';
-                return '🟥';
-            }
-            // Legacy support
-            return r.match ? '🟩' : '🟥';
+            const status = r.status || 'plain';
+            if (status === 'adj') return '🟩';
+            if (status === 'noun') return '⬜';
+            return '⬛';
         }).join('');
         text += `${boxes}\n`;
     });
@@ -510,7 +520,7 @@ function loadPuzzle(puzzle) {
     document.getElementById('dishName').textContent = `"${dishName}"`;
 
     try {
-        const savedState = localStorage.getItem(`dishle_${puzzleDate}`);
+        const savedState = localStorage.getItem(`dish_of_the_day_${puzzleDate}`);
         
         if (savedState) {
             try {
@@ -521,11 +531,12 @@ function loadPuzzle(puzzle) {
                         noun: parsed.noun || puzzle.noun,
                         remainingAdjective: parsed.remainingAdjective || puzzle.adjective,
                         remainingNoun: parsed.remainingNoun || puzzle.noun,
-                        quality: parsed.quality !== undefined ? parsed.quality : (parsed.health !== undefined ? parsed.health : 10),
+                        quality: parsed.quality !== undefined ? parsed.quality : (parsed.health !== undefined ? parsed.health : 1),
                         moves: parsed.moves || 0,
                         history: Array.isArray(parsed.history) ? parsed.history : [],
                         isWon: parsed.isWon || false,
                         isLost: parsed.isLost || false,
+                        isElegant: parsed.isElegant || false,
                         puzzleDate: puzzleDate
                     };
                 } else {
@@ -554,7 +565,7 @@ function handleRetry() {
     if (!currentPuzzle) return;
     
     try {
-        localStorage.removeItem(`dishle_${currentPuzzle.date}`);
+        localStorage.removeItem(`dish_of_the_day_${currentPuzzle.date}`);
     } catch (error) {
         console.error('Error removing from localStorage:', error);
     }
@@ -574,7 +585,7 @@ function handleRetry() {
 function resetDebugDate() {
     debugDateOverride = null;
     try {
-        localStorage.removeItem('dishle_debug_date');
+        localStorage.removeItem('dish_of_the_day_debug_date');
     } catch (error) {
         console.error('Error removing debug date from localStorage:', error);
     }
@@ -599,7 +610,7 @@ function handlePrevious() {
     if (prevPuzzle) {
         debugDateOverride = prevDate;
         try {
-            localStorage.setItem('dishle_debug_date', prevDate);
+            localStorage.setItem('dish_of_the_day_debug_date', prevDate);
         } catch (error) {
             console.error('Error saving debug date to localStorage:', error);
         }
@@ -608,7 +619,7 @@ function handlePrevious() {
     } else {
         debugDateOverride = prevDate;
         try {
-            localStorage.setItem('dishle_debug_date', prevDate);
+            localStorage.setItem('dish_of_the_day_debug_date', prevDate);
         } catch (error) {
             console.error('Error saving debug date to localStorage:', error);
         }
@@ -627,7 +638,7 @@ function handleNext() {
     if (nextPuzzle) {
         debugDateOverride = nextDate;
         try {
-            localStorage.setItem('dishle_debug_date', nextDate);
+            localStorage.setItem('dish_of_the_day_debug_date', nextDate);
         } catch (error) {
             console.error('Error saving debug date to localStorage:', error);
         }
@@ -636,7 +647,7 @@ function handleNext() {
     } else {
         debugDateOverride = nextDate;
         try {
-            localStorage.setItem('dishle_debug_date', nextDate);
+            localStorage.setItem('dish_of_the_day_debug_date', nextDate);
         } catch (error) {
             console.error('Error saving debug date to localStorage:', error);
         }
