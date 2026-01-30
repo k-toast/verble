@@ -261,17 +261,74 @@ function saveGameState() {
     }
 }
 
-// Render star icons (1-4 stars, gold, flat)
+// Star SVG — filled (complete)
+const STAR_SVG_FILLED = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+// Star SVG — outline (incomplete)
+const STAR_SVG_OUTLINE = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+
+// Render star icons for modal (1-4 filled stars)
 function renderQualityStars(container) {
     if (!container) return;
     container.innerHTML = '';
     const count = Math.min(4, Math.max(1, gameState.quality || 1));
-    const starSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
     for (let i = 0; i < count; i++) {
         const star = document.createElement('span');
         star.className = 'quality-star-icon';
-        star.innerHTML = starSvg;
+        star.innerHTML = STAR_SVG_FILLED;
         container.appendChild(star);
+    }
+}
+
+// Build dish stack: vertical rows with per-adjective stars
+function renderPuzzleStack() {
+    const stack = document.getElementById('puzzleStack');
+    if (!stack) return;
+
+    const remainingAdjs = gameState.remainingAdjectives || [];
+    const remainingNoun = (gameState.remainingNoun || '').trim();
+    const adjCount = Math.max(3, remainingAdjs.length);
+
+    stack.innerHTML = '';
+
+    for (let i = 0; i < adjCount; i++) {
+        const text = (remainingAdjs[i] || '').trim() || '—';
+        const isEmpty = text === '—' || text === '';
+        const row = document.createElement('div');
+        row.className = 'puzzle-row';
+
+        const star = document.createElement('span');
+        star.className = 'puzzle-star ' + (isEmpty ? 'puzzle-star-complete' : 'puzzle-star-incomplete');
+        if (isEmpty && (gameState.justCompletedAdjIndices || []).includes(i)) {
+            star.classList.add('puzzle-star-animate');
+        }
+        star.innerHTML = isEmpty ? STAR_SVG_FILLED : STAR_SVG_OUTLINE;
+        row.appendChild(star);
+
+        const textSpan = document.createElement('span');
+        textSpan.className = 'puzzle-row-text puzzle-adjective';
+        textSpan.textContent = text;
+        row.appendChild(textSpan);
+
+        stack.appendChild(row);
+    }
+
+    const divider = document.createElement('div');
+    divider.className = 'puzzle-row-divider';
+    stack.appendChild(divider);
+
+    const nounRow = document.createElement('div');
+    nounRow.className = 'puzzle-row puzzle-row-noun';
+    const spacer = document.createElement('span');
+    spacer.className = 'puzzle-star-placeholder';
+    nounRow.appendChild(spacer);
+    const nounText = document.createElement('span');
+    nounText.className = 'puzzle-row-text puzzle-noun';
+    nounText.textContent = remainingNoun || '—';
+    nounRow.appendChild(nounText);
+    stack.appendChild(nounRow);
+
+    if (gameState.justCompletedAdjIndices) {
+        gameState.justCompletedAdjIndices = [];
     }
 }
 
@@ -285,17 +342,7 @@ function getWastePercent() {
 
 // Update display
 function updateDisplay() {
-    const puzzleText = document.getElementById('puzzleText');
-    const parts = [];
-    (gameState.remainingAdjectives || []).forEach(r => {
-        const text = (r || '').trim() || '—';
-        parts.push(`<span class="puzzle-adjective">${text}</span>`);
-    });
-    parts.push(`<span class="puzzle-noun">${(gameState.remainingNoun || '').trim() || '—'}</span>`);
-    puzzleText.innerHTML = parts.join(' ');
-
-    const starsContainer = document.getElementById('qualityStars');
-    renderQualityStars(starsContainer);
+    renderPuzzleStack();
 
     const input = document.getElementById('ingredientInput');
     const submitBtn = document.getElementById('submitBtn');
@@ -380,9 +427,12 @@ function processIngredient(ingredient) {
         }
     }
 
+    const prevEmpty = (gameState.remainingAdjectives || []).map(r => (r || '').replace(/\s/g, '') === '');
     gameState.remainingAdjectives = adjArrays.map(a => a.join(''));
     gameState.remainingNoun = nounArray.join('');
-    const emptyCount = gameState.remainingAdjectives.filter(r => r.replace(/\s/g, '') === '').length;
+    const nowEmpty = gameState.remainingAdjectives.map(r => r.replace(/\s/g, '') === '');
+    gameState.justCompletedAdjIndices = nowEmpty.map((e, i) => e && !prevEmpty[i]).map((v, i) => v ? i : -1).filter(i => i >= 0);
+    const emptyCount = nowEmpty.filter(Boolean).length;
     gameState.quality = 1 + emptyCount;
     gameState.moves++;
     gameState.history.push({

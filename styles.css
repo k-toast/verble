@@ -1,17 +1,31 @@
 /* ==========================================================================
    VERBLE — NYTimes-Elegant Editorial Design
-   Color System (LOCKED)
+   Semantic Color System
    ========================================================================== */
 
 :root {
-    --ink-primary:    #251d29;
-    --ink-secondary:  #433d4c;
+    /* Base */
+    --paper:          #ffffff;
+    --ink-primary:    #1a1a1a;
+    --ink-secondary:  #6b6b6b;
+    --ink-tertiary:   #9a9a9a;
+
+    /* Surfaces & borders */
+    --surface-neutral: #f7f7f8;
+    --border-light:    #e5e5e8;
+    --border-mid:      #d0d0d6;
+
+    /* Semantic accents — one meaning per color */
+    --accent-matched:   #c4a8a8;  /* letter matched in adjective — muted editorial */
+    --accent-noun:      #b8b8c4;  /* letter matched in noun — distinct from matched */
+    --accent-reward:    #b89c50;  /* star/reward — distinct from gameplay states */
+    --accent-reward-dim:#e8e0c8;  /* star outline (incomplete) */
+
+    /* Legacy aliases for compatibility */
     --neutral-mid:    #778299;
     --neutral-light:  #9caebb;
     --semantic-neg:   #fbcdcd;
     --semantic-pos:   #d4e4d1;
-    --paper:          #ffffff;
-    --adjective-gold: #D08080; /* light red, clean and soft, readable on white */
 }
 
 /* ==========================================================================
@@ -57,8 +71,22 @@ body {
     max-height: calc(100dvh - 40px); /* account for body padding */
     display: flex;
     flex-direction: column;
+    align-items: center;
     border-radius: 0;
     overflow: hidden;
+}
+
+/* ==========================================================================
+   Puzzle Column — Single centered column for core game area
+   ========================================================================== */
+
+.puzzle-column {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
 }
 
 /* ==========================================================================
@@ -68,6 +96,7 @@ body {
 #gameContainer {
     display: flex;
     flex-direction: column;
+    align-items: center;
     flex: 1;
     min-height: 0; /* allows flex children to shrink below content size */
     overflow: hidden;
@@ -141,104 +170,160 @@ h1 {
 }
 
 /* ==========================================================================
-   Puzzle Section
+   Puzzle Section — Vertical stack with per-row stars
    ========================================================================== */
 
 .puzzle-section {
     margin-bottom: 25px;
-    flex-shrink: 0; /* puzzle display doesn't compress */
+    flex-shrink: 0;
 }
 
 .puzzle-label {
-    text-align: center;
+    text-align: left;
     color: var(--ink-secondary);
-    font-size: 0.85em;
-    margin-bottom: 12px;
+    font-size: 0.75em;
+    margin-bottom: 10px;
     font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
 }
 
 .puzzle-display {
-    background: var(--paper);
-    padding: 25px 20px;
-    text-align: center;
+    background: var(--surface-neutral);
+    padding: 20px 18px;
     border-radius: 4px;
-    border: 1px solid var(--neutral-mid);
+    border: 1px solid var(--border-light);
 }
 
-.puzzle-text {
-    font-size: clamp(1.1em, 4vw, 1.8em); /* fluid: min 1.1em, preferred 4vw, max 1.8em */
-    letter-spacing: 0.08em;
-    color: var(--ink-primary);
+/* Dish stack — vertical rows, left-aligned */
+.puzzle-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.puzzle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 1.6em;
+}
+
+.puzzle-star {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.puzzle-star svg {
+    width: 100%;
+    height: 100%;
+}
+
+.puzzle-star-incomplete {
+    color: var(--accent-reward-dim);
+}
+
+.puzzle-star-complete {
+    color: var(--accent-reward);
+}
+
+.puzzle-star-complete.puzzle-star-animate {
+    animation: starFill 0.25s ease;
+}
+
+@keyframes starFill {
+    0% { transform: scale(0.9); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.puzzle-star-placeholder {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+}
+
+.puzzle-row-text {
+    font-size: clamp(1em, 3.5vw, 1.5em);
+    letter-spacing: 0.06em;
     font-family: 'Outfit', sans-serif;
     line-height: 1.4;
 }
 
-/* Adjective: lighter weight, muted gold — not the target */
+/* Adjective: lighter weight, muted — optional/bonus */
 .puzzle-adjective {
     font-weight: 400;
-    color: var(--adjective-gold);
+    color: var(--ink-secondary);
 }
 
-/* Noun: bold, grey — the victory target */
+/* Noun: stronger weight, primary — the victory target */
 .puzzle-noun {
     font-weight: 700;
-    color: var(--neutral-mid);
+    color: var(--ink-primary);
+}
+
+.puzzle-row-divider {
+    height: 1px;
+    background: var(--border-light);
+    margin: 8px 0 4px 0;
 }
 
 /* ==========================================================================
-   Input Section
+   Input Section — Tool, not headline
    ========================================================================== */
 
 .input-section {
     display: flex;
     gap: 10px;
-    margin-bottom: 30px;
-    flex-shrink: 0; /* input section doesn't compress */
+    margin-bottom: 24px;
+    flex-shrink: 0;
 }
 
 #ingredientInput {
     flex: 1;
-    padding: 14px 18px;
+    padding: 12px 16px;
     font-size: 1em;
-    border: 1px solid var(--neutral-mid);
+    border: 1px solid var(--border-light);
     border-radius: 4px;
     text-transform: uppercase;
     font-family: 'Outfit', sans-serif;
-    background: var(--paper);
+    background: var(--surface-neutral);
     color: var(--ink-primary);
-    transition: border-color 0.2s;
+    transition: border-color 0.15s;
 }
 
 #ingredientInput::placeholder {
-    color: var(--neutral-mid);
+    color: var(--ink-tertiary);
     text-transform: none;
     font-style: normal;
 }
 
 #ingredientInput:focus {
     outline: none;
-    border-color: var(--ink-primary);
+    border-color: var(--border-mid);
 }
 
 #ingredientInput:disabled {
-    background: var(--paper);
-    border-color: var(--neutral-light);
+    background: var(--surface-neutral);
+    border-color: var(--border-light);
     cursor: not-allowed;
-    opacity: 0.5;
+    opacity: 0.6;
 }
 
 #submitBtn {
-    padding: 14px 28px;
-    font-size: 1em;
+    padding: 12px 22px;
+    font-size: 0.9em;
     background: var(--paper);
     color: var(--ink-primary);
-    border: 1px solid var(--ink-primary);
+    border: 1px solid var(--border-mid);
     cursor: pointer;
     font-weight: 600;
-    transition: border-color 0.2s;
-    border-radius: 6px;
+    transition: border-color 0.15s;
+    border-radius: 4px;
 }
 
 #submitBtn:hover:not(:disabled) {
@@ -246,60 +331,60 @@ h1 {
 }
 
 #submitBtn:active:not(:disabled) {
-    box-shadow: inset 0 1px 2px rgba(37, 29, 41, 0.1);
+    background: var(--surface-neutral);
 }
 
 #submitBtn:disabled {
-    background: var(--paper);
-    color: var(--neutral-mid);
-    border-color: var(--neutral-mid);
+    background: var(--surface-neutral);
+    color: var(--ink-tertiary);
+    border-color: var(--border-light);
     cursor: not-allowed;
-    opacity: 0.5;
+    opacity: 0.6;
 }
 
 /* ==========================================================================
-   Recipe Section
+   Recipe Section — Subordinate, aligned to column
    ========================================================================== */
 
 .recipe-section {
-    margin-bottom: 25px;
-    flex: 1; /* takes remaining space */
-    min-height: 0; /* allows shrinking below content size */
+    margin-bottom: 20px;
+    flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
 }
 
 .recipe-section h2 {
-    font-size: 0.85em;
-    margin-bottom: 15px;
-    color: var(--ink-primary);
-    font-weight: 600;
+    font-size: 0.7em;
+    margin-bottom: 10px;
+    color: var(--ink-secondary);
+    font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
 }
 
 #recipeContainer {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     flex: 1;
-    min-height: 0; /* allows container to shrink */
-    overflow-y: auto; /* scrollable fallback if content overflows */
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .recipe-slot {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 8px 0;
-    min-height: 48px; /* reserve space so layout doesn't shift when filling slots */
+    gap: 10px;
+    padding: 6px 0;
+    min-height: 44px;
 }
 
 .recipe-number {
-    font-size: 0.9em;
-    font-weight: 600;
-    color: var(--ink-secondary);
-    min-width: 24px;
+    font-size: 0.85em;
+    font-weight: 500;
+    color: var(--ink-tertiary);
+    min-width: 22px;
 }
 
 .recipe-item {
@@ -310,62 +395,57 @@ h1 {
 }
 
 .recipe-placeholder {
-    color: var(--neutral-mid);
-    font-size: 0.9em;
+    color: var(--ink-tertiary);
+    font-size: 0.85em;
     font-weight: 400;
+    min-height: 30px;
+    display: flex;
+    align-items: center;
 }
 
 /* ==========================================================================
-   Letter Tiles — Mechanical, systemic
+   Letter Tiles — Semantic colors
    ========================================================================== */
 
 .letter-box {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.9em;
+    font-size: 0.85em;
     font-weight: 600;
     font-family: 'Outfit', sans-serif;
     border-radius: 4px;
-    background: var(--paper);
+    background: var(--surface-neutral);
     color: var(--ink-primary);
-    border: 1px solid var(--neutral-mid);
+    border: 1px solid var(--border-light);
 }
 
-/* Adjective state: letter found in ADJECTIVE — same muted red */
+/* Matched in adjective — distinct accent */
 .letter-box.adj {
-    background: var(--adjective-gold);
+    background: var(--accent-matched);
     color: var(--ink-primary);
     border: none;
-    font-weight: 700;
 }
 
-/* Noun state: letter found in NOUN — grey */
+/* Matched in noun — distinct from adjective */
 .letter-box.noun {
-    background: var(--neutral-light);
+    background: var(--accent-noun);
     color: var(--ink-primary);
     border: none;
 }
 
-/* Plain state: letter NOT found anywhere — no box, plain text */
+/* Unmatched — neutral, clearly different */
 .letter-box.plain {
     background: transparent;
-    color: var(--ink-primary);
+    color: var(--ink-tertiary);
     border: none;
-    box-shadow: none;
 }
 
 /* ==========================================================================
-   Quality Display — Graphical stars
+   Quality Stars (modal) — Reward accent
    ========================================================================== */
-
-.quality-display {
-    text-align: center;
-    padding-top: 20px;
-    flex-shrink: 0; /* quality display doesn't compress */
-}
 
 .quality-stars {
     display: flex;
@@ -379,9 +459,9 @@ h1 {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: var(--adjective-gold);
-    width: 28px;
-    height: 28px;
+    color: var(--accent-reward);
+    width: 24px;
+    height: 24px;
 }
 
 .quality-star-icon svg {
@@ -394,8 +474,8 @@ h1 {
 }
 
 .modal-quality-stars .quality-star-icon {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
 }
 
 /* ==========================================================================
@@ -407,10 +487,10 @@ footer {
     align-items: center;
     justify-content: space-between;
     padding-top: 20px;
-    margin-top: auto; /* push to bottom */
-    border-top: 1px solid var(--neutral-mid);
+    margin-top: auto;
+    border-top: 1px solid var(--border-light);
     gap: 15px;
-    flex-shrink: 0; /* footer doesn't compress */
+    flex-shrink: 0;
 }
 
 .footer-left {
@@ -441,7 +521,7 @@ footer {
     justify-content: center;
     background: var(--paper);
     color: var(--ink-primary);
-    border: 1px solid var(--neutral-mid);
+    border: 1px solid var(--border-mid);
     cursor: pointer;
     font-size: 1em;
     font-weight: 600;
@@ -459,8 +539,8 @@ footer {
 
 .nav-btn:disabled {
     background: var(--paper);
-    color: var(--neutral-mid);
-    border-color: var(--neutral-light);
+    color: var(--ink-tertiary);
+    border-color: var(--border-light);
     cursor: not-allowed;
     opacity: 0.5;
 }
@@ -484,7 +564,7 @@ footer {
     justify-content: center;
     background: var(--paper);
     color: var(--ink-primary);
-    border: 1px solid var(--neutral-mid);
+    border: 1px solid var(--border-mid);
     cursor: pointer;
     font-size: 1em;
     font-weight: 600;
@@ -519,7 +599,7 @@ footer {
 
 .modal {
     background: var(--paper);
-    border: 1px solid var(--neutral-mid);
+    border: 1px solid var(--border-mid);
     border-radius: 4px;
     width: 90%;
     max-width: 400px;
@@ -532,7 +612,7 @@ footer {
     align-items: center;
     justify-content: space-between;
     padding: 18px 24px;
-    border-bottom: 1px solid var(--neutral-mid);
+    border-bottom: 1px solid var(--border-light);
 }
 
 .modal-header h3 {
@@ -720,10 +800,6 @@ footer {
         font-size: 0.8em;
     }
 
-    .quality-display {
-        padding-top: 10px;
-    }
-
     .quality-star-icon {
         width: 24px;
         height: 24px;
@@ -807,10 +883,6 @@ footer {
         width: 20px;
         height: 20px;
         font-size: 0.65em;
-    }
-
-    .quality-display {
-        padding-top: 8px;
     }
 
     .quality-star-icon {
