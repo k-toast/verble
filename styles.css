@@ -46,11 +46,10 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start; /* top-aligned so content stays visible when keyboard opens */
     padding: 20px;
     color: var(--ink-primary);
     overflow: hidden;
-    /* Prevent iOS bounce/overscroll */
     overscroll-behavior: none;
     position: fixed;
     width: 100%;
@@ -71,7 +70,6 @@ body {
     max-height: calc(100dvh - 40px); /* account for body padding */
     display: flex;
     flex-direction: column;
-    align-items: center;
     border-radius: 0;
     overflow: hidden;
 }
@@ -83,6 +81,7 @@ body {
 .puzzle-column {
     width: 100%;
     max-width: 420px;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -96,10 +95,10 @@ body {
 #gameContainer {
     display: flex;
     flex-direction: column;
-    align-items: center;
     flex: 1;
-    min-height: 0; /* allows flex children to shrink below content size */
+    min-height: 0;
     overflow: hidden;
+    width: 100%;
 }
 
 /* ==========================================================================
@@ -651,12 +650,16 @@ footer {
         padding: 25px 20px;
     }
 
+    .puzzle-column {
+        max-width: 100%;
+    }
+
     h1 {
         font-size: 2.6em;
     }
 
-    .puzzle-text {
-        font-size: 1.4em;
+    .puzzle-row-text {
+        font-size: 1.2em;
     }
 
     .input-section {
@@ -716,6 +719,10 @@ footer {
         max-height: calc(100dvh - 20px);
     }
 
+    .puzzle-column {
+        max-width: 100%;
+    }
+
     header {
         margin-bottom: 15px;
     }
@@ -742,8 +749,8 @@ footer {
         padding: 12px 10px;
     }
 
-    .puzzle-text {
-        font-size: 1.1em;
+    .puzzle-row-text {
+        font-size: 1.05em;
     }
 
     .input-section {
@@ -836,6 +843,10 @@ footer {
         max-height: calc(100dvh - 10px);
     }
 
+    .puzzle-column {
+        max-width: 100%;
+    }
+
     header {
         margin-bottom: 10px;
     }
@@ -853,8 +864,8 @@ footer {
         padding: 8px;
     }
 
-    .puzzle-text {
-        font-size: 1em;
+    .puzzle-row-text {
+        font-size: 0.95em;
     }
 
     .input-section {

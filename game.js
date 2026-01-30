@@ -872,20 +872,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (heightDiff > 150) {
                 keyboardOpen = true;
                 document.body.style.height = `${currentHeight}px`;
+                // Don't force scroll when keyboard opens - let browser keep input visible
             } else if (keyboardOpen) {
                 // Keyboard just closed - remove inline style to let CSS 100dvh take over
                 keyboardOpen = false;
                 document.body.style.height = '';
-                // Small delay to let iOS finish its animation, then ensure scroll position
+                initialHeight = window.innerHeight;
                 setTimeout(() => {
                     window.scrollTo(0, 0);
                 }, 100);
             }
-            
-            window.scrollTo(0, 0);
         });
         
-        // Also handle scroll events from Visual Viewport (some browsers use this)
+        // Prevent overscroll/bounce
         window.visualViewport.addEventListener('scroll', () => {
             window.scrollTo(0, 0);
         });
