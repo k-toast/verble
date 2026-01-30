@@ -1,8 +1,8 @@
 // Game state
 let gameState = {
-    adjective: '',
+    adjectives: [],
     noun: '',
-    remainingAdjective: '',
+    remainingAdjectives: [],
     remainingNoun: '',
     quality: 1,
     moves: 0,
@@ -123,6 +123,63 @@ function formatDateDisplay(dateString) {
     return `${month}/${day}/${year}`;
 }
 
+// Normalize puzzle to new format (adjectives array)
+function getPuzzleAdjectives(puzzle) {
+    if (Array.isArray(puzzle.adjectives) && puzzle.adjectives.length === 3) {
+        return puzzle.adjectives;
+    }
+    if (puzzle.adjective) {
+        return [puzzle.adjective, puzzle.adjective, puzzle.adjective];
+    }
+    return ['', '', ''];
+}
+
+// Load saved game state from localStorage for a puzzle, or return null to use fresh state
+function loadSavedState(puzzle) {
+    const puzzleDate = puzzle.date;
+    const adjectives = getPuzzleAdjectives(puzzle);
+    const noun = puzzle.noun || '';
+    try {
+        const savedState = localStorage.getItem(`dish_of_the_day_${puzzleDate}`);
+        if (!savedState) return null;
+
+        const parsed = JSON.parse(savedState);
+        if (!parsed || typeof parsed !== 'object') return null;
+
+        let remainingAdjectives, quality;
+        if (Array.isArray(parsed.remainingAdjectives) && parsed.remainingAdjectives.length === 3) {
+            remainingAdjectives = parsed.remainingAdjectives.map((r, i) => r || adjectives[i]);
+            const emptyCount = remainingAdjectives.filter(r => (r || '').replace(/\s/g, '') === '').length;
+            quality = 1 + emptyCount;
+        } else if (parsed.remainingAdjective !== undefined) {
+            remainingAdjectives = [parsed.remainingAdjective || adjectives[0], adjectives[1], adjectives[2]];
+            const emptyCount = remainingAdjectives.filter(r => (r || '').replace(/\s/g, '') === '').length;
+            quality = 1 + emptyCount;
+        } else {
+            remainingAdjectives = adjectives.slice();
+            quality = parsed.quality !== undefined ? parsed.quality : (parsed.health !== undefined ? parsed.health : 1);
+        }
+        quality = Math.min(4, Math.max(1, quality));
+
+        return {
+            adjectives: adjectives,
+            noun: parsed.noun || noun,
+            remainingAdjectives: remainingAdjectives,
+            remainingNoun: parsed.remainingNoun || noun,
+            quality: quality,
+            moves: parsed.moves || 0,
+            history: Array.isArray(parsed.history) ? parsed.history : [],
+            isWon: parsed.isWon || false,
+            isLost: parsed.isLost || false,
+            isElegant: parsed.isElegant || false,
+            puzzleDate: puzzleDate
+        };
+    } catch (error) {
+        console.error('Error loading saved state:', error);
+        return null;
+    }
+}
+
 // Initialize game
 function initGame() {
     try {
@@ -155,42 +212,14 @@ function initGame() {
     document.getElementById('dateDisplay').textContent = formatDateDisplay(puzzleDate);
     
     // Display the full dish name in quotes
-    const dishName = `${currentPuzzle.adjective} ${currentPuzzle.noun}`;
+    const adjList = getPuzzleAdjectives(currentPuzzle);
+    const dishName = [...adjList, currentPuzzle.noun].filter(Boolean).join(' ');
     document.getElementById('dishName').textContent = `"${dishName}"`;
 
-    // Try to load saved state
-    try {
-        const savedState = localStorage.getItem(`dish_of_the_day_${puzzleDate}`);
-        
-        if (savedState) {
-            try {
-                const parsed = JSON.parse(savedState);
-                if (parsed && typeof parsed === 'object') {
-                    gameState = {
-                        adjective: parsed.adjective || currentPuzzle.adjective,
-                        noun: parsed.noun || currentPuzzle.noun,
-                        remainingAdjective: parsed.remainingAdjective || currentPuzzle.adjective,
-                        remainingNoun: parsed.remainingNoun || currentPuzzle.noun,
-                        quality: parsed.quality !== undefined ? parsed.quality : (parsed.health !== undefined ? parsed.health : 1),
-                        moves: parsed.moves || 0,
-                        history: Array.isArray(parsed.history) ? parsed.history : [],
-                        isWon: parsed.isWon || false,
-                        isLost: parsed.isLost || false,
-                        isElegant: parsed.isElegant || false,
-                        puzzleDate: puzzleDate
-                    };
-                } else {
-                    resetGameState();
-                }
-            } catch (e) {
-                console.error('Error parsing saved state:', e);
-                resetGameState();
-            }
-        } else {
-            resetGameState();
-        }
-    } catch (error) {
-        console.error('Error reading from localStorage:', error);
+    const loadedState = loadSavedState(currentPuzzle);
+    if (loadedState) {
+        gameState = loadedState;
+    } else {
         resetGameState();
     }
 
@@ -201,10 +230,11 @@ function initGame() {
 }
 
 function resetGameState() {
+    const adjectives = getPuzzleAdjectives(currentPuzzle);
     gameState = {
-        adjective: currentPuzzle.adjective,
+        adjectives: adjectives,
         noun: currentPuzzle.noun,
-        remainingAdjective: currentPuzzle.adjective,
+        remainingAdjectives: adjectives.slice(),
         remainingNoun: currentPuzzle.noun,
         quality: 1,
         moves: 0,
@@ -231,12 +261,41 @@ function saveGameState() {
     }
 }
 
+// Render star icons (1-4 stars, gold, flat)
+function renderQualityStars(container) {
+    if (!container) return;
+    container.innerHTML = '';
+    const count = Math.min(4, Math.max(1, gameState.quality || 1));
+    const starSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+    for (let i = 0; i < count; i++) {
+        const star = document.createElement('span');
+        star.className = 'quality-star-icon';
+        star.innerHTML = starSvg;
+        container.appendChild(star);
+    }
+}
+
+// Calculate waste percentage (letters not matched)
+function getWastePercent() {
+    const totalLetters = gameState.history.reduce((sum, item) => sum + item.ingredient.length, 0);
+    const wasteLetters = gameState.history.reduce((sum, item) =>
+        sum + item.result.filter(r => (r.status || '') === 'plain').length, 0);
+    return totalLetters > 0 ? Math.round((wasteLetters / totalLetters) * 100) : 0;
+}
+
 // Update display
 function updateDisplay() {
     const puzzleText = document.getElementById('puzzleText');
-    puzzleText.innerHTML = `<span class="puzzle-adjective">${gameState.remainingAdjective}</span> <span class="puzzle-noun">${gameState.remainingNoun}</span>`;
+    const parts = [];
+    (gameState.remainingAdjectives || []).forEach(r => {
+        const text = (r || '').trim() || '—';
+        parts.push(`<span class="puzzle-adjective">${text}</span>`);
+    });
+    parts.push(`<span class="puzzle-noun">${(gameState.remainingNoun || '').trim() || '—'}</span>`);
+    puzzleText.innerHTML = parts.join(' ');
 
-    document.getElementById('qualityValue').textContent = `${gameState.quality}-star`;
+    const starsContainer = document.getElementById('qualityStars');
+    renderQualityStars(starsContainer);
 
     const input = document.getElementById('ingredientInput');
     const submitBtn = document.getElementById('submitBtn');
@@ -272,7 +331,7 @@ function updatePreviousButtonState() {
     prevBtn.disabled = !prevPuzzle;
 }
 
-// Process an ingredient - letters match against combined puzzle left-to-right
+// Process an ingredient - letters match against combined puzzle left-to-right (adj1 → adj2 → adj3 → noun)
 function processIngredient(ingredient) {
     if (gameState.isWon || gameState.isLost) return;
 
@@ -284,27 +343,25 @@ function processIngredient(ingredient) {
     }
 
     const result = [];
-    let adjArray = gameState.remainingAdjective.split('');
-    let nounArray = gameState.remainingNoun.split('');
-    let newQuality = gameState.quality;
+    const adjArrays = gameState.remainingAdjectives.map(a => (a || '').split(''));
+    let nounArray = (gameState.remainingNoun || '').split('');
 
     for (let i = 0; i < ingredient.length; i++) {
         const letter = ingredient[i];
         let found = false;
         let foundInAdjective = false;
 
-        // First check adjective
-        for (let j = 0; j < adjArray.length; j++) {
-            if (adjArray[j] === letter) {
-                adjArray.splice(j, 1);
-                found = true;
-                foundInAdjective = true;
-                newQuality++;
-                break;
+        for (let adjIdx = 0; adjIdx < adjArrays.length && !found; adjIdx++) {
+            for (let j = 0; j < adjArrays[adjIdx].length; j++) {
+                if (adjArrays[adjIdx][j] === letter) {
+                    adjArrays[adjIdx].splice(j, 1);
+                    found = true;
+                    foundInAdjective = true;
+                    break;
+                }
             }
         }
 
-        // Then check noun if not found in adjective
         if (!found) {
             for (let j = 0; j < nounArray.length; j++) {
                 if (nounArray[j] === letter) {
@@ -317,34 +374,30 @@ function processIngredient(ingredient) {
         }
 
         if (found) {
-            // 'adj' = found in adjective (green), 'noun' = found in noun (grey)
             result.push({ letter: letter, status: foundInAdjective ? 'adj' : 'noun' });
         } else {
-            // 'plain' = not found anywhere, no effect
             result.push({ letter: letter, status: 'plain' });
         }
     }
 
-    gameState.remainingAdjective = adjArray.join('');
+    gameState.remainingAdjectives = adjArrays.map(a => a.join(''));
     gameState.remainingNoun = nounArray.join('');
-    gameState.quality = newQuality;
+    const emptyCount = gameState.remainingAdjectives.filter(r => r.replace(/\s/g, '') === '').length;
+    gameState.quality = 1 + emptyCount;
     gameState.moves++;
     gameState.history.push({
         ingredient: ingredient,
         result: result
     });
 
-    // Elegant win: both adjective and noun fully removed — only case that ends early (before 5)
-    // Normal win: noun fully removed after 5 ingredients (adjective optional)
-    // Lose: 5 ingredients used and noun not fully removed
-    const adjEmpty = gameState.remainingAdjective.replace(/\s/g, '') === '';
-    const nounEmpty = gameState.remainingNoun.replace(/\s/g, '') === '';
-    if (adjEmpty && nounEmpty) {
+    const allAdjsEmpty = gameState.remainingAdjectives.every(r => r.replace(/\s/g, '') === '');
+    const nounEmpty = (gameState.remainingNoun || '').replace(/\s/g, '') === '';
+    if (allAdjsEmpty && nounEmpty) {
         gameState.isWon = true;
-        gameState.isElegant = true; // Both gone = elegant, ends early
+        gameState.isElegant = true;
     } else if (nounEmpty && gameState.moves === 5) {
         gameState.isWon = true;
-        gameState.isElegant = false; // Noun gone at 5 ingredients = normal win
+        gameState.isElegant = false;
     } else if (gameState.moves === 5) {
         gameState.isLost = true;
     }
@@ -401,30 +454,34 @@ function loadRecipe() {
 // Show game over message as modal
 function showGameOver() {
     if (gameState.isWon) {
-        const dishName = `${gameState.adjective} ${gameState.noun}`;
+        const noun = gameState.noun || '';
         const ingredients = gameState.moves;
-        const quality = gameState.quality;
+        const wastePercent = getWastePercent();
         
         let title;
         let message;
         if (gameState.isElegant) {
             title = 'An elegant dish!';
-            message = `You prepared the ${dishName} using only ${ingredients} ingredient${ingredients !== 1 ? 's' : ''} with ${quality}-star quality.`;
+            message = `You prepared ${noun} using only ${ingredients} ingredient${ingredients !== 1 ? 's' : ''}!`;
         } else {
             title = 'An excellent dish!';
-            message = `You prepared the ${dishName} with ${quality}-star quality.`;
+            message = `You prepared ${noun} successfully!`;
         }
         
+        const starsHtml = '<div id="modalQualityStars" class="quality-stars modal-quality-stars"></div>';
         const content = `
-            <p style="text-align: center; margin-bottom: 20px;">${message}</p>
+            <p style="text-align: center; margin-bottom: 12px;">${message}</p>
+            <p style="text-align: center; margin-bottom: 4px; font-size: 0.9em; color: var(--ink-secondary);">Quality:</p>
+            <div style="text-align: center; margin-bottom: 12px;">${starsHtml}</div>
+            <p style="text-align: center; margin-bottom: 20px; font-size: 0.9em;">Waste: ${wastePercent}%</p>
             <div style="text-align: center;">
                 <button id="modalShareBtn" style="padding: 10px 20px; font-size: 1em; background: #535373; color: #e6e6ec; border: 1px solid #535373; cursor: pointer; font-weight: 500;">Share</button>
             </div>
         `;
         openModal(title, content);
         
-        // Add share button listener
         setTimeout(() => {
+            renderQualityStars(document.getElementById('modalQualityStars'));
             const modalShareBtn = document.getElementById('modalShareBtn');
             if (modalShareBtn) {
                 modalShareBtn.addEventListener('click', handleShare);
@@ -454,14 +511,15 @@ function generateShareText() {
     const result = gameState.isWon ? 'Win' : 'Loss';
     const puzzleDate = gameState.puzzleDate;
     const moves = gameState.moves;
-    const quality = gameState.quality;
-    const dishName = gameState.noun;
+    const quality = gameState.quality || 1;
+    const dishName = gameState.noun || '';
+    const wastePercent = getWastePercent();
     
     let text = `dish of the day ${formatDateDisplay(puzzleDate)}\n`;
     if (gameState.isWon) {
-        text += `${dishName} prepared! ${moves} ingredients, Quality: ${quality}\n\n`;
+        text += `${dishName} prepared! ${moves} ingredients, Quality: ${quality}/4, Waste: ${wastePercent}%\n\n`;
     } else {
-        text += `${result} - ${moves} ingredients, Quality: ${quality}\n\n`;
+        text += `${result} - ${moves} ingredients, Quality: ${quality}/4, Waste: ${wastePercent}%\n\n`;
     }
     
     gameState.history.forEach(item => {
@@ -516,41 +574,14 @@ function loadPuzzle(puzzle) {
     const puzzleDate = puzzle.date;
     document.getElementById('dateDisplay').textContent = formatDateDisplay(puzzleDate);
     
-    const dishName = `${puzzle.adjective} ${puzzle.noun}`;
+    const adjList = getPuzzleAdjectives(puzzle);
+    const dishName = [...adjList, puzzle.noun].filter(Boolean).join(' ');
     document.getElementById('dishName').textContent = `"${dishName}"`;
 
-    try {
-        const savedState = localStorage.getItem(`dish_of_the_day_${puzzleDate}`);
-        
-        if (savedState) {
-            try {
-                const parsed = JSON.parse(savedState);
-                if (parsed && typeof parsed === 'object') {
-                    gameState = {
-                        adjective: parsed.adjective || puzzle.adjective,
-                        noun: parsed.noun || puzzle.noun,
-                        remainingAdjective: parsed.remainingAdjective || puzzle.adjective,
-                        remainingNoun: parsed.remainingNoun || puzzle.noun,
-                        quality: parsed.quality !== undefined ? parsed.quality : (parsed.health !== undefined ? parsed.health : 1),
-                        moves: parsed.moves || 0,
-                        history: Array.isArray(parsed.history) ? parsed.history : [],
-                        isWon: parsed.isWon || false,
-                        isLost: parsed.isLost || false,
-                        isElegant: parsed.isElegant || false,
-                        puzzleDate: puzzleDate
-                    };
-                } else {
-                    resetGameState();
-                }
-            } catch (e) {
-                console.error('Error parsing saved state:', e);
-                resetGameState();
-            }
-        } else {
-            resetGameState();
-        }
-    } catch (error) {
-        console.error('Error reading from localStorage:', error);
+    const loadedState = loadSavedState(puzzle);
+    if (loadedState) {
+        gameState = loadedState;
+    } else {
         resetGameState();
     }
 
@@ -674,7 +705,14 @@ function startCountdownTimer() {
         const diff = midnightHelsinki - helsinkiNow;
         
         if (diff <= 0) {
-            document.getElementById('countdownTimer').textContent = '00:00';
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+            debugDateOverride = null;
+            try {
+                localStorage.removeItem('dish_of_the_day_debug_date');
+            } catch (e) {}
+            closeModal();
+            initGame();
             return;
         }
         

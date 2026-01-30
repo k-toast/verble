@@ -358,41 +358,44 @@ h1 {
 }
 
 /* ==========================================================================
-   Quality Display
+   Quality Display — Graphical stars
    ========================================================================== */
 
 .quality-display {
     text-align: center;
-    font-size: 1.2em;
-    color: var(--ink-primary);
     padding-top: 20px;
-    font-weight: 600;
     flex-shrink: 0; /* quality display doesn't compress */
 }
 
-.quality-star {
+.quality-stars {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+}
+
+.quality-star-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     color: var(--adjective-gold);
+    width: 28px;
+    height: 28px;
 }
 
-#shareBtn {
-    padding: 12px 24px;
-    font-size: 1em;
-    background: var(--paper);
-    color: var(--ink-primary);
-    border: 1px solid var(--ink-primary);
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: border-color 0.2s;
-    margin-top: 15px;
+.quality-star-icon svg {
+    width: 100%;
+    height: 100%;
 }
 
-#shareBtn:hover {
-    border-color: var(--ink-secondary);
+.modal-quality-stars {
+    margin-bottom: 0;
 }
 
-#shareBtn:active {
-    box-shadow: inset 0 1px 2px rgba(37, 29, 41, 0.1);
+.modal-quality-stars .quality-star-icon {
+    width: 24px;
+    height: 24px;
 }
 
 /* ==========================================================================
@@ -576,15 +579,6 @@ footer {
         font-size: 1.4em;
     }
 
-    .puzzle-adjective-letter {
-        width: 1.85em;
-        height: 1.85em;
-    }
-
-    .puzzle-adjective-char {
-        font-size: 0.58em;
-    }
-
     .input-section {
         flex-direction: column;
     }
@@ -672,19 +666,6 @@ footer {
         font-size: 1.1em;
     }
 
-    .puzzle-adjective-letter {
-        width: 1.75em;
-        height: 1.75em;
-    }
-
-    .puzzle-adjective-char {
-        font-size: 0.56em;
-    }
-
-    .puzzle-adjective {
-        gap: 0 0.15em;
-    }
-
     .input-section {
         margin-bottom: 15px;
         gap: 8px;
@@ -740,8 +721,12 @@ footer {
     }
 
     .quality-display {
-        font-size: 1em;
         padding-top: 10px;
+    }
+
+    .quality-star-icon {
+        width: 24px;
+        height: 24px;
     }
 
     footer {
@@ -796,19 +781,6 @@ footer {
         font-size: 1em;
     }
 
-    .puzzle-adjective-letter {
-        width: 1.7em;
-        height: 1.7em;
-    }
-
-    .puzzle-adjective-char {
-        font-size: 0.54em;
-    }
-
-    .puzzle-adjective {
-        gap: 0 0.12em;
-    }
-
     .input-section {
         margin-bottom: 10px;
     }
@@ -839,7 +811,11 @@ footer {
 
     .quality-display {
         padding-top: 8px;
-        font-size: 0.9em;
+    }
+
+    .quality-star-icon {
+        width: 20px;
+        height: 20px;
     }
 
     footer {
