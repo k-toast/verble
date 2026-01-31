@@ -447,14 +447,14 @@ h1 {
     border: 0;
 }
 
-/* Inline validation message — right under input, space before YOUR RECIPE */
+/* Inline validation message — reserved space so layout doesn't shift; right under input */
 .input-feedback {
     font-size: 0.8em;
     font-weight: 500;
     line-height: 1.35;
     color: var(--color-secondary);
-    margin: 6px 8px 0 8px;
-    min-height: 0;
+    margin: 2px 8px 0 8px;
+    min-height: 2.7em;
     padding-bottom: 8px;
     text-align: left;
 }

@@ -909,7 +909,7 @@ function getHelpContent() {
             <div class="help-example">
                 <img src="assets/clean-after.png" alt="Challenge dish after: some letters matched and removed, Z and I marked as Food Waste" class="help-image">
             </div>
-            <p>With the <strong>Z</strong> and one of the <strong>I</strong>s becoming food waste.</p>
+            <p>With the matching <strong>U, C, C, H, N,</strong> and <strong>I</strong> removing those letters from the dish, and the unmatched <strong>Z</strong> and other <strong>I</strong> becoming food waste.</p>
             <p>Food waste won't stop you from completing the challenge, but it's not a good look for an aspiring chef!</p>
             <p>Successfully complete the challenge dish by matching all of its letters in five ingredients or less.</p>
         </div>
