@@ -50,18 +50,24 @@
     box-sizing: border-box;
 }
 
+html {
+    overflow: hidden;
+    height: 100dvh;
+}
+
 body {
     font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background: var(--color-background);
-    min-height: 100dvh;
+    height: 100dvh;
+    max-height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: calc(20px + env(safe-area-inset-top, 0px)) calc(20px + env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) calc(20px + env(safe-area-inset-left, 0px));
     color: var(--ink-primary);
-    overflow: auto;
-    overscroll-behavior: auto;
+    overflow: hidden;
+    overscroll-behavior: none;
     position: relative;
     width: 100%;
 }
@@ -693,12 +699,15 @@ footer {
     border: 1px solid var(--color-border);
     border-radius: 4px;
     width: 90%;
-    max-width: 400px;
+    max-width: 600px;
     max-height: 80vh;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .modal-header {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -733,12 +742,138 @@ footer {
 }
 
 .modal-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     padding: 24px;
     color: var(--color-primary);
-    min-height: 100px;
 }
 
 .modal-content button:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+}
+
+/* Help modal — Wordle-style layout */
+.help-content {
+    font-size: 0.95em;
+    line-height: 1.5;
+}
+
+.help-title {
+    font-size: 1em;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-bottom: 12px;
+}
+
+.help-content p {
+    margin-bottom: 12px;
+    color: var(--color-primary);
+}
+
+/* Remove bottom margin from last child to avoid unnecessary scrollbar */
+.help-content > *:last-child {
+    margin-bottom: 0;
+}
+
+.help-label {
+    font-weight: 600;
+    margin-top: 16px;
+}
+
+.help-example {
+    text-align: center;
+    margin: 12px 0;
+}
+
+.help-image {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+}
+
+/* Victory modal — message, grid, star, waste */
+.victory-message {
+    text-align: center;
+    margin-bottom: 16px;
+    line-height: 1.4;
+}
+
+.victory-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0 auto 16px;
+    width: fit-content;
+}
+
+.victory-grid-row {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+}
+
+.victory-cell {
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    border: 1px solid var(--color-border);
+}
+
+.victory-cell-unused {
+    background: var(--color-surface);
+    border-color: var(--color-border);
+}
+
+.victory-cell-matched {
+    background: var(--color-success);
+    border-color: var(--color-success);
+}
+
+.victory-cell-unmatched {
+    background: var(--color-eliminated);
+    border-color: var(--color-eliminated);
+}
+
+.victory-star,
+.victory-waste {
+    text-align: center;
+    font-size: 0.85em;
+    font-weight: 600;
+    color: var(--color-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+}
+
+.victory-waste {
+    margin-bottom: 20px;
+}
+
+.victory-actions {
+    text-align: center;
+}
+
+.victory-share-btn {
+    padding: 10px 20px;
+    font-size: 1em;
+    background: var(--color-secondary);
+    color: var(--color-surface);
+    border: 1px solid var(--color-secondary);
+    cursor: pointer;
+    font-weight: 500;
+    border-radius: 4px;
+}
+
+.victory-share-btn:hover {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.victory-share-btn:focus-visible {
     outline: 2px solid var(--color-border-focus);
     outline-offset: 2px;
 }
@@ -790,6 +925,11 @@ footer {
         width: 26px;
         height: 26px;
         font-size: 0.75em;
+    }
+
+    .victory-cell {
+        width: 18px;
+        height: 18px;
     }
 
     #recipeContainer {
@@ -915,6 +1055,11 @@ footer {
         border-radius: 3px;
     }
 
+    .victory-cell {
+        width: 16px;
+        height: 16px;
+    }
+
     .recipe-placeholder {
         font-size: 0.8em;
     }
@@ -1007,6 +1152,11 @@ footer {
         font-size: 0.65em;
     }
 
+    .victory-cell {
+        width: 14px;
+        height: 14px;
+    }
+
     footer {
         padding-top: 8px;
     }
@@ -1080,6 +1230,11 @@ footer {
         width: 18px;
         height: 18px;
         font-size: 0.6em;
+    }
+
+    .victory-cell {
+        width: 12px;
+        height: 12px;
     }
 
     .star-ingredient,

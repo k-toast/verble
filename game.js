@@ -293,6 +293,44 @@ function renderPuzzleStack() {
     appendLine(nounLetters);
 }
 
+// Title-case a word for display (e.g. EARTHY -> Earthy)
+function titleCase(str) {
+    if (!str || typeof str !== 'string') return '';
+    const s = str.trim().toLowerCase();
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// Get indefinite article for a word (a vs an)
+function getIndefiniteArticle(word) {
+    if (!word || typeof word !== 'string') return 'a';
+    const first = (word.trim().toLowerCase())[0];
+    return /[aeiou]/.test(first) ? 'an' : 'a';
+}
+
+// Build 12×5 victory grid HTML (white=unused, green=matched, grey=unmatched)
+function buildVictoryGridHTML() {
+    const rows = 5;
+    const cols = 12;
+    let html = '<div class="victory-grid">';
+    for (let r = 0; r < rows; r++) {
+        html += '<div class="victory-grid-row">';
+        const historyItem = gameState.history[r];
+        for (let c = 0; c < cols; c++) {
+            let cellClass = 'victory-cell victory-cell-unused';
+            if (historyItem && c < historyItem.result.length) {
+                const status = historyItem.result[c].status || 'plain';
+                cellClass = status === 'adj' || status === 'noun'
+                    ? 'victory-cell victory-cell-matched'
+                    : 'victory-cell victory-cell-unmatched';
+            }
+            html += `<div class="${cellClass}"></div>`;
+        }
+        html += '</div>';
+    }
+    html += '</div>';
+    return html;
+}
+
 // Get star ingredient: most matches, then least waste, then earliest
 function getStarIngredient() {
     if (!gameState.history.length) return null;
@@ -518,7 +556,7 @@ function processIngredient(ingredient) {
     const allCleared = allAdjsEmpty && nounEmpty;
     if (allCleared) {
         gameState.isWon = true;
-        gameState.isElegant = gameState.moves <= 3;
+        gameState.isElegant = gameState.moves < 5;
     } else if (gameState.moves >= 5) {
         gameState.isLost = true;
     }
@@ -590,25 +628,31 @@ function loadRecipe(newlyAddedIndex) {
 // Show game over message as modal
 function showGameOver() {
     if (gameState.isWon) {
-        const noun = gameState.noun || '';
-        const ingredients = gameState.moves;
+        const adj1 = (gameState.adjectives[0] || '').toLowerCase();
+        const adj2 = (gameState.adjectives[1] || '').toLowerCase();
+        const noun = (gameState.noun || '').toLowerCase();
+        const article = getIndefiniteArticle(gameState.adjectives[0] || '');
         const wastePercent = getWastePercent();
-        
+        const starIngredient = getStarIngredient() || '???';
+
         let title;
         let message;
         if (gameState.isElegant) {
             title = 'An elegant dish!';
-            message = `You prepared ${noun} using only ${ingredients} ingredient${ingredients !== 1 ? 's' : ''}!`;
+            message = `You prepared ${article} ${adj1} and ${adj2} ${noun} with only ${gameState.moves} ingredients!`;
         } else {
             title = 'An excellent dish!';
-            message = `You prepared ${noun} successfully!`;
+            message = `You prepared ${article} ${adj1} and ${adj2} ${noun}!`;
         }
-        
+
+        const gridHTML = buildVictoryGridHTML();
         const content = `
-            <p style="text-align: center; margin-bottom: 12px;">${message}</p>
-            <p style="text-align: center; margin-bottom: 20px; font-size: 0.9em;">Waste: ${wastePercent}%</p>
-            <div style="text-align: center;">
-                <button id="modalShareBtn" style="padding: 10px 20px; font-size: 1em; background: #535373; color: #e6e6ec; border: 1px solid #535373; cursor: pointer; font-weight: 500;">Share</button>
+            <p class="victory-message">${message}</p>
+            ${gridHTML}
+            <p class="victory-star">Star ingredient: ${starIngredient}</p>
+            <p class="victory-waste">Food waste: ${wastePercent}%</p>
+            <div class="victory-actions">
+                <button id="modalShareBtn" class="victory-share-btn">Share</button>
             </div>
         `;
         openModal(title, content);
@@ -850,6 +894,32 @@ function startCountdownTimer() {
     countdownInterval = setInterval(updateCountdown, 1000);
 }
 
+// Help modal content (shared by help button and first-time auto-show)
+function getHelpContent() {
+    return `
+        <div class="help-content">
+            <p>Add to your recipe by typing and submitting any food you want to use (i.e. "ZUCCHINI").</p>
+            <p>The letters in your ingredient will be matched against the letters in the challenge dish, removing any that match.</p>
+            <p class="help-label">Example:</p>
+            <p>Adding the ingredient "ZUCCHINI" to...</p>
+            <div class="help-example">
+                <img src="assets/clean-before.png" alt="Challenge dish before: CLEAN FOCUSED SUSHI" class="help-image">
+            </div>
+            <p>Would produce...</p>
+            <div class="help-example">
+                <img src="assets/clean-after.png" alt="Challenge dish after: some letters matched and removed, Z and I marked as Food Waste" class="help-image">
+            </div>
+            <p>With the "Z" and one of the "I"s becoming food waste.</p>
+            <p>Food waste won't stop you from completing the challenge, but it's not a good look for an aspiring chef!</p>
+            <p>Successfully complete the challenge dish by matching all of its letters in five ingredients or less.</p>
+        </div>
+    `;
+}
+
+function showHelpModal() {
+    openModal('How to Play', getHelpContent());
+}
+
 // Modal functions
 function openModal(title, content) {
     document.getElementById('modalTitle').textContent = title;
@@ -866,6 +936,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadPuzzles();
     await loadFoodLists();
     initGame();
+
+    // Show help modal for first-time players
+    try {
+        const helpShown = localStorage.getItem('dish_of_the_day_help_shown');
+        if (!helpShown) {
+            showHelpModal();
+            localStorage.setItem('dish_of_the_day_help_shown', '1');
+        }
+    } catch (e) {
+        // localStorage may be unavailable (private browsing, etc.)
+    }
 
     const input = document.getElementById('ingredientInput');
     const submitBtn = document.getElementById('submitBtn');
@@ -905,9 +986,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Modal buttons
-    document.getElementById('helpBtn').addEventListener('click', () => {
-        openModal('Help', '');
-    });
+    document.getElementById('helpBtn').addEventListener('click', showHelpModal);
     
     document.getElementById('infoBtn').addEventListener('click', () => {
         openModal('About', '');
