@@ -447,15 +447,15 @@ h1 {
     border: 0;
 }
 
-/* Inline validation message — permanent space, form-style feedback */
+/* Inline validation message — right under input, space before YOUR RECIPE */
 .input-feedback {
     font-size: 0.8em;
     font-weight: 500;
     line-height: 1.35;
     color: var(--color-secondary);
-    margin: 4px 8px 0 8px;
-    min-height: 2.8em;
-    padding-top: 4px;
+    margin: 6px 8px 0 8px;
+    min-height: 0;
+    padding-bottom: 8px;
     text-align: left;
 }
 
@@ -891,14 +891,24 @@ footer {
    ========================================================================== */
 
 @media (max-width: 768px) {
-    /* Allow pull-to-refresh: body must be scroll root so overscroll triggers refresh */
+    /* Allow pull-to-refresh: body must be scroll root; force scroll container so overscroll works */
+    html {
+        overflow-y: scroll;
+        -webkit-overflow-scrolling: touch;
+    }
+
     body {
-        overflow-y: auto;
+        overflow-y: scroll;
         overscroll-behavior-y: auto;
         min-height: 100dvh;
         max-height: none;
         justify-content: flex-start;
         -webkit-overflow-scrolling: touch;
+    }
+
+    /* 1px overflow enables pull-to-refresh when content fits viewport */
+    .container {
+        margin-bottom: 1px;
     }
 
     /* When keyboard open: footer hidden, body scrollable so input stays visible */
