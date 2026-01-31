@@ -24,7 +24,6 @@
     --color-success:     #6AAA64;
     --color-eliminated:  #9CA3AF;
     --color-disabled:    #F3F4F6;
-    --color-star:        #B89B3C;
 
     /* Legacy aliases (mapped to new tokens) */
     --paper:             var(--color-background);

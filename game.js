@@ -35,71 +35,37 @@ function getHelsinkiDate() {
     return getRealHelsinkiDate();
 }
 
-// Validate date string format (YYYY-MM-DD)
-function isValidDateString(dateString) {
-    if (!dateString || typeof dateString !== 'string') return false;
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(dateString)) return false;
-    
-    const parts = dateString.split('-');
-    const year = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10);
-    const day = parseInt(parts[2], 10);
-    
-    if (month < 1 || month > 12 || day < 1 || day > 31 || year < 2000 || year > 2100) {
-        return false;
+// Offset date by N days (YYYY-MM-DD format)
+function offsetDate(dateString, days) {
+    if (!dateString || typeof dateString !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        console.error('Invalid date string format:', dateString);
+        return dateString;
     }
-    
-    const date = new Date(year, month - 1, day);
-    return date.getFullYear() === year && 
-           date.getMonth() === month - 1 && 
-           date.getDate() === day;
+    const date = new Date(dateString + 'T00:00:00');
+    if (isNaN(date.getTime())) {
+        console.error('Invalid date:', dateString);
+        return dateString;
+    }
+    date.setDate(date.getDate() + days);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
-// Increment date by one day (YYYY-MM-DD format)
 function incrementDate(dateString) {
-    if (!dateString || typeof dateString !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-        console.error('Invalid date string format:', dateString);
-        return dateString;
-    }
-    
-    const date = new Date(dateString + 'T00:00:00');
-    if (isNaN(date.getTime())) {
-        console.error('Invalid date:', dateString);
-        return dateString;
-    }
-    
-    date.setDate(date.getDate() + 1);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return offsetDate(dateString, 1);
 }
 
-// Decrement date by one day (YYYY-MM-DD format)
 function decrementDate(dateString) {
-    if (!dateString || typeof dateString !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-        console.error('Invalid date string format:', dateString);
-        return dateString;
-    }
-    
-    const date = new Date(dateString + 'T00:00:00');
-    if (isNaN(date.getTime())) {
-        console.error('Invalid date:', dateString);
-        return dateString;
-    }
-    
-    date.setDate(date.getDate() - 1);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return offsetDate(dateString, -1);
 }
 
 // Load puzzles from JSON
 async function loadPuzzles() {
     try {
         const response = await fetch('puzzles.json');
+        if (!response.ok) throw new Error('Failed to load puzzles');
         puzzles = await response.json();
     } catch (error) {
         console.error('Error loading puzzles:', error);
@@ -111,15 +77,6 @@ async function loadPuzzles() {
 function findTodayPuzzle() {
     const today = getHelsinkiDate();
     return puzzles.find(p => p.date === today);
-}
-
-// Format date for display (M/D/YYYY)
-function formatDateDisplay(dateString) {
-    const parts = dateString.split('-');
-    const month = parseInt(parts[1], 10);
-    const day = parseInt(parts[2], 10);
-    const year = parts[0];
-    return `${month}/${day}/${year}`;
 }
 
 // Normalize puzzle to new format (adjectives array - 2 adjectives)
@@ -154,8 +111,6 @@ function loadSavedState(puzzle) {
 
         let remainingAdjectives;
         if (Array.isArray(parsed.remainingAdjectives) && parsed.remainingAdjectives.length >= 2) {
-            remainingAdjectives = parsed.remainingAdjectives.slice(0, 2).map((r, i) => r || adjectives[i]);
-        } else if (Array.isArray(parsed.remainingAdjectives) && parsed.remainingAdjectives.length === 3) {
             remainingAdjectives = parsed.remainingAdjectives.slice(0, 2).map((r, i) => r || adjectives[i]);
         } else if (parsed.remainingAdjective !== undefined) {
             remainingAdjectives = [parsed.remainingAdjective || adjectives[0], adjectives[1] || ''];
@@ -429,19 +384,18 @@ function updateInputValidationState() {
 function processIngredient(ingredient) {
     if (gameState.isWon || gameState.isLost) return;
 
+    const input = document.getElementById('ingredientInput');
     ingredient = ingredient.toUpperCase().trim();
     showInputFeedback('');
 
     if (ingredient.length > 12) {
         showInputFeedback('That ingredient has more than 12 letters.', 'highlight');
-        const input = document.getElementById('ingredientInput');
         if (input) input.setAttribute('aria-invalid', 'true');
         return;
     }
 
     if (!/^[A-Z]{2,12}$/.test(ingredient)) {
         showInputFeedback('Enter 2–12 letters', 'error');
-        const input = document.getElementById('ingredientInput');
         if (input) input.setAttribute('aria-invalid', 'true');
         return;
     }
@@ -449,12 +403,10 @@ function processIngredient(ingredient) {
     const isDuplicate = gameState.history.some(h => (h.ingredient || '').toUpperCase() === ingredient);
     if (isDuplicate) {
         showInputFeedback('Already used', 'error');
-        const input = document.getElementById('ingredientInput');
         if (input) input.setAttribute('aria-invalid', 'true');
         return;
     }
 
-    const input = document.getElementById('ingredientInput');
     if (input) input.setAttribute('aria-invalid', 'false');
     const result = [];
     const adjArrays = gameState.remainingAdjectives.map(a => (a || '').split(''));
@@ -754,63 +706,37 @@ function handleResetToToday() {
     resetDebugDate();
 }
 
-// Handle previous button
-function handlePrevious() {
-    const prevBtn = document.getElementById('prevBtn');
-    if (prevBtn && prevBtn.disabled) return;
+// Handle navigation (previous or next)
+function handleNavigate(direction) {
+    if (direction === 'prev') {
+        const prevBtn = document.getElementById('prevBtn');
+        if (prevBtn && prevBtn.disabled) return;
+    }
 
     const currentDate = getHelsinkiDate();
-    const prevDate = decrementDate(currentDate);
-    
-    const prevPuzzle = puzzles.find(p => p.date === prevDate);
-    
-    if (prevPuzzle) {
-        debugDateOverride = prevDate;
-        try {
-            localStorage.setItem('dish_of_the_day_debug_date', prevDate);
-        } catch (error) {
-            console.error('Error saving debug date to localStorage:', error);
-        }
-        
-        loadPuzzle(prevPuzzle);
+    const targetDate = direction === 'prev' ? decrementDate(currentDate) : incrementDate(currentDate);
+    const targetPuzzle = puzzles.find(p => p.date === targetDate);
+
+    debugDateOverride = targetDate;
+    try {
+        localStorage.setItem('dish_of_the_day_debug_date', targetDate);
+    } catch (error) {
+        console.error('Error saving debug date to localStorage:', error);
+    }
+
+    if (targetPuzzle) {
+        loadPuzzle(targetPuzzle);
     } else {
-        debugDateOverride = prevDate;
-        try {
-            localStorage.setItem('dish_of_the_day_debug_date', prevDate);
-        } catch (error) {
-            console.error('Error saving debug date to localStorage:', error);
-        }
-        
         initGame();
     }
 }
 
-// Handle next button
+function handlePrevious() {
+    handleNavigate('prev');
+}
+
 function handleNext() {
-    const currentDate = getHelsinkiDate();
-    const nextDate = incrementDate(currentDate);
-    
-    const nextPuzzle = puzzles.find(p => p.date === nextDate);
-    
-    if (nextPuzzle) {
-        debugDateOverride = nextDate;
-        try {
-            localStorage.setItem('dish_of_the_day_debug_date', nextDate);
-        } catch (error) {
-            console.error('Error saving debug date to localStorage:', error);
-        }
-        
-        loadPuzzle(nextPuzzle);
-    } else {
-        debugDateOverride = nextDate;
-        try {
-            localStorage.setItem('dish_of_the_day_debug_date', nextDate);
-        } catch (error) {
-            console.error('Error saving debug date to localStorage:', error);
-        }
-        
-        initGame();
-    }
+    handleNavigate('next');
 }
 
 // Countdown timer to midnight Helsinki time
@@ -882,7 +808,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    input.addEventListener('keypress', (e) => {
+    input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             submitBtn.click();
         }
