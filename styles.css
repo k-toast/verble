@@ -891,9 +891,14 @@ footer {
    ========================================================================== */
 
 @media (max-width: 768px) {
-    /* Allow pull-to-refresh when keyboard closed */
+    /* Allow pull-to-refresh: body must be scroll root so overscroll triggers refresh */
     body {
+        overflow-y: auto;
         overscroll-behavior-y: auto;
+        min-height: 100dvh;
+        max-height: none;
+        justify-content: flex-start;
+        -webkit-overflow-scrolling: touch;
     }
 
     /* When keyboard open: footer hidden, body scrollable so input stays visible */
@@ -901,10 +906,54 @@ footer {
         overflow-y: auto;
     }
 
-    /* Allow game area to scroll so star/food waste stay visible when content is tall */
+    /* No inner scroll: game fits viewport; body handles any overscroll for pull-to-refresh */
     #gameContainer {
-        overflow-y: auto;
-        overflow-x: hidden;
+        overflow: hidden;
+    }
+
+    /* Compact layout for phones so whole game fits without scrolling */
+    .container {
+        max-height: 100dvh;
+    }
+
+    header {
+        margin-bottom: 20px;
+    }
+
+    .puzzle-section {
+        margin-bottom: 12px;
+    }
+
+    .puzzle-display {
+        padding: 12px 10px;
+    }
+
+    .input-section {
+        margin-bottom: 6px;
+    }
+
+    .recipe-section h2 {
+        margin-bottom: 4px;
+    }
+
+    #recipeContainer {
+        gap: 2px;
+    }
+
+    .recipe-slot {
+        min-height: 32px;
+        padding: 4px 0;
+    }
+
+    .star-ingredient,
+    .food-waste {
+        margin-top: 6px;
+        margin-bottom: 2px;
+    }
+
+    footer {
+        margin-top: 12px;
+        padding-top: 12px;
     }
 }
 
@@ -963,12 +1012,12 @@ footer {
     }
 
     #recipeContainer {
-        gap: 6px;
+        gap: 4px;
     }
 
     .recipe-slot {
-        padding: 6px 0;
-        min-height: 40px;
+        padding: 4px 0;
+        min-height: 32px;
     }
 
     footer {
@@ -992,7 +1041,7 @@ footer {
     }
 
     .container {
-        padding: 15px;
+        padding: 12px;
         max-height: calc(100dvh - 20px);
     }
 
@@ -1001,11 +1050,11 @@ footer {
     }
 
     header {
-        margin-bottom: 15px;
+        margin-bottom: 10px;
     }
 
     footer {
-        margin-top: 15px;
+        margin-top: 10px;
     }
 
     h1 {
@@ -1018,16 +1067,16 @@ footer {
     }
 
     .puzzle-section {
-        margin-bottom: 15px;
+        margin-bottom: 10px;
     }
 
     .puzzle-label {
         font-size: 0.75em;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
 
     .puzzle-display {
-        padding: 12px 10px;
+        padding: 10px 8px;
     }
 
     .puzzle-line {
@@ -1051,22 +1100,22 @@ footer {
     }
 
     .recipe-section {
-        margin-bottom: 10px;
+        margin-bottom: 4px;
     }
 
     .recipe-section h2 {
         font-size: 0.75em;
-        margin-bottom: 8px;
+        margin-bottom: 4px;
     }
 
     #recipeContainer {
-        gap: 4px;
+        gap: 2px;
     }
 
     .recipe-slot {
-        padding: 4px 0;
+        padding: 3px 0;
         gap: 8px;
-        min-height: 34px;
+        min-height: 28px;
     }
 
     .recipe-number {

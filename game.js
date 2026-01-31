@@ -991,7 +991,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('infoBtn').addEventListener('click', () => {
         openModal('About Dish of the Day', `<div class="about-content">
             <p>A daily word puzzle by Mike Kayatta.</p>
-            <p>You are playing an early test version, so you might encountered unexpected bugs or changes, unfinished features, or weird placeholders.</p>
+            <p>You are playing an early test version, so you might encounter unexpected bugs or changes, unfinished features, or weird placeholders.</p>
             <p>Right now, there are 30 puzzles. Eventually, they will be served daily, but for now you can feel free to cheat using the <strong>&lt;</strong> <strong>R</strong> and <strong>&gt;</strong> buttons at the bottom of the game, which move between the available puzzles and even allow you to replay.</p>
         </div>`);
     });
