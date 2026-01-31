@@ -79,7 +79,8 @@ body {
     display: flex;
     flex-direction: column;
     border-radius: 0;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .content-wrapper {
@@ -113,7 +114,7 @@ body {
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    overflow: hidden;
+    overflow: visible;
     width: 100%;
 }
 
@@ -382,7 +383,9 @@ h1 {
     gap: 0;
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
+    /* Ensure space for 5 ingredient slots so none are clipped */
+    min-height: 220px;
+    overflow-y: visible;
 }
 
 .recipe-slot {
@@ -774,6 +777,10 @@ footer {
         min-height: 40px;
     }
 
+    #recipeContainer {
+        min-height: 200px; /* 5 * 40px */
+    }
+
     footer {
         flex-wrap: wrap;
     }
@@ -880,6 +887,10 @@ footer {
         min-height: 34px;
     }
 
+    #recipeContainer {
+        min-height: 170px; /* 5 * 34px */
+    }
+
     .recipe-number {
         font-size: 0.8em;
         min-width: 20px;
@@ -982,6 +993,10 @@ footer {
         min-height: 28px;
     }
 
+    #recipeContainer {
+        min-height: 140px; /* 5 * 28px */
+    }
+
     .letter-box {
         width: 20px;
         height: 20px;
@@ -1055,6 +1070,10 @@ footer {
     .recipe-slot {
         padding: 2px 0;
         min-height: 24px;
+    }
+
+    #recipeContainer {
+        min-height: 120px; /* 5 * 24px */
     }
 
     .letter-box {
