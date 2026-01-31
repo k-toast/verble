@@ -4,7 +4,6 @@ let gameState = {
     noun: '',
     remainingAdjectives: [],
     remainingNoun: '',
-    quality: 1,
     moves: 0,
     history: [],
     isWon: false,
@@ -123,15 +122,22 @@ function formatDateDisplay(dateString) {
     return `${month}/${day}/${year}`;
 }
 
-// Normalize puzzle to new format (adjectives array)
+// Normalize puzzle to new format (adjectives array - 2 adjectives)
 function getPuzzleAdjectives(puzzle) {
-    if (Array.isArray(puzzle.adjectives) && puzzle.adjectives.length === 3) {
-        return puzzle.adjectives;
+    if (Array.isArray(puzzle.adjectives) && puzzle.adjectives.length >= 2) {
+        return puzzle.adjectives.slice(0, 2);
     }
     if (puzzle.adjective) {
-        return [puzzle.adjective, puzzle.adjective, puzzle.adjective];
+        return [puzzle.adjective, puzzle.adjective];
     }
-    return ['', '', ''];
+    return ['', ''];
+}
+
+// Get 1-based puzzle number from puzzles array
+function getPuzzleNumber(puzzle) {
+    if (!puzzle || !puzzles.length) return '001';
+    const idx = puzzles.findIndex(p => p.date === puzzle.date);
+    return String(idx >= 0 ? idx + 1 : 1).padStart(3, '0');
 }
 
 // Load saved game state from localStorage for a puzzle, or return null to use fresh state
@@ -146,27 +152,22 @@ function loadSavedState(puzzle) {
         const parsed = JSON.parse(savedState);
         if (!parsed || typeof parsed !== 'object') return null;
 
-        let remainingAdjectives, quality;
-        if (Array.isArray(parsed.remainingAdjectives) && parsed.remainingAdjectives.length === 3) {
-            remainingAdjectives = parsed.remainingAdjectives.map((r, i) => r || adjectives[i]);
-            const emptyCount = remainingAdjectives.filter(r => (r || '').replace(/\s/g, '') === '').length;
-            quality = 1 + emptyCount;
+        let remainingAdjectives;
+        if (Array.isArray(parsed.remainingAdjectives) && parsed.remainingAdjectives.length >= 2) {
+            remainingAdjectives = parsed.remainingAdjectives.slice(0, 2).map((r, i) => r || adjectives[i]);
+        } else if (Array.isArray(parsed.remainingAdjectives) && parsed.remainingAdjectives.length === 3) {
+            remainingAdjectives = parsed.remainingAdjectives.slice(0, 2).map((r, i) => r || adjectives[i]);
         } else if (parsed.remainingAdjective !== undefined) {
-            remainingAdjectives = [parsed.remainingAdjective || adjectives[0], adjectives[1], adjectives[2]];
-            const emptyCount = remainingAdjectives.filter(r => (r || '').replace(/\s/g, '') === '').length;
-            quality = 1 + emptyCount;
+            remainingAdjectives = [parsed.remainingAdjective || adjectives[0], adjectives[1] || ''];
         } else {
             remainingAdjectives = adjectives.slice();
-            quality = parsed.quality !== undefined ? parsed.quality : (parsed.health !== undefined ? parsed.health : 1);
         }
-        quality = Math.min(4, Math.max(1, quality));
 
         return {
             adjectives: adjectives,
             noun: parsed.noun || noun,
             remainingAdjectives: remainingAdjectives,
             remainingNoun: parsed.remainingNoun || noun,
-            quality: quality,
             moves: parsed.moves || 0,
             history: Array.isArray(parsed.history) ? parsed.history : [],
             isWon: parsed.isWon || false,
@@ -209,9 +210,8 @@ function initGame() {
     document.getElementById('gameContainer').style.display = 'block';
 
     const puzzleDate = currentPuzzle.date;
-    document.getElementById('dateDisplay').textContent = formatDateDisplay(puzzleDate);
+    document.getElementById('dateDisplay').textContent = `#${getPuzzleNumber(currentPuzzle)}`;
     
-    // Display the full dish name in quotes
     const adjList = getPuzzleAdjectives(currentPuzzle);
     const dishName = [...adjList, currentPuzzle.noun].filter(Boolean).join(' ');
     document.getElementById('dishName').textContent = `"${dishName}"`;
@@ -236,7 +236,6 @@ function resetGameState() {
         noun: currentPuzzle.noun,
         remainingAdjectives: adjectives.slice(),
         remainingNoun: currentPuzzle.noun,
-        quality: 1,
         moves: 0,
         history: [],
         isWon: false,
@@ -261,75 +260,59 @@ function saveGameState() {
     }
 }
 
-// Star SVG — filled (complete)
-const STAR_SVG_FILLED = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
-// Star SVG — outline (incomplete)
-const STAR_SVG_OUTLINE = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+// Get letter states for puzzle display: active, matched
+function getLetterStatesForDisplay() {
+    const adjectives = gameState.adjectives || [];
+    const noun = gameState.noun || '';
+    const remainingAdjs = gameState.remainingAdjectives || [];
+    const remainingNoun = (gameState.remainingNoun || '').trim();
+    const result = { adj1: [], adj2: [], noun: [] };
 
-// Render star icons for modal (1-4 filled stars)
-function renderQualityStars(container) {
-    if (!container) return;
-    container.innerHTML = '';
-    const count = Math.min(4, Math.max(1, gameState.quality || 1));
-    for (let i = 0; i < count; i++) {
-        const star = document.createElement('span');
-        star.className = 'quality-star-icon';
-        star.innerHTML = STAR_SVG_FILLED;
-        container.appendChild(star);
+    function processWord(original, remaining) {
+        const letters = [];
+        let rem = remaining.split('');
+        for (const c of original) {
+            const pos = rem.indexOf(c);
+            if (pos >= 0) {
+                rem.splice(pos, 1);
+                letters.push({ char: c, state: 'active' });
+            } else {
+                letters.push({ char: c, state: 'matched' });
+            }
+        }
+        return letters;
     }
+
+    result.adj1 = processWord((adjectives[0] || '').trim(), (remainingAdjs[0] || '').trim());
+    result.adj2 = processWord((adjectives[1] || '').trim(), (remainingAdjs[1] || '').trim());
+    result.noun = processWord(noun.trim(), remainingNoun);
+    return result;
 }
 
-// Build dish stack: vertical rows with per-adjective stars
+// Build puzzle display: two lines — adjectives on line 1, noun on line 2, both centered
 function renderPuzzleStack() {
     const stack = document.getElementById('puzzleStack');
     if (!stack) return;
 
-    const remainingAdjs = gameState.remainingAdjectives || [];
-    const remainingNoun = (gameState.remainingNoun || '').trim();
-    const adjCount = Math.max(3, remainingAdjs.length);
+    const letterStates = getLetterStatesForDisplay();
+    const adjLetters = [...letterStates.adj1, { char: ' ', state: 'active' }, ...letterStates.adj2];
+    const nounLetters = letterStates.noun;
+
+    function appendLine(letters) {
+        const line = document.createElement('div');
+        line.className = 'puzzle-line';
+        letters.forEach(({ char, state }) => {
+            const span = document.createElement('span');
+            span.className = `puzzle-letter puzzle-letter-${state}`;
+            span.textContent = char === ' ' ? '\u00A0' : char;
+            line.appendChild(span);
+        });
+        stack.appendChild(line);
+    }
 
     stack.innerHTML = '';
-
-    for (let i = 0; i < adjCount; i++) {
-        const text = (remainingAdjs[i] || '').trim() || '—';
-        const isEmpty = text === '—' || text === '';
-        const row = document.createElement('div');
-        row.className = 'puzzle-row';
-
-        const star = document.createElement('span');
-        star.className = 'puzzle-star ' + (isEmpty ? 'puzzle-star-complete' : 'puzzle-star-incomplete');
-        if (isEmpty && (gameState.justCompletedAdjIndices || []).includes(i)) {
-            star.classList.add('puzzle-star-animate');
-        }
-        star.innerHTML = isEmpty ? STAR_SVG_FILLED : STAR_SVG_OUTLINE;
-        row.appendChild(star);
-
-        const textSpan = document.createElement('span');
-        textSpan.className = 'puzzle-row-text puzzle-adjective';
-        textSpan.textContent = text;
-        row.appendChild(textSpan);
-
-        stack.appendChild(row);
-    }
-
-    const divider = document.createElement('div');
-    divider.className = 'puzzle-row-divider';
-    stack.appendChild(divider);
-
-    const nounRow = document.createElement('div');
-    nounRow.className = 'puzzle-row puzzle-row-noun';
-    const spacer = document.createElement('span');
-    spacer.className = 'puzzle-star-placeholder';
-    nounRow.appendChild(spacer);
-    const nounText = document.createElement('span');
-    nounText.className = 'puzzle-row-text puzzle-noun';
-    nounText.textContent = remainingNoun || '—';
-    nounRow.appendChild(nounText);
-    stack.appendChild(nounRow);
-
-    if (gameState.justCompletedAdjIndices) {
-        gameState.justCompletedAdjIndices = [];
-    }
+    appendLine(adjLetters);
+    appendLine(nounLetters);
 }
 
 // Calculate waste percentage (letters not matched)
@@ -378,7 +361,7 @@ function updatePreviousButtonState() {
     prevBtn.disabled = !prevPuzzle;
 }
 
-// Process an ingredient - letters match against combined puzzle left-to-right (adj1 → adj2 → adj3 → noun)
+// Process an ingredient - letters match against combined puzzle left-to-right (adj1 → adj2 → noun)
 function processIngredient(ingredient) {
     if (gameState.isWon || gameState.isLost) return;
 
@@ -427,13 +410,8 @@ function processIngredient(ingredient) {
         }
     }
 
-    const prevEmpty = (gameState.remainingAdjectives || []).map(r => (r || '').replace(/\s/g, '') === '');
     gameState.remainingAdjectives = adjArrays.map(a => a.join(''));
     gameState.remainingNoun = nounArray.join('');
-    const nowEmpty = gameState.remainingAdjectives.map(r => r.replace(/\s/g, '') === '');
-    gameState.justCompletedAdjIndices = nowEmpty.map((e, i) => e && !prevEmpty[i]).map((v, i) => v ? i : -1).filter(i => i >= 0);
-    const emptyCount = nowEmpty.filter(Boolean).length;
-    gameState.quality = 1 + emptyCount;
     gameState.moves++;
     gameState.history.push({
         ingredient: ingredient,
@@ -442,13 +420,11 @@ function processIngredient(ingredient) {
 
     const allAdjsEmpty = gameState.remainingAdjectives.every(r => r.replace(/\s/g, '') === '');
     const nounEmpty = (gameState.remainingNoun || '').replace(/\s/g, '') === '';
-    if (allAdjsEmpty && nounEmpty) {
+    const allCleared = allAdjsEmpty && nounEmpty;
+    if (allCleared) {
         gameState.isWon = true;
-        gameState.isElegant = true;
-    } else if (nounEmpty && gameState.moves === 5) {
-        gameState.isWon = true;
-        gameState.isElegant = false;
-    } else if (gameState.moves === 5) {
+        gameState.isElegant = gameState.moves <= 3;
+    } else if (gameState.moves >= 5) {
         gameState.isLost = true;
     }
 
@@ -457,7 +433,7 @@ function processIngredient(ingredient) {
     loadRecipe();
 }
 
-// Load and display recipe (history) - always show 5 slots
+// Load and display recipe (history) - 4 slots with food waste
 function loadRecipe() {
     const container = document.getElementById('recipeContainer');
     container.innerHTML = '';
@@ -468,21 +444,19 @@ function loadRecipe() {
         const slotDiv = document.createElement('div');
         slotDiv.className = 'recipe-slot';
         
-        // Add number
         const numberDiv = document.createElement('div');
         numberDiv.className = 'recipe-number';
         numberDiv.textContent = `${i + 1}.`;
         slotDiv.appendChild(numberDiv);
         
         if (i < gameState.history.length) {
-            // Filled slot with ingredient
             const item = gameState.history[i];
             const itemDiv = document.createElement('div');
             itemDiv.className = 'recipe-item';
             
             item.result.forEach(letterData => {
                 const box = document.createElement('div');
-                const statusClass = letterData.status || 'plain'; // 'adj', 'noun', or 'plain'
+                const statusClass = letterData.status || 'plain';
                 box.className = 'letter-box ' + statusClass;
                 box.textContent = letterData.letter;
                 itemDiv.appendChild(box);
@@ -490,7 +464,6 @@ function loadRecipe() {
             
             slotDiv.appendChild(itemDiv);
         } else {
-            // Empty slot with placeholder
             const placeholder = document.createElement('div');
             placeholder.className = 'recipe-placeholder';
             placeholder.textContent = '???';
@@ -498,6 +471,12 @@ function loadRecipe() {
         }
         
         container.appendChild(slotDiv);
+    }
+
+    const wasteDiv = document.getElementById('foodWasteDisplay');
+    if (wasteDiv) {
+        const wastePercent = getWastePercent();
+        wasteDiv.textContent = `FOOD WASTE ${wastePercent}%`;
     }
 }
 
@@ -518,11 +497,8 @@ function showGameOver() {
             message = `You prepared ${noun} successfully!`;
         }
         
-        const starsHtml = '<div id="modalQualityStars" class="quality-stars modal-quality-stars"></div>';
         const content = `
             <p style="text-align: center; margin-bottom: 12px;">${message}</p>
-            <p style="text-align: center; margin-bottom: 4px; font-size: 0.9em; color: var(--ink-secondary);">Quality:</p>
-            <div style="text-align: center; margin-bottom: 12px;">${starsHtml}</div>
             <p style="text-align: center; margin-bottom: 20px; font-size: 0.9em;">Waste: ${wastePercent}%</p>
             <div style="text-align: center;">
                 <button id="modalShareBtn" style="padding: 10px 20px; font-size: 1em; background: #535373; color: #e6e6ec; border: 1px solid #535373; cursor: pointer; font-weight: 500;">Share</button>
@@ -531,7 +507,6 @@ function showGameOver() {
         openModal(title, content);
         
         setTimeout(() => {
-            renderQualityStars(document.getElementById('modalQualityStars'));
             const modalShareBtn = document.getElementById('modalShareBtn');
             if (modalShareBtn) {
                 modalShareBtn.addEventListener('click', handleShare);
@@ -559,17 +534,16 @@ function showGameOver() {
 // Generate share text
 function generateShareText() {
     const result = gameState.isWon ? 'Win' : 'Loss';
-    const puzzleDate = gameState.puzzleDate;
+    const puzzleNum = getPuzzleNumber(currentPuzzle);
     const moves = gameState.moves;
-    const quality = gameState.quality || 1;
     const dishName = gameState.noun || '';
     const wastePercent = getWastePercent();
     
-    let text = `dish of the day ${formatDateDisplay(puzzleDate)}\n`;
+    let text = `dish of the day #${puzzleNum}\n`;
     if (gameState.isWon) {
-        text += `${dishName} prepared! ${moves} ingredients, Quality: ${quality}/4, Waste: ${wastePercent}%\n\n`;
+        text += `${dishName} prepared! ${moves} ingredients, Waste: ${wastePercent}%\n\n`;
     } else {
-        text += `${result} - ${moves} ingredients, Quality: ${quality}/4, Waste: ${wastePercent}%\n\n`;
+        text += `${result} - ${moves} ingredients, Waste: ${wastePercent}%\n\n`;
     }
     
     gameState.history.forEach(item => {
@@ -622,7 +596,7 @@ function loadPuzzle(puzzle) {
     
     currentPuzzle = puzzle;
     const puzzleDate = puzzle.date;
-    document.getElementById('dateDisplay').textContent = formatDateDisplay(puzzleDate);
+    document.getElementById('dateDisplay').textContent = `#${getPuzzleNumber(puzzle)}`;
     
     const adjList = getPuzzleAdjectives(puzzle);
     const dishName = [...adjList, puzzle.noun].filter(Boolean).join(' ');
@@ -834,10 +808,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Modal buttons
     document.getElementById('helpBtn').addEventListener('click', () => {
         openModal('Help', '');
-    });
-    
-    document.getElementById('statsBtn').addEventListener('click', () => {
-        openModal('Stats', '');
     });
     
     document.getElementById('infoBtn').addEventListener('click', () => {

@@ -4,22 +4,25 @@
    ========================================================================== */
 
 :root {
-    /* Base */
-    --paper:          #ffffff;
-    --ink-primary:    #1a1a1a;
+    /* Base — black and white per design */
+    --paper:          #F3EEDB;
+    --ink-primary:    #1F2933;
     --ink-secondary:  #6b6b6b;
     --ink-tertiary:   #9a9a9a;
 
     /* Surfaces & borders */
-    --surface-neutral: #f7f7f8;
-    --border-light:    #e5e5e8;
-    --border-mid:      #d0d0d6;
+    --surface-neutral: #f5f2e8;
+    --border-light:    #ddd9c8;
+    --border-mid:      #c9c4b0;
+    --border-strong:   #a8a38e;
 
-    /* Semantic accents — one meaning per color */
-    --accent-matched:   #c4a8a8;  /* letter matched in adjective — muted editorial */
-    --accent-noun:      #b8b8c4;  /* letter matched in noun — distinct from matched */
-    --accent-reward:    #b89c50;  /* star/reward — distinct from gameplay states */
-    --accent-reward-dim:#e8e0c8;  /* star outline (incomplete) */
+    /* Border roles */
+    --border-structural:  #e2dfd2;
+    --border-interactive: #8a8f96;
+
+    /* Recipe letter tiles */
+    --letter-matched:  #5a9d58;
+    --letter-unmatched:#c2c6cc;
 
     /* Legacy aliases for compatibility */
     --neutral-mid:    #778299;
@@ -74,14 +77,22 @@ body {
     overflow: hidden;
 }
 
+.content-wrapper {
+    max-width: 420px;
+    width: 100%;
+    margin: 0 auto;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
 /* ==========================================================================
    Puzzle Column — Single centered column for core game area
    ========================================================================== */
 
 .puzzle-column {
     width: 100%;
-    max-width: 420px;
-    margin: 0 auto;
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -107,13 +118,13 @@ body {
 
 header {
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 56px;
     flex-shrink: 0; /* header doesn't compress */
 }
 
 h1 {
     font-family: 'Outfit', sans-serif;
-    font-size: clamp(2em, 8vw, 3.2em); /* fluid: min 2em, preferred 8vw, max 3.2em */
+    font-size: clamp(1.4em, 5vw, 2em);
     color: var(--ink-primary);
     margin-bottom: 8px;
     font-weight: 700;
@@ -125,6 +136,10 @@ h1 {
     color: var(--ink-secondary);
     font-size: 0.9em;
     font-weight: 400;
+    white-space: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    min-width: 0;
 }
 
 .dish-name {
@@ -191,84 +206,44 @@ h1 {
     background: var(--surface-neutral);
     padding: 20px 18px;
     border-radius: 4px;
-    border: 1px solid var(--border-light);
+    border: 1px solid var(--border-structural);
 }
 
-/* Dish stack — vertical rows, left-aligned */
+/* Puzzle display — two lines: adjectives, then noun, both centered */
 .puzzle-stack {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-}
-
-.puzzle-row {
-    display: flex;
     align-items: center;
-    gap: 10px;
-    min-height: 1.6em;
+    gap: 4px;
 }
 
-.puzzle-star {
-    flex-shrink: 0;
-    width: 20px;
-    height: 20px;
+.puzzle-line {
     display: flex;
+    flex-wrap: nowrap;
     align-items: center;
     justify-content: center;
-    transition: color 0.2s ease, transform 0.2s ease;
-}
-
-.puzzle-star svg {
-    width: 100%;
-    height: 100%;
-}
-
-.puzzle-star-incomplete {
-    color: var(--accent-reward-dim);
-}
-
-.puzzle-star-complete {
-    color: var(--accent-reward);
-}
-
-.puzzle-star-complete.puzzle-star-animate {
-    animation: starFill 0.25s ease;
-}
-
-@keyframes starFill {
-    0% { transform: scale(0.9); opacity: 0.7; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-.puzzle-star-placeholder {
-    flex-shrink: 0;
-    width: 20px;
-    height: 20px;
-}
-
-.puzzle-row-text {
-    font-size: clamp(1em, 3.5vw, 1.5em);
+    gap: 2px 4px;
+    font-size: clamp(1.15em, 4.2vw, 1.75em);
     letter-spacing: 0.06em;
     font-family: 'Outfit', sans-serif;
-    line-height: 1.4;
-}
-
-/* Adjective: lighter weight, muted — optional/bonus */
-.puzzle-adjective {
-    font-weight: 400;
-    color: var(--ink-secondary);
-}
-
-/* Noun: stronger weight, primary — the victory target */
-.puzzle-noun {
     font-weight: 700;
+    line-height: 1.4;
     color: var(--ink-primary);
 }
 
-.puzzle-row-divider {
-    height: 1px;
-    background: var(--border-light);
-    margin: 8px 0 4px 0;
+.puzzle-letter {
+    transition: opacity 0.2s ease;
+}
+
+.puzzle-letter-active {
+    opacity: 1;
+}
+
+.puzzle-letter-matched {
+    opacity: 0.4;
+    text-decoration: underline;
+    text-decoration-thickness: 0.5px;
+    text-decoration-color: rgba(31, 41, 51, 0.85);
 }
 
 /* ==========================================================================
@@ -286,7 +261,7 @@ h1 {
     flex: 1;
     padding: 12px 16px;
     font-size: 1em;
-    border: 1px solid var(--border-light);
+    border: 1px solid var(--border-interactive);
     border-radius: 4px;
     text-transform: uppercase;
     font-family: 'Outfit', sans-serif;
@@ -303,7 +278,7 @@ h1 {
 
 #ingredientInput:focus {
     outline: none;
-    border-color: var(--border-mid);
+    border-color: var(--border-interactive);
 }
 
 #ingredientInput:disabled {
@@ -318,7 +293,7 @@ h1 {
     font-size: 0.9em;
     background: var(--paper);
     color: var(--ink-primary);
-    border: 1px solid var(--border-mid);
+    border: 1px solid var(--border-interactive);
     cursor: pointer;
     font-weight: 600;
     transition: border-color 0.15s;
@@ -326,7 +301,7 @@ h1 {
 }
 
 #submitBtn:hover:not(:disabled) {
-    border-color: var(--ink-secondary);
+    border-color: var(--ink-primary);
 }
 
 #submitBtn:active:not(:disabled) {
@@ -418,63 +393,33 @@ h1 {
     border-radius: 4px;
     background: var(--surface-neutral);
     color: var(--ink-primary);
-    border: 1px solid var(--border-light);
-}
-
-/* Matched in adjective — distinct accent */
-.letter-box.adj {
-    background: var(--accent-matched);
-    color: var(--ink-primary);
     border: none;
 }
 
-/* Matched in noun — distinct from adjective */
+/* Matched (adj or noun) */
+.letter-box.adj,
 .letter-box.noun {
-    background: var(--accent-noun);
+    background: var(--letter-matched);
+    color: var(--paper);
+    border: none;
+}
+
+/* Unmatched */
+.letter-box.plain {
+    background: var(--letter-unmatched);
     color: var(--ink-primary);
     border: none;
 }
 
-/* Unmatched — neutral, clearly different */
-.letter-box.plain {
-    background: transparent;
-    color: var(--ink-tertiary);
-    border: none;
-}
-
-/* ==========================================================================
-   Quality Stars (modal) — Reward accent
-   ========================================================================== */
-
-.quality-stars {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    gap: 6px;
-}
-
-.quality-star-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--accent-reward);
-    width: 24px;
-    height: 24px;
-}
-
-.quality-star-icon svg {
-    width: 100%;
-    height: 100%;
-}
-
-.modal-quality-stars {
-    margin-bottom: 0;
-}
-
-.modal-quality-stars .quality-star-icon {
-    width: 22px;
-    height: 22px;
+/* Food waste display */
+.food-waste {
+    font-size: 0.75em;
+    font-weight: 500;
+    color: var(--ink-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 20px;
+    margin-bottom: 8px;
 }
 
 /* ==========================================================================
@@ -520,7 +465,7 @@ footer {
     justify-content: center;
     background: var(--paper);
     color: var(--ink-primary);
-    border: 1px solid var(--border-mid);
+    border: 1px solid var(--border-interactive);
     cursor: pointer;
     font-size: 1em;
     font-weight: 600;
@@ -563,7 +508,7 @@ footer {
     justify-content: center;
     background: var(--paper);
     color: var(--ink-primary);
-    border: 1px solid var(--border-mid);
+    border: 1px solid var(--border-interactive);
     cursor: pointer;
     font-size: 1em;
     font-weight: 600;
@@ -655,11 +600,11 @@ footer {
     }
 
     h1 {
-        font-size: 2.6em;
+        font-size: 1.8em;
     }
 
-    .puzzle-row-text {
-        font-size: 1.2em;
+    .puzzle-line {
+        font-size: 1.4em;
     }
 
     .input-section {
@@ -728,7 +673,7 @@ footer {
     }
 
     h1 {
-        font-size: 2em;
+        font-size: 1.5em;
         margin-bottom: 4px;
     }
 
@@ -749,8 +694,8 @@ footer {
         padding: 12px 10px;
     }
 
-    .puzzle-row-text {
-        font-size: 1.05em;
+    .puzzle-line {
+        font-size: 1.2em;
     }
 
     .input-section {
@@ -807,11 +752,6 @@ footer {
         font-size: 0.8em;
     }
 
-    .quality-star-icon {
-        width: 24px;
-        height: 24px;
-    }
-
     footer {
         padding-top: 10px;
         gap: 10px;
@@ -852,7 +792,7 @@ footer {
     }
 
     h1 {
-        font-size: 1.8em;
+        font-size: 1.3em;
         margin-bottom: 2px;
     }
 
@@ -864,8 +804,8 @@ footer {
         padding: 8px;
     }
 
-    .puzzle-row-text {
-        font-size: 0.95em;
+    .puzzle-line {
+        font-size: 1.05em;
     }
 
     .input-section {
@@ -894,11 +834,6 @@ footer {
         width: 20px;
         height: 20px;
         font-size: 0.65em;
-    }
-
-    .quality-star-icon {
-        width: 20px;
-        height: 20px;
     }
 
     footer {
