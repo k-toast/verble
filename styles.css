@@ -271,7 +271,7 @@ h1 {
 .input-section {
     display: flex;
     flex-direction: column;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     flex-shrink: 0;
     overflow: visible;
 }
@@ -355,6 +355,11 @@ h1 {
     opacity: 1;
 }
 
+/* Desktop: show "SUBMIT" text, hide arrow */
+.submit-arrow {
+    display: none;
+}
+
 /* ==========================================================================
    Recipe Section — Subordinate, aligned to column
    ========================================================================== */
@@ -369,7 +374,7 @@ h1 {
 
 .recipe-section h2 {
     font-size: 0.7em;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     color: var(--color-secondary);
     font-weight: 600;
     text-transform: uppercase;
@@ -442,9 +447,9 @@ h1 {
     font-weight: 500;
     line-height: 1.35;
     color: var(--color-secondary);
-    margin: 6px 8px 0 8px;
-    min-height: 2.6em;
-    padding-top: 6px;
+    margin: 4px 8px 0 8px;
+    min-height: 1.5em;
+    padding-top: 4px;
     text-align: left;
 }
 
@@ -759,12 +764,26 @@ footer {
         font-size: 1.4em;
     }
 
+    /* Mobile: arrow button inline with input to save vertical space */
+    .submit-text {
+        display: none;
+    }
+
+    .submit-arrow {
+        display: inline;
+        font-size: 1.2em;
+        line-height: 1;
+    }
+
     .input-wrapper {
-        flex-direction: column;
+        flex-direction: row;
     }
 
     #submitBtn {
-        width: 100%;
+        width: auto;
+        min-width: 48px;
+        padding: 0 14px;
+        flex-shrink: 0;
     }
 
     .letter-box {
@@ -846,7 +865,7 @@ footer {
     }
 
     .input-section {
-        margin-bottom: 10px;
+        margin-bottom: 6px;
         gap: 8px;
     }
 
@@ -856,8 +875,9 @@ footer {
     }
 
     #submitBtn {
-        padding: 10px 20px;
-        font-size: 0.9em;
+        padding: 0 14px;
+        min-width: 48px;
+        font-size: 1em;
     }
 
     .recipe-section {
