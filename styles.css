@@ -1,34 +1,44 @@
 /* ==========================================================================
    VERBLE — NYTimes-Elegant Editorial Design
-   Semantic Color System
+   Semantic Color System (WCAG AA)
    ========================================================================== */
 
 :root {
-    /* Base — black and white per design */
-    --paper:          #F3EEDB;
-    --ink-primary:    #1F2933;
-    --ink-secondary:  #6b6b6b;
-    --ink-tertiary:   #9a9a9a;
+    /* Background & surface */
+    --color-background:   #F6F1E7;
+    --color-surface:      #FBF8F1;
+    --color-surface-elevated: #FDFBF7;
 
-    /* Surfaces & borders */
-    --surface-neutral: #f5f2e8;
-    --border-light:    #ddd9c8;
-    --border-mid:      #c9c4b0;
-    --border-strong:   #a8a38e;
+    /* Text hierarchy */
+    --color-primary:     #111827;
+    --color-secondary:   #374151;
+    --color-muted:       #6B7280;
 
-    /* Border roles */
-    --border-structural:  #e2dfd2;
-    --border-interactive: #8a8f96;
+    /* Borders */
+    --color-border:      #D1D5DB;
+    --color-border-surface: #B8BDC4;
+    --color-border-button: #A8AEBA;
+    --color-border-focus: #6B9BEA;
 
-    /* Recipe letter tiles */
-    --letter-matched:  #5a9d58;
-    --letter-unmatched:#c2c6cc;
+    /* Semantic states */
+    --color-success:     #6AAA64;
+    --color-eliminated:  #9CA3AF;
+    --color-disabled:    #F3F4F6;
+    --color-star:        #B89B3C;
 
-    /* Legacy aliases for compatibility */
-    --neutral-mid:    #778299;
-    --neutral-light:  #9caebb;
-    --semantic-neg:   #fbcdcd;
-    --semantic-pos:   #d4e4d1;
+    /* Legacy aliases (mapped to new tokens) */
+    --paper:             var(--color-background);
+    --ink-primary:       var(--color-primary);
+    --ink-secondary:     var(--color-secondary);
+    --ink-tertiary:      var(--color-muted);
+    --surface-neutral:   var(--color-surface);
+    --border-light:      var(--color-border);
+    --border-mid:        #B8BDC4;
+    --border-strong:     var(--color-muted);
+    --border-structural: var(--color-border);
+    --border-interactive:var(--color-secondary);
+    --letter-matched:    var(--color-success);
+    --letter-unmatched:  var(--color-eliminated);
 }
 
 /* ==========================================================================
@@ -43,21 +53,18 @@
 
 body {
     font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: var(--paper);
-    height: 100dvh; /* dynamic viewport height handles mobile browser chrome */
-    min-height: 0; /* allow shrinking when JS sets explicit height */
+    background: var(--color-background);
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start; /* top-aligned so content stays visible when keyboard opens */
+    justify-content: center;
     padding: 20px;
     color: var(--ink-primary);
-    overflow: hidden;
+    overflow: auto;
     overscroll-behavior: none;
-    position: fixed;
+    position: relative;
     width: 100%;
-    top: 0;
-    left: 0;
 }
 
 /* ==========================================================================
@@ -65,12 +72,11 @@ body {
    ========================================================================== */
 
 .container {
-    background: var(--paper);
+    background: var(--color-background);
     padding: 40px;
     max-width: 600px;
     width: 100%;
-    height: 100%;
-    max-height: calc(100dvh - 40px); /* account for body padding */
+    max-height: calc(100dvh - 40px);
     display: flex;
     flex-direction: column;
     border-radius: 0;
@@ -78,7 +84,7 @@ body {
 }
 
 .content-wrapper {
-    max-width: 420px;
+    max-width: 460px;
     width: 100%;
     margin: 0 auto;
     flex: 1;
@@ -133,18 +139,19 @@ h1 {
 }
 
 .date-line {
-    color: var(--ink-secondary);
-    font-size: 0.9em;
-    font-weight: 400;
+    color: var(--color-secondary);
+    font-size: 0.85em;
+    font-weight: 500;
     white-space: nowrap;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     min-width: 0;
+    letter-spacing: 0.02em;
 }
 
 .dish-name {
-    color: var(--ink-secondary);
-    font-weight: 400;
+    color: var(--color-secondary);
+    font-weight: 500;
 }
 
 /* ==========================================================================
@@ -154,7 +161,7 @@ h1 {
 .no-puzzle {
     text-align: center;
     padding: 50px 20px;
-    color: var(--ink-secondary);
+    color: var(--color-secondary);
     font-size: 1.1em;
     flex: 1;
 }
@@ -166,21 +173,26 @@ h1 {
 .reset-btn {
     padding: 12px 24px;
     font-size: 1em;
-    background: var(--paper);
-    color: var(--ink-primary);
-    border: 1px solid var(--ink-primary);
+    background: var(--color-surface);
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
     border-radius: 6px;
     cursor: pointer;
     font-weight: 600;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, background 0.2s;
 }
 
 .reset-btn:hover {
-    border-color: var(--ink-secondary);
+    border-color: var(--color-secondary);
+}
+
+.reset-btn:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
 }
 
 .reset-btn:active {
-    box-shadow: inset 0 1px 2px rgba(37, 29, 41, 0.1);
+    background: var(--color-border);
 }
 
 /* ==========================================================================
@@ -194,19 +206,19 @@ h1 {
 
 .puzzle-label {
     text-align: left;
-    color: var(--ink-secondary);
-    font-size: 0.75em;
+    color: var(--color-secondary);
+    font-size: 0.7em;
     margin-bottom: 10px;
-    font-weight: 500;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
 }
 
 .puzzle-display {
-    background: var(--surface-neutral);
+    background: var(--color-surface-elevated);
     padding: 20px 18px;
     border-radius: 4px;
-    border: 1px solid var(--border-structural);
+    border: 1px solid var(--color-border-surface);
 }
 
 /* Puzzle display — two lines: adjectives, then noun, both centered */
@@ -222,17 +234,23 @@ h1 {
     flex-wrap: nowrap;
     align-items: center;
     justify-content: center;
-    gap: 2px 4px;
+    gap: 2px 6px;
     font-size: clamp(1.15em, 4.2vw, 1.75em);
     letter-spacing: 0.06em;
     font-family: 'Outfit', sans-serif;
     font-weight: 700;
     line-height: 1.4;
-    color: var(--ink-primary);
+    color: var(--color-primary);
 }
 
 .puzzle-letter {
-    transition: opacity 0.2s ease;
+    transition: opacity 0.15s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .puzzle-letter {
+        transition: none;
+    }
 }
 
 .puzzle-letter-active {
@@ -240,10 +258,11 @@ h1 {
 }
 
 .puzzle-letter-matched {
-    opacity: 0.4;
-    text-decoration: underline;
-    text-decoration-thickness: 0.5px;
-    text-decoration-color: rgba(31, 41, 51, 0.85);
+    opacity: 0.5;
+    color: var(--color-primary);
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+    text-decoration-color: var(--color-muted);
 }
 
 /* ==========================================================================
@@ -252,68 +271,89 @@ h1 {
 
 .input-section {
     display: flex;
-    gap: 10px;
+    flex-direction: column;
     margin-bottom: 24px;
     flex-shrink: 0;
+    overflow: visible;
+}
+
+.input-wrapper {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+    overflow: visible;
+    margin: 0 8px; /* room for focus ring so it isn't clipped by overflow:hidden ancestors */
 }
 
 #ingredientInput {
     flex: 1;
     padding: 12px 16px;
     font-size: 1em;
-    border: 1px solid var(--border-interactive);
+    border: 1px solid var(--color-border-surface);
     border-radius: 4px;
     text-transform: uppercase;
     font-family: 'Outfit', sans-serif;
-    background: var(--surface-neutral);
-    color: var(--ink-primary);
+    background: var(--color-surface-elevated);
+    color: var(--color-primary);
     transition: border-color 0.15s;
 }
 
 #ingredientInput::placeholder {
-    color: var(--ink-tertiary);
+    color: var(--color-muted);
     text-transform: none;
     font-style: normal;
 }
 
 #ingredientInput:focus {
     outline: none;
-    border-color: var(--border-interactive);
+}
+
+#ingredientInput:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
 }
 
 #ingredientInput:disabled {
-    background: var(--surface-neutral);
-    border-color: var(--border-light);
+    background: var(--color-disabled);
+    border-color: var(--color-border);
+    color: var(--color-muted);
     cursor: not-allowed;
-    opacity: 0.6;
+    opacity: 1;
 }
 
 #submitBtn {
-    padding: 12px 22px;
-    font-size: 0.9em;
-    background: var(--paper);
-    color: var(--ink-primary);
-    border: 1px solid var(--border-interactive);
+    padding: 10px 18px;
+    font-size: 0.75em;
+    background: var(--color-surface-elevated);
+    color: var(--color-muted);
+    border: 1px solid var(--color-border-button);
     cursor: pointer;
     font-weight: 600;
-    transition: border-color 0.15s;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
     border-radius: 4px;
+    letter-spacing: 0.05em;
 }
 
 #submitBtn:hover:not(:disabled) {
-    border-color: var(--ink-primary);
+    border-color: var(--color-border-button);
+    color: var(--color-secondary);
+}
+
+#submitBtn:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
 }
 
 #submitBtn:active:not(:disabled) {
-    background: var(--surface-neutral);
+    background: var(--color-border);
 }
 
 #submitBtn:disabled {
-    background: var(--surface-neutral);
-    color: var(--ink-tertiary);
-    border-color: var(--border-light);
+    background: var(--color-disabled);
+    color: var(--color-eliminated);
+    border-color: var(--color-border);
     cursor: not-allowed;
-    opacity: 0.6;
+    opacity: 1;
 }
 
 /* ==========================================================================
@@ -331,16 +371,16 @@ h1 {
 .recipe-section h2 {
     font-size: 0.7em;
     margin-bottom: 10px;
-    color: var(--ink-secondary);
-    font-weight: 500;
+    color: var(--color-secondary);
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
 }
 
 #recipeContainer {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 0;
     flex: 1;
     min-height: 0;
     overflow-y: auto;
@@ -350,26 +390,33 @@ h1 {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 6px 0;
+    padding: 8px 0;
     min-height: 44px;
+    border-bottom: 1px solid rgba(209, 213, 219, 0.5);
+}
+
+.recipe-slot:last-child {
+    border-bottom: none;
 }
 
 .recipe-number {
-    font-size: 0.85em;
-    font-weight: 500;
-    color: var(--ink-tertiary);
+    font-size: 0.8em;
+    font-weight: 600;
+    color: var(--color-muted);
     min-width: 22px;
 }
 
 .recipe-item {
     display: flex;
-    gap: 3px;
+    gap: 4px;
     flex-wrap: wrap;
+    min-width: 0;
     justify-content: flex-start;
+    align-items: center;
 }
 
 .recipe-placeholder {
-    color: var(--ink-tertiary);
+    color: var(--color-muted);
     font-size: 0.85em;
     font-weight: 400;
     min-height: 30px;
@@ -377,8 +424,46 @@ h1 {
     align-items: center;
 }
 
+/* Screen reader only */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Inline validation message — permanent space, form-style feedback */
+.input-feedback {
+    font-size: 0.8em;
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--color-secondary);
+    margin: 6px 8px 0 8px;
+    min-height: 2.6em;
+    padding-top: 6px;
+    text-align: left;
+}
+
+.input-feedback.error {
+    color: var(--color-primary);
+}
+
+.input-feedback.highlight {
+    color: var(--color-border-focus);
+}
+
+/* Header win state */
+header.solved .dish-name {
+    font-weight: 600;
+}
+
 /* ==========================================================================
-   Letter Tiles — Semantic colors
+   Letter Tiles — Semantic colors (unused vs eliminated vs disabled)
    ========================================================================== */
 
 .letter-box {
@@ -391,34 +476,69 @@ h1 {
     font-weight: 600;
     font-family: 'Outfit', sans-serif;
     border-radius: 4px;
-    background: var(--surface-neutral);
-    color: var(--ink-primary);
-    border: none;
+    background: var(--color-surface);
+    color: var(--color-primary);
+    border: 1px solid var(--color-border);
+    transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 }
 
-/* Matched (adj or noun) */
+@media (prefers-reduced-motion: reduce) {
+    .letter-box {
+        transition: none;
+    }
+}
+
+/* Tile reveal animation (<200ms) */
+.recipe-slot.revealing .letter-box {
+    animation: tileReveal 0.15s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .recipe-slot.revealing .letter-box {
+        animation: none;
+    }
+}
+
+@keyframes tileReveal {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* Matched (adj or noun) — success/active */
 .letter-box.adj,
 .letter-box.noun {
-    background: var(--letter-matched);
-    color: var(--paper);
-    border: none;
+    background: var(--color-success);
+    color: var(--color-surface);
+    border-color: var(--color-success);
 }
 
-/* Unmatched */
+/* Eliminated (plain) — muted tone, lighter weight */
 .letter-box.plain {
-    background: var(--letter-unmatched);
-    color: var(--ink-primary);
-    border: none;
+    background: var(--color-eliminated);
+    color: var(--color-surface);
+    border-color: var(--color-eliminated);
+    font-weight: 500;
+}
+
+/* Star ingredient display */
+.star-ingredient {
+    font-size: 0.7em;
+    font-weight: 600;
+    color: var(--color-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-top: 16px;
+    margin-bottom: 4px;
 }
 
 /* Food waste display */
 .food-waste {
-    font-size: 0.75em;
-    font-weight: 500;
-    color: var(--ink-secondary);
+    font-size: 0.7em;
+    font-weight: 600;
+    color: var(--color-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-top: 20px;
+    letter-spacing: 0.12em;
+    margin-top: 8px;
     margin-bottom: 8px;
 }
 
@@ -430,27 +550,30 @@ footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-top: 20px;
-    margin-top: auto;
-    border-top: 1px solid var(--border-light);
+    padding-top: 24px;
+    margin-top: 56px;
+    border-top: 1px solid var(--color-border);
     gap: 15px;
     flex-shrink: 0;
 }
 
 .footer-left {
-    color: var(--ink-secondary);
-    font-size: 0.85em;
+    color: var(--color-secondary);
+    font-size: 0.8em;
+    font-weight: 500;
+    letter-spacing: 0.02em;
     flex: 1;
 }
 
 #countdownTimer {
-    font-weight: 600;
-    color: var(--ink-primary);
+    font-weight: 700;
+    color: var(--color-primary);
 }
 
 .footer-center {
     display: flex;
-    gap: 8px;
+    gap: 6px;
+    align-items: center;
 }
 
 /* ==========================================================================
@@ -463,30 +586,36 @@ footer {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--paper);
-    color: var(--ink-primary);
-    border: 1px solid var(--border-interactive);
+    background: var(--color-surface);
+    color: var(--color-primary);
+    border: 1px solid var(--color-border);
     cursor: pointer;
-    font-size: 1em;
+    font-size: 0.95em;
     font-weight: 600;
-    transition: border-color 0.2s;
+    transition: border-color 0.15s, background 0.15s;
     border-radius: 4px;
 }
 
 .nav-btn:hover:not(:disabled) {
-    border-color: var(--ink-primary);
+    border-color: var(--color-secondary);
+    background: var(--color-background);
+}
+
+.nav-btn:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
 }
 
 .nav-btn:active:not(:disabled) {
-    box-shadow: inset 0 1px 2px rgba(37, 29, 41, 0.1);
+    background: var(--color-border);
 }
 
 .nav-btn:disabled {
-    background: var(--paper);
-    color: var(--ink-tertiary);
-    border-color: var(--border-light);
+    background: var(--color-disabled);
+    color: var(--color-eliminated);
+    border-color: var(--color-border);
     cursor: not-allowed;
-    opacity: 0.5;
+    opacity: 1;
 }
 
 .footer-right {
@@ -506,22 +635,28 @@ footer {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--paper);
-    color: var(--ink-primary);
-    border: 1px solid var(--border-interactive);
+    background: var(--color-surface);
+    color: var(--color-primary);
+    border: 1px solid var(--color-border);
     cursor: pointer;
-    font-size: 1em;
+    font-size: 0.95em;
     font-weight: 600;
-    transition: border-color 0.2s;
+    transition: border-color 0.15s, background 0.15s;
     border-radius: 4px;
 }
 
 .icon-btn:hover {
-    border-color: var(--ink-primary);
+    border-color: var(--color-secondary);
+    background: var(--color-background);
+}
+
+.icon-btn:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
 }
 
 .icon-btn:active {
-    box-shadow: inset 0 1px 2px rgba(37, 29, 41, 0.1);
+    background: var(--color-border);
 }
 
 /* ==========================================================================
@@ -542,8 +677,8 @@ footer {
 }
 
 .modal {
-    background: var(--paper);
-    border: 1px solid var(--border-mid);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: 4px;
     width: 90%;
     max-width: 400px;
@@ -556,19 +691,19 @@ footer {
     align-items: center;
     justify-content: space-between;
     padding: 18px 24px;
-    border-bottom: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--color-border);
 }
 
 .modal-header h3 {
     font-size: 1.1em;
     font-weight: 600;
-    color: var(--ink-primary);
+    color: var(--color-primary);
 }
 
 .modal-close {
     background: none;
     border: none;
-    color: var(--ink-secondary);
+    color: var(--color-secondary);
     font-size: 1.6em;
     cursor: pointer;
     padding: 0;
@@ -577,13 +712,23 @@ footer {
 }
 
 .modal-close:hover {
-    color: var(--ink-primary);
+    color: var(--color-primary);
+}
+
+.modal-close:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
 }
 
 .modal-content {
     padding: 24px;
-    color: var(--ink-primary);
+    color: var(--color-primary);
     min-height: 100px;
+}
+
+.modal-content button:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
 }
 
 /* ==========================================================================
@@ -607,7 +752,7 @@ footer {
         font-size: 1.4em;
     }
 
-    .input-section {
+    .input-wrapper {
         flex-direction: column;
     }
 
@@ -670,6 +815,10 @@ footer {
 
     header {
         margin-bottom: 15px;
+    }
+
+    footer {
+        margin-top: 15px;
     }
 
     h1 {
@@ -789,6 +938,10 @@ footer {
 
     header {
         margin-bottom: 10px;
+    }
+
+    footer {
+        margin-top: 10px;
     }
 
     h1 {

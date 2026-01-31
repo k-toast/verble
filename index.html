@@ -12,7 +12,7 @@
 <body>
     <div class="container">
         <div class="content-wrapper">
-        <header>
+        <header id="gameHeader">
             <h1>dish of the day</h1>
             <div class="date-line"><span id="dateDisplay"></span> <span class="dish-name" id="dishName"></span></div>
         </header>
@@ -22,7 +22,7 @@
             <button id="resetToTodayBtn" class="reset-btn">Reset to Today</button>
         </div>
 
-        <div id="gameContainer" style="display: none;">
+        <div id="gameContainer" style="display: none;" role="main" aria-label="Puzzle game area">
             <div class="puzzle-column">
             <div class="puzzle-section">
                 <div class="puzzle-label">TODAY'S CHALLENGE</div>
@@ -32,24 +32,31 @@
             </div>
 
             <div class="input-section">
-                <input 
-                    type="text" 
-                    id="ingredientInput" 
-                    placeholder="type an ingredient here"
-                    maxlength="20"
-                    autocomplete="off"
-                >
-                <button id="submitBtn">SUBMIT</button>
+                <div class="input-wrapper">
+                    <input 
+                        type="text" 
+                        id="ingredientInput" 
+                        placeholder="type an ingredient here"
+                        maxlength="13"
+                        autocomplete="off"
+                        aria-describedby="inputFeedback"
+                        aria-invalid="false"
+                    >
+                    <button id="submitBtn" type="button">SUBMIT</button>
+                </div>
+                <div id="inputFeedback" class="input-feedback" role="status" aria-live="polite"></div>
             </div>
 
             <div class="recipe-section">
                 <h2>YOUR RECIPE</h2>
                 <div id="recipeContainer"></div>
+                <div id="starIngredientDisplay" class="star-ingredient"></div>
                 <div id="foodWasteDisplay" class="food-waste"></div>
             </div>
             </div>
         </div>
 
+        <div id="gameStatus" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
         <footer class="game-footer">
             <div class="footer-left">
                 <span>Next challenge in: </span>

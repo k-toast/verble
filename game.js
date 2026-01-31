@@ -315,6 +315,29 @@ function renderPuzzleStack() {
     appendLine(nounLetters);
 }
 
+// Get star ingredient: most matches, then least waste, then earliest
+function getStarIngredient() {
+    if (!gameState.history.length) return null;
+    let best = null;
+    let bestMatches = -1;
+    let bestWaste = Infinity;
+    let bestIndex = Infinity;
+    for (let i = 0; i < gameState.history.length; i++) {
+        const item = gameState.history[i];
+        const matches = item.result.filter(r => (r.status || '') === 'adj' || (r.status || '') === 'noun').length;
+        const waste = item.result.filter(r => (r.status || '') === 'plain').length;
+        if (matches > bestMatches ||
+            (matches === bestMatches && waste < bestWaste) ||
+            (matches === bestMatches && waste === bestWaste && i < bestIndex)) {
+            best = item.ingredient;
+            bestMatches = matches;
+            bestWaste = waste;
+            bestIndex = i;
+        }
+    }
+    return best;
+}
+
 // Calculate waste percentage (letters not matched)
 function getWastePercent() {
     const totalLetters = gameState.history.reduce((sum, item) => sum + item.ingredient.length, 0);
@@ -329,14 +352,26 @@ function updateDisplay() {
 
     const input = document.getElementById('ingredientInput');
     const submitBtn = document.getElementById('submitBtn');
-    
+    const header = document.getElementById('gameHeader');
+    const gameStatus = document.getElementById('gameStatus');
+
     if (gameState.isWon || gameState.isLost) {
         input.disabled = true;
         submitBtn.disabled = true;
+        showInputFeedback('');
+        if (gameState.isWon) {
+            if (header) header.classList.add('solved');
+            if (gameStatus) gameStatus.textContent = 'Puzzle solved!';
+        } else {
+            if (header) header.classList.remove('solved');
+            if (gameStatus) gameStatus.textContent = 'Game over. Try again or move to next puzzle.';
+        }
         showGameOver();
     } else {
         input.disabled = false;
-        submitBtn.disabled = false;
+        if (header) header.classList.remove('solved');
+        if (gameStatus) gameStatus.textContent = '';
+        updateInputValidationState();
     }
 
     updatePreviousButtonState();
@@ -361,17 +396,66 @@ function updatePreviousButtonState() {
     prevBtn.disabled = !prevPuzzle;
 }
 
+// Show inline feedback near input
+// style: '' (default), 'error', or 'highlight' (blue)
+function showInputFeedback(message, style) {
+    const el = document.getElementById('inputFeedback');
+    if (!el) return;
+    el.textContent = message || '';
+    el.className = 'input-feedback' + (style ? ' ' + style : '');
+}
+
+// Update input validation state (length limit) and submit button
+function updateInputValidationState() {
+    const input = document.getElementById('ingredientInput');
+    const submitBtn = document.getElementById('submitBtn');
+    if (!input || !submitBtn) return;
+
+    const len = (input.value || '').replace(/[^A-Za-z]/g, '').length;
+    if (len >= 13) {
+        showInputFeedback('That ingredient has more than 12 letters.', 'highlight');
+        input.setAttribute('aria-invalid', 'true');
+        submitBtn.disabled = true;
+    } else {
+        showInputFeedback('');
+        input.setAttribute('aria-invalid', 'false');
+        if (!gameState.isWon && !gameState.isLost) {
+            submitBtn.disabled = false;
+        }
+    }
+}
+
 // Process an ingredient - letters match against combined puzzle left-to-right (adj1 → adj2 → noun)
 function processIngredient(ingredient) {
     if (gameState.isWon || gameState.isLost) return;
 
     ingredient = ingredient.toUpperCase().trim();
-    
-    if (!/^[A-Z]{2,20}$/.test(ingredient)) {
-        alert('Please enter an ingredient with 2-20 letters (A-Z only)');
+    showInputFeedback('');
+
+    if (ingredient.length > 12) {
+        showInputFeedback('That ingredient has more than 12 letters.', 'highlight');
+        const input = document.getElementById('ingredientInput');
+        if (input) input.setAttribute('aria-invalid', 'true');
         return;
     }
 
+    if (!/^[A-Z]{2,12}$/.test(ingredient)) {
+        showInputFeedback('Enter 2–12 letters', 'error');
+        const input = document.getElementById('ingredientInput');
+        if (input) input.setAttribute('aria-invalid', 'true');
+        return;
+    }
+
+    const isDuplicate = gameState.history.some(h => (h.ingredient || '').toUpperCase() === ingredient);
+    if (isDuplicate) {
+        showInputFeedback('Already used', 'error');
+        const input = document.getElementById('ingredientInput');
+        if (input) input.setAttribute('aria-invalid', 'true');
+        return;
+    }
+
+    const input = document.getElementById('ingredientInput');
+    if (input) input.setAttribute('aria-invalid', 'false');
     const result = [];
     const adjArrays = gameState.remainingAdjectives.map(a => (a || '').split(''));
     let nounArray = (gameState.remainingNoun || '').split('');
@@ -430,11 +514,12 @@ function processIngredient(ingredient) {
 
     saveGameState();
     updateDisplay();
-    loadRecipe();
+    loadRecipe(gameState.history.length - 1);
 }
 
-// Load and display recipe (history) - 4 slots with food waste
-function loadRecipe() {
+// Load and display recipe (history) - 5 slots with food waste
+// newlyAddedIndex: optional 0-based index of the slot just added (for reveal animation)
+function loadRecipe(newlyAddedIndex) {
     const container = document.getElementById('recipeContainer');
     container.innerHTML = '';
 
@@ -442,7 +527,7 @@ function loadRecipe() {
 
     for (let i = 0; i < maxSlots; i++) {
         const slotDiv = document.createElement('div');
-        slotDiv.className = 'recipe-slot';
+        slotDiv.className = 'recipe-slot' + (i === newlyAddedIndex ? ' revealing' : '');
         
         const numberDiv = document.createElement('div');
         numberDiv.className = 'recipe-number';
@@ -471,12 +556,22 @@ function loadRecipe() {
         }
         
         container.appendChild(slotDiv);
+
+        if (i === newlyAddedIndex) {
+            slotDiv.addEventListener('animationend', () => slotDiv.classList.remove('revealing'), { once: true });
+        }
+    }
+
+    const starDiv = document.getElementById('starIngredientDisplay');
+    if (starDiv) {
+        const star = getStarIngredient();
+        starDiv.textContent = 'STAR INGREDIENT: ' + (star || '???');
     }
 
     const wasteDiv = document.getElementById('foodWasteDisplay');
     if (wasteDiv) {
         const wastePercent = getWastePercent();
-        wasteDiv.textContent = `FOOD WASTE ${wastePercent}%`;
+        wasteDiv.textContent = `FOOD WASTE: ${wastePercent}%`;
     }
 }
 
@@ -514,16 +609,23 @@ function showGameOver() {
         }, 0);
     } else if (gameState.isLost) {
         const content = `
-            <p style="text-align: center; margin-bottom: 20px;">The dish, she is ruined. Try again tomorrow.</p>
-            <div style="text-align: center;">
-                <button id="modalShareBtn" style="padding: 10px 20px; font-size: 1em; background: #535373; color: #e6e6ec; border: 1px solid #535373; cursor: pointer; font-weight: 500;">Share</button>
+            <p style="text-align: center; margin-bottom: 20px;">The dish, she is ruined.</p>
+            <div style="text-align: center; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                <button id="modalRetryBtn" style="padding: 10px 20px; font-size: 1em; background: #111827; color: #FBF8F1; border: 1px solid #111827; cursor: pointer; font-weight: 500;">Try again</button>
+                <button id="modalShareBtn" style="padding: 10px 20px; font-size: 1em; background: transparent; color: #374151; border: 1px solid #D1D5DB; cursor: pointer; font-weight: 500;">Share</button>
             </div>
         `;
         openModal('Oof!', content);
         
-        // Add share button listener
         setTimeout(() => {
+            const modalRetryBtn = document.getElementById('modalRetryBtn');
             const modalShareBtn = document.getElementById('modalShareBtn');
+            if (modalRetryBtn) {
+                modalRetryBtn.addEventListener('click', () => {
+                    closeModal();
+                    handleRetry();
+                });
+            }
             if (modalShareBtn) {
                 modalShareBtn.addEventListener('click', handleShare);
             }
@@ -788,6 +890,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     input.addEventListener('input', (e) => {
         e.target.value = e.target.value.replace(/[^A-Za-z]/g, '').toUpperCase();
+        updateInputValidationState();
     });
 
     // Navigation buttons
