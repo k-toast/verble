@@ -58,10 +58,10 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: calc(20px + env(safe-area-inset-top, 0px)) calc(20px + env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) calc(20px + env(safe-area-inset-left, 0px));
     color: var(--ink-primary);
     overflow: auto;
-    overscroll-behavior: none;
+    overscroll-behavior: auto;
     position: relative;
     width: 100%;
 }
@@ -800,7 +800,7 @@ footer {
 
 @media (max-width: 480px), (max-height: 700px) {
     body {
-        padding: 10px;
+        padding: calc(10px + env(safe-area-inset-top, 0px)) calc(10px + env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) calc(10px + env(safe-area-inset-left, 0px));
     }
 
     .container {
@@ -923,7 +923,7 @@ footer {
 
 @media (max-height: 600px) {
     body {
-        padding: 5px;
+        padding: calc(5px + env(safe-area-inset-top, 0px)) calc(5px + env(safe-area-inset-right, 0px)) calc(5px + env(safe-area-inset-bottom, 0px)) calc(5px + env(safe-area-inset-left, 0px));
     }
 
     .container {
@@ -997,5 +997,81 @@ footer {
         width: 28px;
         height: 28px;
         font-size: 0.8em;
+    }
+}
+
+/* ==========================================================================
+   Very Short Phones — Fit game without scrolling (iPhone SE, etc.)
+   ========================================================================== */
+
+@media (max-height: 568px) {
+    body {
+        padding: calc(8px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) calc(8px + env(safe-area-inset-left, 0px));
+    }
+
+    .container {
+        padding: 8px;
+        max-height: calc(100dvh - 16px);
+    }
+
+    header {
+        margin-bottom: 8px;
+    }
+
+    footer {
+        margin-top: 8px;
+        padding-top: 6px;
+    }
+
+    h1 {
+        font-size: 1.2em;
+        margin-bottom: 2px;
+    }
+
+    .puzzle-section {
+        margin-bottom: 8px;
+    }
+
+    .puzzle-display {
+        padding: 6px 8px;
+    }
+
+    .puzzle-line {
+        font-size: 0.95em;
+    }
+
+    .input-section {
+        margin-bottom: 8px;
+    }
+
+    .recipe-section {
+        margin-bottom: 8px;
+    }
+
+    .recipe-section h2 {
+        margin-bottom: 4px;
+    }
+
+    .recipe-slot {
+        padding: 2px 0;
+        min-height: 24px;
+    }
+
+    .letter-box {
+        width: 18px;
+        height: 18px;
+        font-size: 0.6em;
+    }
+
+    .star-ingredient,
+    .food-waste {
+        margin-top: 6px;
+        margin-bottom: 4px;
+    }
+
+    .nav-btn,
+    .icon-btn {
+        width: 28px;
+        height: 28px;
     }
 }

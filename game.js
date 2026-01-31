@@ -858,8 +858,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Handle mobile keyboard open/close - snap viewport back when keyboard closes
-    if (window.visualViewport) {
+    // Handle mobile keyboard open/close - snap viewport back when keyboard closes (mobile only)
+    if (window.visualViewport && window.matchMedia('(max-width: 768px)').matches) {
         let initialHeight = window.innerHeight;
         let keyboardOpen = false;
         
@@ -881,11 +881,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     window.scrollTo(0, 0);
                 }, 100);
             }
-        });
-        
-        // Prevent overscroll/bounce
-        window.visualViewport.addEventListener('scroll', () => {
-            window.scrollTo(0, 0);
         });
     }
 
