@@ -1011,29 +1011,52 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Handle mobile keyboard open/close - snap viewport back when keyboard closes (mobile only)
+    // Handle mobile keyboard — polyfill for iOS (interactive-widget=resizes-content not supported)
+    // On Android/Chrome, viewport meta handles it; this ensures iOS Safari also resizes content
     if (window.visualViewport && window.matchMedia('(max-width: 768px)').matches) {
-        let initialHeight = window.innerHeight;
+        let initialHeight = window.visualViewport.height;
         let keyboardOpen = false;
-        
-        window.visualViewport.addEventListener('resize', () => {
-            const currentHeight = window.visualViewport.height;
+
+        function updateViewportHeight() {
+            const vv = window.visualViewport;
+            const currentHeight = vv.height;
             const heightDiff = initialHeight - currentHeight;
-            
-            // Keyboard is likely open if viewport shrunk significantly (>150px)
-            if (heightDiff > 150) {
+
+            if (heightDiff > 100) {
+                // Keyboard open — constrain layout to visible area
                 keyboardOpen = true;
-                document.body.style.height = `${currentHeight}px`;
-                // Don't force scroll when keyboard opens - let browser keep input visible
+                document.documentElement.classList.add('keyboard-open');
+                const h = `${currentHeight}px`;
+                document.documentElement.style.height = h;
+                document.documentElement.style.maxHeight = h;
+                document.body.style.height = h;
+                document.body.style.maxHeight = h;
             } else if (keyboardOpen) {
-                // Keyboard just closed - remove inline style to let CSS 100dvh take over
+                // Keyboard closed — restore normal sizing
                 keyboardOpen = false;
+                document.documentElement.classList.remove('keyboard-open');
+                document.documentElement.style.height = '';
+                document.documentElement.style.maxHeight = '';
                 document.body.style.height = '';
-                initialHeight = window.innerHeight;
+                document.body.style.maxHeight = '';
+                initialHeight = vv.height;
                 setTimeout(() => {
                     window.scrollTo(0, 0);
-                }, 100);
+                }, 50);
+            } else {
+                // Track baseline when keyboard not open
+                initialHeight = currentHeight;
             }
+        }
+
+        window.visualViewport.addEventListener('resize', updateViewportHeight);
+        window.visualViewport.addEventListener('scroll', updateViewportHeight);
+
+        // Ensure input stays visible when focused (scroll into view above keyboard)
+        input.addEventListener('focus', () => {
+            requestAnimationFrame(() => {
+                input.scrollIntoView({ block: 'center', behavior: 'auto' });
+            });
         });
     }
 
