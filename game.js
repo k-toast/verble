@@ -17,6 +17,10 @@ let currentPuzzle = null;
 let debugDateOverride = null;
 let countdownInterval = null;
 
+let allowedFoods = null;
+let blockedFoods = new Set();
+let lastRejectedIngredient = null;
+
 // Get real Helsinki timezone date string (YYYY-MM-DD) - without debug override
 function getRealHelsinkiDate() {
     const now = new Date();
@@ -70,6 +74,25 @@ async function loadPuzzles() {
     } catch (error) {
         console.error('Error loading puzzles:', error);
         puzzles = [];
+    }
+}
+
+// Load food allow/block lists for ingredient validation
+async function loadFoodLists() {
+    try {
+        const [foodsRes, blockedRes] = await Promise.all([
+            fetch('foods.json'),
+            fetch('foods-blocked.json').catch(() => ({ ok: false }))
+        ]);
+        if (!foodsRes.ok) throw new Error('No foods list');
+        const foods = await foodsRes.json();
+        const blocked = blockedRes.ok ? await blockedRes.json() : [];
+        allowedFoods = new Set(foods.map(f => String(f).toUpperCase().trim()));
+        blockedFoods = new Set((blocked || []).map(b => String(b).toUpperCase().trim()));
+    } catch (error) {
+        console.warn('Could not load food lists, allowing all:', error);
+        allowedFoods = null;
+        blockedFoods = new Set();
     }
 }
 
@@ -366,7 +389,19 @@ function updateInputValidationState() {
     const submitBtn = document.getElementById('submitBtn');
     if (!input || !submitBtn) return;
 
-    const len = (input.value || '').replace(/[^A-Za-z]/g, '').length;
+    const currentValue = (input.value || '').replace(/[^A-Za-z]/g, '').toUpperCase();
+
+    // Clear sticky invalid-food error when player edits the input
+    if (lastRejectedIngredient !== null && currentValue !== lastRejectedIngredient) {
+        lastRejectedIngredient = null;
+    }
+
+    // If sticky error is still active, preserve it and don't overwrite
+    if (lastRejectedIngredient !== null && currentValue === lastRejectedIngredient) {
+        return;
+    }
+
+    const len = currentValue.length;
     if (len >= 13) {
         showInputFeedback('That ingredient has more than 12 letters.', 'highlight');
         input.setAttribute('aria-invalid', 'true');
@@ -381,8 +416,9 @@ function updateInputValidationState() {
 }
 
 // Process an ingredient - letters match against combined puzzle left-to-right (adj1 → adj2 → noun)
+// Returns true if accepted, false if rejected (validation failure)
 function processIngredient(ingredient) {
-    if (gameState.isWon || gameState.isLost) return;
+    if (gameState.isWon || gameState.isLost) return false;
 
     const input = document.getElementById('ingredientInput');
     ingredient = ingredient.toUpperCase().trim();
@@ -391,22 +427,45 @@ function processIngredient(ingredient) {
     if (ingredient.length > 12) {
         showInputFeedback('That ingredient has more than 12 letters.', 'highlight');
         if (input) input.setAttribute('aria-invalid', 'true');
-        return;
+        return false;
     }
 
     if (!/^[A-Z]{2,12}$/.test(ingredient)) {
         showInputFeedback('Enter 2–12 letters', 'error');
         if (input) input.setAttribute('aria-invalid', 'true');
-        return;
+        return false;
     }
 
     const isDuplicate = gameState.history.some(h => (h.ingredient || '').toUpperCase() === ingredient);
     if (isDuplicate) {
         showInputFeedback('Already used', 'error');
         if (input) input.setAttribute('aria-invalid', 'true');
-        return;
+        return false;
     }
 
+    const puzzleNoun = (gameState.noun || '').toUpperCase().trim();
+    if (puzzleNoun && ingredient === puzzleNoun) {
+        lastRejectedIngredient = ingredient;
+        showInputFeedback('The challenge dish may not be used as an ingredient.', 'highlight');
+        if (input) input.setAttribute('aria-invalid', 'true');
+        return false;
+    }
+
+    if (blockedFoods.has(ingredient)) {
+        lastRejectedIngredient = ingredient;
+        showInputFeedback(`"${ingredient}" is not recognized as an ingredient in the panty.`, 'highlight');
+        if (input) input.setAttribute('aria-invalid', 'true');
+        return false;
+    }
+
+    if (allowedFoods !== null && !allowedFoods.has(ingredient)) {
+        lastRejectedIngredient = ingredient;
+        showInputFeedback(`"${ingredient}" is not recognized as an ingredient in the panty.`, 'highlight');
+        if (input) input.setAttribute('aria-invalid', 'true');
+        return false;
+    }
+
+    lastRejectedIngredient = null;
     if (input) input.setAttribute('aria-invalid', 'false');
     const result = [];
     const adjArrays = gameState.remainingAdjectives.map(a => (a || '').split(''));
@@ -467,6 +526,7 @@ function processIngredient(ingredient) {
     saveGameState();
     updateDisplay();
     loadRecipe(gameState.history.length - 1);
+    return true;
 }
 
 // Load and display recipe (history) - 5 slots with food waste
@@ -647,7 +707,12 @@ function copyToClipboardFallback(text) {
 // Load a specific puzzle
 function loadPuzzle(puzzle) {
     if (!puzzle) return;
-    
+
+    lastRejectedIngredient = null;
+    showInputFeedback('');
+    const inputEl = document.getElementById('ingredientInput');
+    if (inputEl) inputEl.value = '';
+
     currentPuzzle = puzzle;
     const puzzleDate = puzzle.date;
     document.getElementById('dateDisplay').textContent = `#${getPuzzleNumber(puzzle)}`;
@@ -672,13 +737,18 @@ function loadPuzzle(puzzle) {
 // Handle retry button
 function handleRetry() {
     if (!currentPuzzle) return;
-    
+
+    lastRejectedIngredient = null;
+    showInputFeedback('');
+    const inputEl = document.getElementById('ingredientInput');
+    if (inputEl) inputEl.value = '';
+
     try {
         localStorage.removeItem(`dish_of_the_day_${currentPuzzle.date}`);
     } catch (error) {
         console.error('Error removing from localStorage:', error);
     }
-    
+
     resetGameState();
     updateDisplay();
     loadRecipe();
@@ -794,6 +864,7 @@ function closeModal() {
 // Event listeners
 document.addEventListener('DOMContentLoaded', async () => {
     await loadPuzzles();
+    await loadFoodLists();
     initGame();
 
     const input = document.getElementById('ingredientInput');
@@ -801,8 +872,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     submitBtn.addEventListener('click', () => {
         const ingredient = input.value.trim();
-        if (ingredient) {
-            processIngredient(ingredient);
+        if (ingredient && processIngredient(ingredient)) {
             input.value = '';
             // Don't auto-focus - let user tap when ready (prevents iOS keyboard flicker)
         }
