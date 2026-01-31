@@ -887,13 +887,24 @@ footer {
 }
 
 /* ==========================================================================
-   Mobile keyboard — when keyboard opens (iOS polyfill / resizes-content)
+   Mobile — pull-to-refresh, keyboard handling
    ========================================================================== */
 
 @media (max-width: 768px) {
-    html.keyboard-open .container {
-        flex: 1;
-        max-height: 100%;
+    /* Allow pull-to-refresh when keyboard closed */
+    body {
+        overscroll-behavior-y: auto;
+    }
+
+    /* When keyboard open: footer hidden, body scrollable so input stays visible */
+    html.keyboard-open body {
+        overflow-y: auto;
+    }
+
+    /* Allow game area to scroll so star/food waste stay visible when content is tall */
+    #gameContainer {
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 }
 
