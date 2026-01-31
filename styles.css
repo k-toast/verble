@@ -79,8 +79,7 @@ body {
     display: flex;
     flex-direction: column;
     border-radius: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
 }
 
 .content-wrapper {
@@ -114,7 +113,7 @@ body {
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    overflow: visible;
+    overflow: hidden;
     width: 100%;
 }
 
@@ -272,7 +271,7 @@ h1 {
 .input-section {
     display: flex;
     flex-direction: column;
-    margin-bottom: 24px;
+    margin-bottom: 12px;
     flex-shrink: 0;
     overflow: visible;
 }
@@ -361,7 +360,7 @@ h1 {
    ========================================================================== */
 
 .recipe-section {
-    margin-bottom: 20px;
+    margin-bottom: 0;
     flex: 1;
     min-height: 0;
     display: flex;
@@ -370,7 +369,7 @@ h1 {
 
 .recipe-section h2 {
     font-size: 0.7em;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
     color: var(--color-secondary);
     font-weight: 600;
     text-transform: uppercase;
@@ -383,9 +382,7 @@ h1 {
     gap: 0;
     flex: 1;
     min-height: 0;
-    /* Ensure space for 5 ingredient slots so none are clipped */
-    min-height: 220px;
-    overflow-y: visible;
+    overflow-y: auto;
 }
 
 .recipe-slot {
@@ -529,8 +526,9 @@ header.solved .dish-name {
     color: var(--color-secondary);
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    margin-top: 16px;
+    margin-top: 12px;
     margin-bottom: 4px;
+    flex-shrink: 0;
 }
 
 /* Food waste display */
@@ -540,8 +538,9 @@ header.solved .dish-name {
     color: var(--color-secondary);
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    margin-top: 8px;
-    margin-bottom: 8px;
+    margin-top: 6px;
+    margin-bottom: 0;
+    flex-shrink: 0;
 }
 
 /* ==========================================================================
@@ -553,18 +552,23 @@ footer {
     align-items: center;
     justify-content: space-between;
     padding-top: 24px;
-    margin-top: 56px;
+    margin-top: 24px;
     border-top: 1px solid var(--color-border);
-    gap: 15px;
+    gap: 12px;
     flex-shrink: 0;
+    background: var(--color-background);
+    position: relative;
+    z-index: 1;
 }
 
 .footer-left {
     color: var(--color-secondary);
-    font-size: 0.8em;
+    font-size: 0.75em;
     font-weight: 500;
     letter-spacing: 0.02em;
-    flex: 1;
+    flex: 0 1 auto;
+    min-width: 0;
+    white-space: nowrap;
 }
 
 #countdownTimer {
@@ -576,6 +580,7 @@ footer {
     display: flex;
     gap: 6px;
     align-items: center;
+    flex-shrink: 0;
 }
 
 /* ==========================================================================
@@ -623,7 +628,7 @@ footer {
 .footer-right {
     display: flex;
     gap: 8px;
-    flex: 1;
+    flex: 0 0 auto;
     justify-content: flex-end;
 }
 
@@ -777,27 +782,14 @@ footer {
         min-height: 40px;
     }
 
-    #recipeContainer {
-        min-height: 200px; /* 5 * 40px */
-    }
-
     footer {
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        gap: 8px;
     }
 
     .footer-left {
-        order: 3;
-        flex-basis: 100%;
-        text-align: center;
-        margin-top: 10px;
-    }
-
-    .footer-center {
-        order: 1;
-    }
-
-    .footer-right {
-        order: 2;
+        flex: 0 1 auto;
+        min-width: 0;
     }
 }
 
@@ -854,7 +846,7 @@ footer {
     }
 
     .input-section {
-        margin-bottom: 15px;
+        margin-bottom: 10px;
         gap: 8px;
     }
 
@@ -885,10 +877,6 @@ footer {
         padding: 4px 0;
         gap: 8px;
         min-height: 34px;
-    }
-
-    #recipeContainer {
-        min-height: 170px; /* 5 * 34px */
     }
 
     .recipe-number {
@@ -972,7 +960,7 @@ footer {
     }
 
     .input-section {
-        margin-bottom: 10px;
+        margin-bottom: 6px;
     }
 
     #ingredientInput,
@@ -991,10 +979,6 @@ footer {
     .recipe-slot {
         padding: 2px 0;
         min-height: 28px;
-    }
-
-    #recipeContainer {
-        min-height: 140px; /* 5 * 28px */
     }
 
     .letter-box {
@@ -1056,11 +1040,11 @@ footer {
     }
 
     .input-section {
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
 
     .recipe-section {
-        margin-bottom: 8px;
+        margin-bottom: 0;
     }
 
     .recipe-section h2 {
@@ -1070,10 +1054,6 @@ footer {
     .recipe-slot {
         padding: 2px 0;
         min-height: 24px;
-    }
-
-    #recipeContainer {
-        min-height: 120px; /* 5 * 24px */
     }
 
     .letter-box {
@@ -1092,5 +1072,27 @@ footer {
     .icon-btn {
         width: 28px;
         height: 28px;
+    }
+}
+
+/* Very narrow screens — footer wraps when needed */
+@media (max-width: 380px) {
+    footer {
+        flex-wrap: wrap;
+    }
+
+    .footer-left {
+        flex-basis: 100%;
+        order: 3;
+        margin-top: 8px;
+        text-align: center;
+    }
+
+    .footer-center {
+        order: 1;
+    }
+
+    .footer-right {
+        order: 2;
     }
 }
