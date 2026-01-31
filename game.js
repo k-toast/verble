@@ -898,10 +898,10 @@ function startCountdownTimer() {
 function getHelpContent() {
     return `
         <div class="help-content">
-            <p>Add to your recipe by typing and submitting any food you want to use (i.e. "ZUCCHINI").</p>
+            <p>Add to your recipe by typing and submitting any food you want to use (i.e. <strong>ZUCCHINI</strong>).</p>
             <p>The letters in your ingredient will be matched against the letters in the challenge dish, removing any that match.</p>
             <p class="help-label">Example:</p>
-            <p>Adding the ingredient "ZUCCHINI" to...</p>
+            <p>Adding the ingredient <strong>ZUCCHINI</strong> to...</p>
             <div class="help-example">
                 <img src="assets/clean-before.png" alt="Challenge dish before: CLEAN FOCUSED SUSHI" class="help-image">
             </div>
@@ -909,7 +909,7 @@ function getHelpContent() {
             <div class="help-example">
                 <img src="assets/clean-after.png" alt="Challenge dish after: some letters matched and removed, Z and I marked as Food Waste" class="help-image">
             </div>
-            <p>With the "Z" and one of the "I"s becoming food waste.</p>
+            <p>With the <strong>Z</strong> and one of the <strong>I</strong>s becoming food waste.</p>
             <p>Food waste won't stop you from completing the challenge, but it's not a good look for an aspiring chef!</p>
             <p>Successfully complete the challenge dish by matching all of its letters in five ingredients or less.</p>
         </div>
@@ -989,7 +989,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('helpBtn').addEventListener('click', showHelpModal);
     
     document.getElementById('infoBtn').addEventListener('click', () => {
-        openModal('About', '');
+        openModal('About Dish of the Day', `<div class="about-content">
+            <p>A daily word puzzle by Mike Kayatta.</p>
+            <p>You are playing an early test version, so you might encountered unexpected bugs or changes, unfinished features, or weird placeholders.</p>
+            <p>Right now, there are 30 puzzles. Eventually, they will be served daily, but for now you can feel free to cheat using the <strong>&lt;</strong> <strong>R</strong> and <strong>&gt;</strong> buttons at the bottom of the game, which move between the available puzzles and even allow you to replay.</p>
+        </div>`);
     });
     
     document.getElementById('modalClose').addEventListener('click', closeModal);

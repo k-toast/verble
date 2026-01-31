@@ -754,6 +754,14 @@ footer {
     outline-offset: 2px;
 }
 
+/* About modal — paragraph spacing */
+.about-content p {
+    margin-bottom: 12px;
+}
+.about-content > p:last-child {
+    margin-bottom: 0;
+}
+
 /* Help modal — Wordle-style layout */
 .help-content {
     font-size: 0.95em;
