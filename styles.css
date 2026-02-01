@@ -38,6 +38,9 @@
     --border-interactive:var(--color-secondary);
     --letter-matched:    var(--color-success);
     --letter-unmatched:  var(--color-eliminated);
+
+    /* Consistent buffer between major sections */
+    --section-buffer: 24px;
 }
 
 /* ==========================================================================
@@ -129,7 +132,7 @@ body {
 
 header {
     text-align: center;
-    margin-bottom: 56px;
+    margin-bottom: var(--section-buffer);
     flex-shrink: 0; /* header doesn't compress */
 }
 
@@ -285,7 +288,7 @@ h1 {
 .input-section {
     display: flex;
     flex-direction: column;
-    margin-bottom: 8px;
+    margin-bottom: var(--section-buffer);
     flex-shrink: 0;
     overflow: visible;
 }
@@ -402,6 +405,8 @@ h1 {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    padding-bottom: calc(var(--section-buffer) / 2);
+    justify-content: flex-end;
 }
 
 .recipe-slot {
@@ -463,8 +468,13 @@ h1 {
     color: var(--color-secondary);
     margin: 2px 8px 0 8px;
     min-height: 2.7em;
-    padding-bottom: 8px;
+    padding-bottom: 0;
     text-align: left;
+}
+
+/* Reduce input-feedback min-height when empty so buffer matches header→TODAY'S CHALLENGE */
+.input-feedback:empty {
+    min-height: 0;
 }
 
 .input-feedback.error {
@@ -572,8 +582,8 @@ footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-top: 24px;
-    margin-top: 24px;
+    padding-top: calc(var(--section-buffer) / 2);
+    margin-top: calc(var(--section-buffer) / 2);
     border-top: 1px solid var(--color-border);
     gap: 12px;
     flex-shrink: 0;
@@ -937,8 +947,8 @@ footer {
         max-height: 100dvh;
     }
 
-    header {
-        margin-bottom: 25px;
+    :root {
+        --section-buffer: 14px;
     }
 
     .puzzle-section {
@@ -947,10 +957,6 @@ footer {
 
     .puzzle-display {
         padding: 14px 12px;
-    }
-
-    .input-section {
-        margin-bottom: 6px;
     }
 
     .recipe-section h2 {
@@ -970,11 +976,6 @@ footer {
     .food-waste {
         margin-top: 6px;
         margin-bottom: 2px;
-    }
-
-    footer {
-        margin-top: 11px;
-        padding-top: 11px;
     }
 }
 
@@ -1070,12 +1071,8 @@ footer {
         max-width: 100%;
     }
 
-    header {
-        margin-bottom: 18px;
-    }
-
-    footer {
-        margin-top: 10px;
+    :root {
+        --section-buffer: 12px;
     }
 
     h1 {
@@ -1105,7 +1102,6 @@ footer {
     }
 
     .input-section {
-        margin-bottom: 6px;
         gap: 8px;
     }
 
@@ -1165,7 +1161,6 @@ footer {
     }
 
     footer {
-        padding-top: 10px;
         gap: 10px;
     }
 
@@ -1199,12 +1194,8 @@ footer {
         max-width: 100%;
     }
 
-    header {
-        margin-bottom: 14px;
-    }
-
-    footer {
-        margin-top: 8px;
+    :root {
+        --section-buffer: 10px;
     }
 
     h1 {
@@ -1222,10 +1213,6 @@ footer {
 
     .puzzle-line {
         font-size: 1.05em;
-    }
-
-    .input-section {
-        margin-bottom: 5px;
     }
 
     #ingredientInput,
@@ -1257,10 +1244,6 @@ footer {
         height: 14px;
     }
 
-    footer {
-        padding-top: 8px;
-    }
-
     .nav-btn,
     .icon-btn {
         width: 28px;
@@ -1283,13 +1266,8 @@ footer {
         max-height: calc(100dvh - 16px);
     }
 
-    header {
-        margin-bottom: 12px;
-    }
-
-    footer {
-        margin-top: 6px;
-        padding-top: 6px;
+    :root {
+        --section-buffer: 8px;
     }
 
     h1 {
@@ -1307,10 +1285,6 @@ footer {
 
     .puzzle-line {
         font-size: 0.95em;
-    }
-
-    .input-section {
-        margin-bottom: 5px;
     }
 
     .recipe-section {
@@ -1335,12 +1309,6 @@ footer {
     .victory-cell {
         width: 12px;
         height: 12px;
-    }
-
-    .star-ingredient,
-    .food-waste {
-        margin-top: 6px;
-        margin-bottom: 4px;
     }
 
     .nav-btn,
