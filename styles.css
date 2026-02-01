@@ -810,6 +810,11 @@ footer {
     margin-top: 16px;
 }
 
+.help-content ul {
+    margin: 8px 0 12px 1.2em;
+    padding-left: 0;
+}
+
 .help-example {
     text-align: center;
     margin: 12px 0;

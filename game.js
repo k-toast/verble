@@ -935,20 +935,24 @@ function startCountdownTimer() {
 function getHelpContent() {
     return `
         <div class="help-content">
-            <p>Add to your recipe by typing and submitting any food you want to use (i.e. <strong>ZUCCHINI</strong>).</p>
-            <p>The letters in your ingredient will be matched against the letters in the challenge dish, removing any that match.</p>
-            <p class="help-label">Example:</p>
-            <p>Adding the ingredient <strong>ZUCCHINI</strong> to...</p>
+            <p>Complete the puzzle by entering ingredients that share letters with the dish of the day.</p>
+            <p>Each time you submit a valid ingredient, its letters will match against the dish one at a time, left to right.</p>
+            <p class="help-label">A valid ingredient is...</p>
+            <ul>
+                <li>Food</li>
+                <li>12 letters or less</li>
+            </ul>
+            <p class="help-label">Example</p>
+            <p>Adding the ingredient <strong>BANANA</strong> to this:</p>
             <div class="help-example">
-                <img src="assets/clean-before.png" alt="Challenge dish before: CLEAN FOCUSED SUSHI" class="help-image">
+                <img src="assets/clean-before.png" alt="Challenge dish before: APPEALING CANNOLI" class="help-image">
             </div>
-            <p>Would produce...</p>
+            <p>Would produce this:</p>
             <div class="help-example">
-                <img src="assets/clean-after.png" alt="Challenge dish after: some letters matched and removed, Z and I marked as Food Waste" class="help-image">
+                <img src="assets/clean-after.png" alt="Challenge dish after: BANANA letters matched" class="help-image">
             </div>
-            <p>With the matching <strong>U, C, C, H, N,</strong> and <strong>I</strong> removing those letters from the dish, and the unmatched <strong>Z</strong> and other <strong>I</strong> becoming food waste.</p>
-            <p>Food waste won't stop you from completing the challenge, but it's not a good look for an aspiring chef!</p>
-            <p>Successfully complete the challenge dish by matching all of its letters in five ingredients or less.</p>
+            <p>With the <strong>A</strong>, <strong>N</strong>, <strong>A</strong>, <strong>N</strong>, and <strong>A</strong> matching and the <strong>B</strong> discarded.</p>
+            <p>A dish is prepared successfully if all of its letters are matched using five ingredients or less.</p>
         </div>
     `;
 }
