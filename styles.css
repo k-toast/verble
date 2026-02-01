@@ -5,9 +5,9 @@
 
 :root {
     /* Background & surface */
-    --color-background:   #F6F1E7;
-    --color-surface:      #FBF8F1;
-    --color-surface-elevated: #FDFBF7;
+    --color-background:   #F5F4F1;
+    --color-surface:      #FAF9F6;
+    --color-surface-elevated: #FCFBF9;
 
     /* Text hierarchy */
     --color-primary:     #111827;
