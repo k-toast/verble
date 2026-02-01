@@ -726,30 +726,44 @@ function showGameOver() {
     }
 }
 
-// Generate share text
+// Generate share text — matches victory modal: message, grid (green/black only, no blanks), key ingredient, food waste
 function generateShareText() {
-    const result = gameState.isWon ? 'Win' : 'Loss';
     const puzzleNum = getPuzzleNumber(currentPuzzle);
     const moves = gameState.moves;
-    const dishName = gameState.noun || '';
     const wastePercent = getWastePercent();
-    
-    let text = `dish of the day #${puzzleNum}\n`;
+    const starIngredient = getStarIngredient() || '???';
+
+    let text = `dish of the day #${puzzleNum}\n\n`;
+
     if (gameState.isWon) {
-        text += `${dishName} prepared! ${moves} ingredients, Waste: ${wastePercent}%\n\n`;
+        const adj = (gameState.adjectives[0] || '').toLowerCase();
+        const noun = (gameState.noun || '').toLowerCase();
+        const article = getIndefiniteArticle(gameState.adjectives[0] || '');
+        if (gameState.isElegant) {
+            text += `You prepared ${article} ${adj} ${noun} with only ${moves} ingredients!\n\n`;
+        } else {
+            text += `You prepared ${article} ${adj} ${noun}!\n\n`;
+        }
     } else {
-        text += `${result} - ${moves} ingredients, Waste: ${wastePercent}%\n\n`;
+        text += `The dish, she is ruined. (${moves} ingredients)\n\n`;
     }
-    
-    gameState.history.forEach(item => {
-        const boxes = item.result.map(r => {
-            const status = r.status || 'plain';
-            if (status === 'adj') return '🟩';
-            if (status === 'noun') return '⬜';
-            return '⬛';
+
+    text += 'secret recipe\n\n';
+
+    // Grid: only matched (green) and unmatched (black), no blanks
+    gameState.history.forEach((item) => {
+        const boxes = item.result.map(cell => {
+            const status = cell.status || 'plain';
+            if (status === 'adj' || status === 'noun') return '🟩';
+            return '⬛';  // black for unmatched
         }).join('');
-        text += `${boxes}\n`;
+        text += boxes + '\n';
     });
+
+    if (gameState.isWon) {
+        text += `\nKey ingredient: ${starIngredient}\n`;
+        text += `⬛ Food waste: ${wastePercent}%`;
+    }
 
     return text;
 }
@@ -996,8 +1010,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ingredient = input.value.trim();
         if (ingredient) {
             const accepted = await processIngredient(ingredient);
-            if (accepted) input.value = '';
-            // Don't auto-focus - let user tap when ready (prevents iOS keyboard flicker)
+            if (accepted) {
+                input.value = '';
+                if (!gameState.isWon && !gameState.isLost) input.focus();
+            }
         }
     });
 
