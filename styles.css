@@ -223,7 +223,7 @@ h1 {
     background: var(--color-surface-elevated);
     padding: 20px 18px;
     border-radius: 4px;
-    border: 1px solid var(--color-border-surface);
+    border: 2px solid var(--color-border-surface);
 }
 
 /* Puzzle display — two lines: adjectives, then noun, both centered */
@@ -231,7 +231,7 @@ h1 {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 12px;
 }
 
 .puzzle-line {
@@ -241,14 +241,24 @@ h1 {
     justify-content: center;
     gap: 2px 6px;
     font-size: clamp(1.15em, 4.2vw, 1.75em);
-    letter-spacing: 0.06em;
     font-family: 'Outfit', sans-serif;
     font-weight: 700;
     line-height: 1.4;
     color: var(--color-primary);
 }
 
+/* Fixed cell size so letters and green boxes occupy same space (no layout shift) */
 .puzzle-letter {
+    width: 0.95em;
+    height: 0.95em;
+    min-width: 20px;
+    min-height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 4px;
+    border: 2px solid var(--color-border);
     transition: opacity 0.15s ease;
 }
 
@@ -262,12 +272,10 @@ h1 {
     opacity: 1;
 }
 
-.puzzle-letter-matched {
-    opacity: 0.5;
-    color: var(--color-primary);
-    text-decoration: line-through;
-    text-decoration-thickness: 1px;
-    text-decoration-color: var(--color-muted);
+/* Matched letter — blank green box (same cell size as letters) */
+.puzzle-letter-matched.puzzle-matched-box {
+    background: var(--color-success);
+    border-color: var(--color-success);
 }
 
 /* ==========================================================================
@@ -488,7 +496,7 @@ header.solved .dish-name {
     border-radius: 4px;
     background: var(--color-surface);
     color: var(--color-primary);
-    border: 1px solid var(--color-border);
+    border: 2px solid var(--color-border);
     transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 }
 
@@ -498,19 +506,19 @@ header.solved .dish-name {
     }
 }
 
-/* Tile reveal animation (<200ms) */
-.recipe-slot.revealing .letter-box {
-    animation: tileReveal 0.15s ease-out;
+/* Letter grow animation — appears letter-by-letter on submission */
+.letter-box.letter-grow {
+    animation: letterGrow 0.12s ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .recipe-slot.revealing .letter-box {
+    .letter-box.letter-grow {
         animation: none;
     }
 }
 
-@keyframes tileReveal {
-    from { opacity: 0; transform: scale(0.96); }
+@keyframes letterGrow {
+    from { opacity: 0; transform: scale(0.4); }
     to { opacity: 1; transform: scale(1); }
 }
 
@@ -530,8 +538,9 @@ header.solved .dish-name {
     font-weight: 500;
 }
 
-/* Star ingredient display */
+/* Star ingredient display — hidden on main screen, kept for future use */
 .star-ingredient {
+    display: none;
     font-size: 0.7em;
     font-weight: 600;
     color: var(--color-secondary);
@@ -542,8 +551,9 @@ header.solved .dish-name {
     flex-shrink: 0;
 }
 
-/* Food waste display */
+/* Food waste display — hidden on main screen, kept for future use */
 .food-waste {
+    display: none;
     font-size: 0.7em;
     font-weight: 600;
     color: var(--color-secondary);
@@ -828,7 +838,7 @@ footer {
     width: 20px;
     height: 20px;
     border-radius: 3px;
-    border: 1px solid var(--color-border);
+    border: 2px solid var(--color-border);
 }
 
 .victory-cell-unused {

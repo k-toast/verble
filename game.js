@@ -21,6 +21,10 @@ let allowedFoods = null;
 let blockedFoods = new Set();
 let lastRejectedIngredient = null;
 
+// Animation state for letter-by-letter reveal
+let animationState = null; // { ingredient, result, revealedCount, adjArrays, nounArray }
+const LETTER_REVEAL_MS = 300;
+
 // Get real Helsinki timezone date string (YYYY-MM-DD) - without debug override
 function getRealHelsinkiDate() {
     const now = new Date();
@@ -102,15 +106,15 @@ function findTodayPuzzle() {
     return puzzles.find(p => p.date === today);
 }
 
-// Normalize puzzle to new format (adjectives array - 2 adjectives)
+// Normalize puzzle to new format (adjectives array - 1 adjective)
 function getPuzzleAdjectives(puzzle) {
-    if (Array.isArray(puzzle.adjectives) && puzzle.adjectives.length >= 2) {
-        return puzzle.adjectives.slice(0, 2);
+    if (Array.isArray(puzzle.adjectives) && puzzle.adjectives.length >= 1) {
+        return puzzle.adjectives.slice(0, 1);
     }
     if (puzzle.adjective) {
-        return [puzzle.adjective, puzzle.adjective];
+        return [puzzle.adjective];
     }
-    return ['', ''];
+    return [''];
 }
 
 // Get 1-based puzzle number from puzzles array
@@ -133,10 +137,10 @@ function loadSavedState(puzzle) {
         if (!parsed || typeof parsed !== 'object') return null;
 
         let remainingAdjectives;
-        if (Array.isArray(parsed.remainingAdjectives) && parsed.remainingAdjectives.length >= 2) {
-            remainingAdjectives = parsed.remainingAdjectives.slice(0, 2).map((r, i) => r || adjectives[i]);
+        if (Array.isArray(parsed.remainingAdjectives) && parsed.remainingAdjectives.length >= 1) {
+            remainingAdjectives = parsed.remainingAdjectives.slice(0, 1).map((r, i) => r || adjectives[i]);
         } else if (parsed.remainingAdjective !== undefined) {
-            remainingAdjectives = [parsed.remainingAdjective || adjectives[0], adjectives[1] || ''];
+            remainingAdjectives = [parsed.remainingAdjective || adjectives[0]];
         } else {
             remainingAdjectives = adjectives.slice();
         }
@@ -244,7 +248,7 @@ function getLetterStatesForDisplay() {
     const noun = gameState.noun || '';
     const remainingAdjs = gameState.remainingAdjectives || [];
     const remainingNoun = (gameState.remainingNoun || '').trim();
-    const result = { adj1: [], adj2: [], noun: [] };
+    const result = { adj: [], noun: [] };
 
     function processWord(original, remaining) {
         const letters = [];
@@ -261,36 +265,39 @@ function getLetterStatesForDisplay() {
         return letters;
     }
 
-    result.adj1 = processWord((adjectives[0] || '').trim(), (remainingAdjs[0] || '').trim());
-    result.adj2 = processWord((adjectives[1] || '').trim(), (remainingAdjs[1] || '').trim());
+    result.adj = processWord((adjectives[0] || '').trim(), (remainingAdjs[0] || '').trim());
     result.noun = processWord(noun.trim(), remainingNoun);
     return result;
 }
 
-// Build puzzle display: two lines — adjectives on line 1, noun on line 2, both centered
+// Build puzzle display: two lines — adjective on line 1, noun on line 2, both centered
 function renderPuzzleStack() {
     const stack = document.getElementById('puzzleStack');
     if (!stack) return;
 
     const letterStates = getLetterStatesForDisplay();
-    const adjLetters = [...letterStates.adj1, { char: ' ', state: 'active' }, ...letterStates.adj2];
-    const nounLetters = letterStates.noun;
 
     function appendLine(letters) {
         const line = document.createElement('div');
         line.className = 'puzzle-line';
         letters.forEach(({ char, state }) => {
-            const span = document.createElement('span');
-            span.className = `puzzle-letter puzzle-letter-${state}`;
-            span.textContent = char === ' ' ? '\u00A0' : char;
-            line.appendChild(span);
+            if (state === 'matched') {
+                const box = document.createElement('div');
+                box.className = 'puzzle-letter puzzle-letter-matched puzzle-matched-box';
+                line.appendChild(box);
+            } else {
+                const span = document.createElement('span');
+                span.className = `puzzle-letter puzzle-letter-${state}`;
+                span.textContent = char === ' ' ? '\u00A0' : char;
+                line.appendChild(span);
+            }
         });
         stack.appendChild(line);
     }
 
     stack.innerHTML = '';
-    appendLine(adjLetters);
-    appendLine(nounLetters);
+    appendLine(letterStates.adj);
+    appendLine(letterStates.noun);
 }
 
 // Title-case a word for display (e.g. EARTHY -> Earthy)
@@ -399,13 +406,6 @@ function updatePreviousButtonState() {
     if (!prevBtn) return;
 
     const currentDate = getHelsinkiDate();
-    const realToday = getRealHelsinkiDate();
-    
-    if (currentDate === realToday) {
-        prevBtn.disabled = true;
-        return;
-    }
-
     const prevDate = decrementDate(currentDate);
     const prevPuzzle = puzzles.find(p => p.date === prevDate);
     
@@ -453,12 +453,38 @@ function updateInputValidationState() {
     }
 }
 
-// Process an ingredient - letters match against combined puzzle left-to-right (adj1 → adj2 → noun)
-// Returns true if accepted, false if rejected (validation failure)
-function processIngredient(ingredient) {
+// Sleep helper for animation delays
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Process one letter: match against puzzle, update arrays, return status
+function matchOneLetter(letter, adjArrays, nounArray) {
+    let foundInAdjective = false;
+    for (let adjIdx = 0; adjIdx < adjArrays.length; adjIdx++) {
+        for (let j = 0; j < adjArrays[adjIdx].length; j++) {
+            if (adjArrays[adjIdx][j] === letter) {
+                adjArrays[adjIdx].splice(j, 1);
+                return { status: 'adj' };
+            }
+        }
+    }
+    for (let j = 0; j < nounArray.length; j++) {
+        if (nounArray[j] === letter) {
+            nounArray.splice(j, 1);
+            return { status: 'noun' };
+        }
+    }
+    return { status: 'plain' };
+}
+
+// Process an ingredient - letters match against combined puzzle left-to-right (adj → noun)
+// Returns a Promise that resolves to true if accepted, false if rejected (validation failure)
+async function processIngredient(ingredient) {
     if (gameState.isWon || gameState.isLost) return false;
 
     const input = document.getElementById('ingredientInput');
+    const submitBtn = document.getElementById('submitBtn');
     ingredient = ingredient.toUpperCase().trim();
     showInputFeedback('');
 
@@ -505,51 +531,49 @@ function processIngredient(ingredient) {
 
     lastRejectedIngredient = null;
     if (input) input.setAttribute('aria-invalid', 'false');
-    const result = [];
+
     const adjArrays = gameState.remainingAdjectives.map(a => (a || '').split(''));
-    let nounArray = (gameState.remainingNoun || '').split('');
+    const nounArray = (gameState.remainingNoun || '').split('');
+    const result = [];
+
+    // Disable input during animation
+    if (input) input.disabled = true;
+    if (submitBtn) submitBtn.disabled = true;
+
+    animationState = {
+        ingredient,
+        result: [],
+        revealedCount: 0,
+        adjArrays,
+        nounArray
+    };
 
     for (let i = 0; i < ingredient.length; i++) {
         const letter = ingredient[i];
-        let found = false;
-        let foundInAdjective = false;
+        const { status } = matchOneLetter(letter, adjArrays, nounArray);
+        result.push({ letter, status });
 
-        for (let adjIdx = 0; adjIdx < adjArrays.length && !found; adjIdx++) {
-            for (let j = 0; j < adjArrays[adjIdx].length; j++) {
-                if (adjArrays[adjIdx][j] === letter) {
-                    adjArrays[adjIdx].splice(j, 1);
-                    found = true;
-                    foundInAdjective = true;
-                    break;
-                }
-            }
+        // Sync game state so renderPuzzleStack shows the green box for this match
+        gameState.remainingAdjectives = adjArrays.map(a => a.join(''));
+        gameState.remainingNoun = nounArray.join('');
+
+        animationState.result = result;
+        animationState.revealedCount = i + 1;
+
+        renderPuzzleStack();
+        loadRecipe();
+
+        const recipeContainer = document.getElementById('recipeContainer');
+        if (recipeContainer && i === 0) {
+            recipeContainer.lastElementChild?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         }
 
-        if (!found) {
-            for (let j = 0; j < nounArray.length; j++) {
-                if (nounArray[j] === letter) {
-                    nounArray.splice(j, 1);
-                    found = true;
-                    foundInAdjective = false;
-                    break;
-                }
-            }
-        }
-
-        if (found) {
-            result.push({ letter: letter, status: foundInAdjective ? 'adj' : 'noun' });
-        } else {
-            result.push({ letter: letter, status: 'plain' });
-        }
+        await sleep(LETTER_REVEAL_MS);
     }
 
-    gameState.remainingAdjectives = adjArrays.map(a => a.join(''));
-    gameState.remainingNoun = nounArray.join('');
+    animationState = null;
     gameState.moves++;
-    gameState.history.push({
-        ingredient: ingredient,
-        result: result
-    });
+    gameState.history.push({ ingredient, result });
 
     const allAdjsEmpty = gameState.remainingAdjectives.every(r => r.replace(/\s/g, '') === '');
     const nounEmpty = (gameState.remainingNoun || '').replace(/\s/g, '') === '';
@@ -563,28 +587,31 @@ function processIngredient(ingredient) {
 
     saveGameState();
     updateDisplay();
-    loadRecipe(gameState.history.length - 1);
+    loadRecipe();
     return true;
 }
 
 // Load and display recipe (history) - 5 slots with food waste
-// newlyAddedIndex: optional 0-based index of the slot just added (for reveal animation)
-function loadRecipe(newlyAddedIndex) {
+// Handles animationState: during letter-by-letter reveal, renders partial slot with grow animation on new letter
+function loadRecipe() {
     const container = document.getElementById('recipeContainer');
     container.innerHTML = '';
 
     const maxSlots = 5;
+    const historyCount = gameState.history.length;
+    const animating = animationState !== null;
+    const totalSlots = animating ? historyCount + 1 : historyCount;
 
     for (let i = 0; i < maxSlots; i++) {
         const slotDiv = document.createElement('div');
-        slotDiv.className = 'recipe-slot' + (i === newlyAddedIndex ? ' revealing' : '');
+        slotDiv.className = 'recipe-slot';
         
         const numberDiv = document.createElement('div');
         numberDiv.className = 'recipe-number';
         numberDiv.textContent = `${i + 1}.`;
         slotDiv.appendChild(numberDiv);
         
-        if (i < gameState.history.length) {
+        if (i < historyCount) {
             const item = gameState.history[i];
             const itemDiv = document.createElement('div');
             itemDiv.className = 'recipe-item';
@@ -598,6 +625,21 @@ function loadRecipe(newlyAddedIndex) {
             });
             
             slotDiv.appendChild(itemDiv);
+        } else if (animating && i === historyCount) {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'recipe-item';
+            
+            const partial = animationState.result;
+            partial.forEach((letterData, idx) => {
+                const box = document.createElement('div');
+                const statusClass = letterData.status || 'plain';
+                const isNew = idx === animationState.revealedCount - 1;
+                box.className = 'letter-box ' + statusClass + (isNew ? ' letter-grow' : '');
+                box.textContent = letterData.letter;
+                itemDiv.appendChild(box);
+            });
+            
+            slotDiv.appendChild(itemDiv);
         } else {
             const placeholder = document.createElement('div');
             placeholder.className = 'recipe-placeholder';
@@ -606,10 +648,6 @@ function loadRecipe(newlyAddedIndex) {
         }
         
         container.appendChild(slotDiv);
-
-        if (i === newlyAddedIndex) {
-            slotDiv.addEventListener('animationend', () => slotDiv.classList.remove('revealing'), { once: true });
-        }
     }
 
     const starDiv = document.getElementById('starIngredientDisplay');
@@ -628,8 +666,7 @@ function loadRecipe(newlyAddedIndex) {
 // Show game over message as modal
 function showGameOver() {
     if (gameState.isWon) {
-        const adj1 = (gameState.adjectives[0] || '').toLowerCase();
-        const adj2 = (gameState.adjectives[1] || '').toLowerCase();
+        const adj = (gameState.adjectives[0] || '').toLowerCase();
         const noun = (gameState.noun || '').toLowerCase();
         const article = getIndefiniteArticle(gameState.adjectives[0] || '');
         const wastePercent = getWastePercent();
@@ -639,10 +676,10 @@ function showGameOver() {
         let message;
         if (gameState.isElegant) {
             title = 'An elegant dish!';
-            message = `You prepared ${article} ${adj1} and ${adj2} ${noun} with only ${gameState.moves} ingredients!`;
+            message = `You prepared ${article} ${adj} ${noun} with only ${gameState.moves} ingredients!`;
         } else {
             title = 'An excellent dish!';
-            message = `You prepared ${article} ${adj1} and ${adj2} ${noun}!`;
+            message = `You prepared ${article} ${adj} ${noun}!`;
         }
 
         const gridHTML = buildVictoryGridHTML();
@@ -951,10 +988,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const input = document.getElementById('ingredientInput');
     const submitBtn = document.getElementById('submitBtn');
 
-    submitBtn.addEventListener('click', () => {
+    submitBtn.addEventListener('click', async () => {
         const ingredient = input.value.trim();
-        if (ingredient && processIngredient(ingredient)) {
-            input.value = '';
+        if (ingredient) {
+            const accepted = await processIngredient(ingredient);
+            if (accepted) input.value = '';
             // Don't auto-focus - let user tap when ready (prevents iOS keyboard flicker)
         }
     });
@@ -992,7 +1030,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         openModal('About Dish of the Day', `<div class="about-content">
             <p>A daily word puzzle by Mike Kayatta.</p>
             <p>You are playing an early test version, so you might encounter unexpected bugs or changes, unfinished features, or weird placeholders.</p>
-            <p>Right now, there are 30 puzzles. Eventually, they will be served daily, but for now you can feel free to cheat using the <strong>&lt;</strong> <strong>R</strong> and <strong>&gt;</strong> buttons at the bottom of the game, which move between the available puzzles and even allow you to replay.</p>
+            <p>Right now, there are 50 puzzles. Eventually, they will be served daily, but for now you can feel free to cheat using the <strong>&lt;</strong> <strong>R</strong> and <strong>&gt;</strong> buttons at the bottom of the game, which move between the available puzzles and even allow you to replay.</p>
         </div>`);
     });
     
