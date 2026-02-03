@@ -1016,6 +1016,12 @@ function loadPuzzle(puzzle) {
 
 // TODAY button: go to today's puzzle (and retry if already on today)
 function handleTodayClick() {
+    // Always clear debug date override so "today" means real today, not a stored override
+    debugDateOverride = null;
+    try {
+        localStorage.removeItem('dish_of_the_day_debug_date');
+    } catch (e) {}
+
     const today = getRealHelsinkiDate();
     if (currentView === 'archive') {
         const todayPuzzle = findTodayPuzzle();
