@@ -1409,6 +1409,12 @@ footer {
         height: 32px;
         font-size: 0.9em;
     }
+
+    .footer-left .nav-btn {
+        width: auto;
+        min-width: 32px;
+        padding: 0 8px;
+    }
 }
 
 /* ==========================================================================
@@ -1485,6 +1491,12 @@ footer {
         height: 28px;
         font-size: 0.8em;
     }
+
+    .footer-left .nav-btn {
+        width: auto;
+        min-width: 28px;
+        padding: 0 6px;
+    }
 }
 
 /* ==========================================================================
@@ -1550,6 +1562,12 @@ footer {
     .icon-btn {
         width: 28px;
         height: 28px;
+    }
+
+    .footer-left .nav-btn {
+        width: auto;
+        min-width: 28px;
+        padding: 0 6px;
     }
 }
 
