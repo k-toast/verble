@@ -20,6 +20,8 @@ let countdownInterval = null;
 let allowedFoods = null;
 let blockedFoods = new Set();
 let lastRejectedIngredient = null;
+let lastAttemptWasNewBest = false;
+let currentView = 'game'; // 'game' | 'archive'
 
 // Animation state for letter-by-letter reveal
 let animationState = null; // { ingredient, result, revealedCount, adjArrays, nounArray }
@@ -165,6 +167,9 @@ function loadSavedState(puzzle) {
 
 // Initialize game
 function initGame() {
+    currentView = 'game';
+    document.body.classList.remove('archive-view');
+    document.getElementById('archiveContainer').style.display = 'none';
     try {
         const savedDebugDate = localStorage.getItem('dish_of_the_day_debug_date');
         if (savedDebugDate) {
@@ -184,12 +189,13 @@ function initGame() {
         document.getElementById('noPuzzleMessage').style.display = 'block';
         document.getElementById('gameContainer').style.display = 'none';
         updatePreviousButtonState();
+        updateFooterTodayButton();
         startCountdownTimer();
         return;
     }
 
     document.getElementById('noPuzzleMessage').style.display = 'none';
-    document.getElementById('gameContainer').style.display = 'block';
+    document.getElementById('gameContainer').style.display = 'flex';
 
     const puzzleDate = currentPuzzle.date;
     document.getElementById('dateDisplay').textContent = `#${getPuzzleNumber(currentPuzzle)}`;
@@ -208,7 +214,32 @@ function initGame() {
     gameState.puzzleDate = puzzleDate;
     updateDisplay();
     loadRecipe();
+    updatePuzzleLabel();
+    updateFooterTodayButton();
     startCountdownTimer();
+}
+
+function updatePuzzleLabel() {
+    const el = document.getElementById('puzzleLabel');
+    const countdownWrap = document.getElementById('countdownInLabel');
+    if (!el || !currentPuzzle) return;
+    const today = getHelsinkiDate();
+    const isToday = currentPuzzle.date === today;
+    el.textContent = isToday ? "TODAY'S CHALLENGE" : 'REPLAY CHALLENGE';
+    if (countdownWrap) countdownWrap.style.display = isToday ? '' : 'none';
+}
+
+// Show TODAY'S DISH button only when on archive screen or viewing a replay (not today's puzzle)
+function updateFooterTodayButton() {
+    const btn = document.getElementById('retryBtn');
+    if (!btn) return;
+    const onArchiveScreen = currentView === 'archive';
+    const onReplayPuzzle = currentView === 'game' && currentPuzzle && currentPuzzle.date !== getHelsinkiDate();
+    const show = onArchiveScreen || onReplayPuzzle;
+    btn.style.display = show ? '' : 'none';
+    btn.textContent = "TODAY'S DISH";
+    btn.setAttribute('aria-label', "Today's dish");
+    btn.setAttribute('title', "Today's dish");
 }
 
 function resetGameState() {
@@ -243,6 +274,67 @@ function saveGameState() {
 }
 
 const STATS_KEY = 'dish_of_the_day_stats';
+const ATTEMPTS_KEY = 'dish_of_the_day_attempts';
+
+// Load attempts data (per-puzzle first + best)
+function getAttemptsData() {
+    try {
+        const raw = localStorage.getItem(ATTEMPTS_KEY);
+        if (!raw) return {};
+        const data = JSON.parse(raw);
+        return typeof data === 'object' && data !== null ? data : {};
+    } catch (_) {
+        return {};
+    }
+}
+
+// Save attempts data
+function setAttemptsData(data) {
+    try {
+        localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(data));
+    } catch (e) {
+        console.error('Error saving attempts:', e);
+    }
+}
+
+// Returns true if (movesA, wasteA) is strictly better than (movesB, wasteB). Ingredients take priority.
+function isBetterRun(movesA, wasteA, movesB, wasteB) {
+    return (movesA < movesB) || (movesA === movesB && wasteA < wasteB);
+}
+
+// Record first/best attempt for this puzzle. Call on game end (win or loss). Returns { isNewBest } for wins.
+function recordAttempts() {
+    if (!gameState.isWon && !gameState.isLost) return { isNewBest: false };
+    const date = gameState.puzzleDate;
+    const moves = gameState.moves;
+    const waste = getWastePercent();
+    const won = gameState.isWon;
+
+    const data = getAttemptsData();
+    const existing = data[date];
+    let isNewBest = false;
+
+    if (!existing) {
+        data[date] = {
+            first: { moves, waste, won },
+            best: won ? { moves, waste } : null
+        };
+        if (won) isNewBest = true;
+    } else {
+        if (won) {
+            const prevBest = existing.best;
+            const thisRun = { moves, waste };
+            if (!prevBest || isBetterRun(moves, waste, prevBest.moves, prevBest.waste)) {
+                data[date].best = thisRun;
+                isNewBest = true;
+            } else {
+                data[date].best = prevBest;
+            }
+        }
+    }
+    setAttemptsData(data);
+    return { isNewBest };
+}
 
 // Record a completed game (win or loss) for statistics
 function recordGameCompleted() {
@@ -480,16 +572,10 @@ function updateDisplay() {
     updatePreviousButtonState();
 }
 
-// Update Previous button enabled/disabled state
+// Update nav button state (ARCHIVE always enabled)
 function updatePreviousButtonState() {
     const prevBtn = document.getElementById('prevBtn');
-    if (!prevBtn) return;
-
-    const currentDate = getHelsinkiDate();
-    const prevDate = decrementDate(currentDate);
-    const prevPuzzle = puzzles.find(p => p.date === prevDate);
-    
-    prevBtn.disabled = !prevPuzzle;
+    if (prevBtn) prevBtn.disabled = false;
 }
 
 // Show inline feedback near input
@@ -666,7 +752,11 @@ async function processIngredient(ingredient) {
     }
 
     saveGameState();
-    if (gameState.isWon || gameState.isLost) recordGameCompleted();
+    if (gameState.isWon || gameState.isLost) {
+        recordGameCompleted();
+        const result = recordAttempts();
+        lastAttemptWasNewBest = result.isNewBest;
+    }
     updateDisplay();
     loadRecipe();
     return true;
@@ -762,22 +852,35 @@ function showGameOver() {
             title = 'An excellent dish!';
             message = `You prepared ${article} ${adj} ${noun}!`;
         }
+        const isReplayPuzzle = currentPuzzle && currentPuzzle.date !== getHelsinkiDate();
+        if (isReplayPuzzle && lastAttemptWasNewBest) title += ' - A NEW BEST!';
 
         const gridHTML = buildVictoryGridHTML();
         const wasteLabel = wastePercent <= 25 ? `Food waste: ${wastePercent}% 🏆` : `Food waste: ${wastePercent}%`;
+        const tryAgainBtn = isReplayPuzzle
+            ? '<button id="modalRetryBtn" class="victory-share-btn">Try again</button>'
+            : '';
         const content = `
             <p class="victory-message">${message}</p>
             ${gridHTML}
             <p class="victory-star">Key ingredient: ${starIngredient} 🔑</p>
             <p class="victory-waste">${wasteLabel}</p>
             <div class="victory-actions">
+                ${tryAgainBtn}
                 <button id="modalShareBtn" class="victory-share-btn">Share</button>
             </div>
         `;
         openModal(title, content);
         
         setTimeout(() => {
+            const modalRetryBtn = document.getElementById('modalRetryBtn');
             const modalShareBtn = document.getElementById('modalShareBtn');
+            if (modalRetryBtn) {
+                modalRetryBtn.addEventListener('click', () => {
+                    closeModal();
+                    handleRetry();
+                });
+            }
             if (modalShareBtn) {
                 modalShareBtn.addEventListener('click', handleShare);
             }
@@ -906,10 +1009,31 @@ function loadPuzzle(puzzle) {
     gameState.puzzleDate = puzzleDate;
     updateDisplay();
     loadRecipe();
+    updatePuzzleLabel();
+    updateFooterTodayButton();
     updatePreviousButtonState();
 }
 
-// Handle retry button
+// TODAY button: go to today's puzzle (and retry if already on today)
+function handleTodayClick() {
+    const today = getRealHelsinkiDate();
+    if (currentView === 'archive') {
+        const todayPuzzle = findTodayPuzzle();
+        if (todayPuzzle) {
+            loadPuzzle(todayPuzzle);
+            showGameView();
+            updatePuzzleLabel();
+        }
+        return;
+    }
+    if (currentPuzzle && currentPuzzle.date !== today) {
+        resetDebugDate();
+        return;
+    }
+    handleRetry();
+}
+
+// Handle retry (same puzzle, clear state)
 function handleRetry() {
     if (!currentPuzzle) return;
 
@@ -933,6 +1057,81 @@ function handleRetry() {
     input.disabled = false;
     submitBtn.disabled = false;
     // Don't auto-focus input - let user tap when ready (avoids mobile keyboard popup)
+}
+
+// Show archive view and render list
+function showArchiveView() {
+    currentView = 'archive';
+    document.body.classList.add('archive-view');
+    document.getElementById('noPuzzleMessage').style.display = 'none';
+    document.getElementById('gameContainer').style.display = 'none';
+    document.getElementById('archiveContainer').style.display = 'flex';
+    renderArchiveList();
+    updateFooterTodayButton();
+}
+
+// Show game view (from archive or init)
+function showGameView() {
+    currentView = 'game';
+    document.body.classList.remove('archive-view');
+    document.getElementById('archiveContainer').style.display = 'none';
+    const hasPuzzle = currentPuzzle && puzzles.find(p => p.date === currentPuzzle.date);
+    if (!hasPuzzle) {
+        document.getElementById('noPuzzleMessage').style.display = 'block';
+        document.getElementById('gameContainer').style.display = 'none';
+    } else {
+        document.getElementById('noPuzzleMessage').style.display = 'none';
+        document.getElementById('gameContainer').style.display = 'flex';
+    }
+    updateFooterTodayButton();
+}
+
+// Build and render archive list (all past puzzles: date < today, with or without attempts)
+function renderArchiveList() {
+    const listEl = document.getElementById('archiveList');
+    if (!listEl) return;
+    const attempts = getAttemptsData();
+    const today = getRealHelsinkiDate();
+    const pastPuzzles = puzzles.filter(p => p.date < today).sort((a, b) => b.date.localeCompare(a.date));
+    listEl.innerHTML = '';
+    pastPuzzles.forEach(puzzle => {
+        const date = puzzle.date;
+        const entry = attempts[date];
+        const num = getPuzzleNumber(puzzle);
+        const name = [...getPuzzleAdjectives(puzzle), puzzle.noun].filter(Boolean).map(w => titleCase(w)).join(' ');
+        let row1Ingredients, row1Waste, row2Text;
+        if (entry && entry.first) {
+            const first = entry.first;
+            const best = entry.best;
+            row1Ingredients = first.won ? String(first.moves) : 'fail';
+            row1Waste = first.won ? `${first.waste}%` : 'fail';
+            row2Text = best
+                ? `Best attempt: ingredients used: ${best.moves}, food waste: ${best.waste}%`
+                : 'Best attempt: —';
+        } else {
+            row1Ingredients = '—';
+            row1Waste = '—';
+            row2Text = 'Best attempt: —';
+        }
+        const item = document.createElement('div');
+        item.className = 'archive-item';
+        item.dataset.date = date;
+        item.innerHTML = `
+            <div class="archive-item-row1">#${num} ${name}, ingredients used: ${row1Ingredients}, food waste: ${row1Waste}</div>
+            <div class="archive-item-row2">${row2Text}</div>
+        `;
+        item.addEventListener('click', () => {
+            loadPuzzle(puzzle);
+            showGameView();
+            updatePuzzleLabel();
+        });
+        listEl.appendChild(item);
+    });
+}
+
+// ARCHIVE button: show archive view
+function handleArchive() {
+    showArchiveView();
 }
 
 // Reset debug date override
@@ -978,10 +1177,6 @@ function handleNavigate(direction) {
 
 function handlePrevious() {
     handleNavigate('prev');
-}
-
-function handleNext() {
-    handleNavigate('next');
 }
 
 // Countdown timer to midnight Helsinki time
@@ -1209,11 +1404,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Navigation buttons
     const prevBtn = document.getElementById('prevBtn');
     const retryBtn = document.getElementById('retryBtn');
-    const nextBtn = document.getElementById('nextBtn');
     
-    prevBtn.addEventListener('click', handlePrevious);
-    retryBtn.addEventListener('click', handleRetry);
-    nextBtn.addEventListener('click', handleNext);
+    prevBtn.addEventListener('click', handleArchive);
+    retryBtn.addEventListener('click', handleTodayClick);
 
     // Reset to Today button
     const resetToTodayBtn = document.getElementById('resetToTodayBtn');
