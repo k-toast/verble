@@ -1112,7 +1112,16 @@ function showStatsModal() {
         const input = document.getElementById('statsResetInput');
         const btn = document.getElementById('statsResetBtn');
         if (btn) btn.addEventListener('click', handleStatsReset);
-        if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleStatsReset(); });
+        if (input) {
+            input.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleStatsReset(); });
+            if (window.matchMedia('(max-width: 768px)').matches) {
+                input.addEventListener('focus', () => {
+                    requestAnimationFrame(() => {
+                        input.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                    });
+                });
+            }
+        }
     }, 0);
 }
 
