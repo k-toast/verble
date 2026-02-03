@@ -242,6 +242,89 @@ function saveGameState() {
     }
 }
 
+const STATS_KEY = 'dish_of_the_day_stats';
+
+// Record a completed game (win or loss) for statistics
+function recordGameCompleted() {
+    if (!gameState.isWon && !gameState.isLost) return;
+    try {
+        const wastePercent = getWastePercent();
+        const entry = {
+            date: gameState.puzzleDate,
+            won: gameState.isWon,
+            moves: gameState.moves,
+            wastePercent,
+            elegant: !!gameState.isElegant,
+            trophy: wastePercent <= 25
+        };
+        let data = { games: [] };
+        try {
+            const raw = localStorage.getItem(STATS_KEY);
+            if (raw) data = JSON.parse(raw);
+            if (!Array.isArray(data.games)) data.games = [];
+        } catch (_) {}
+        data.games.push(entry);
+        localStorage.setItem(STATS_KEY, JSON.stringify(data));
+    } catch (e) {
+        console.error('Error recording stats:', e);
+    }
+}
+
+// Load and compute stats for the stats modal
+function getStats() {
+    let games = [];
+    try {
+        const raw = localStorage.getItem(STATS_KEY);
+        if (raw) {
+            const data = JSON.parse(raw);
+            if (Array.isArray(data.games)) games = data.games;
+        }
+    } catch (_) {}
+    const dishesAttempted = games.length;
+    const wins = games.filter(g => g.won);
+    const dishSuccessesPercent = dishesAttempted > 0 ? Math.round((wins.length / dishesAttempted) * 100) : 0;
+    const averageWastePercent = games.length > 0
+        ? Math.round(games.reduce((s, g) => s + (g.wastePercent || 0), 0) / games.length)
+        : 0;
+    const totalTrophies = games.filter(g => g.trophy).length;
+    const elegantPercent = wins.length > 0
+        ? Math.round((wins.filter(g => g.elegant).length / wins.length) * 100)
+        : 0;
+    const averageIngredients = games.length > 0
+        ? (games.reduce((s, g) => s + (g.moves || 0), 0) / games.length).toFixed(1)
+        : '0.0';
+
+    const today = getRealHelsinkiDate();
+    const datesPlayed = [...new Set(games.map(g => g.date))].sort().reverse();
+    let attemptStreak = 0;
+    if (datesPlayed.length > 0) {
+        let check = today;
+        for (let i = 0; i < datesPlayed.length; i++) {
+            if (datesPlayed[i] === check) {
+                attemptStreak++;
+                check = offsetDate(check, -1);
+            } else if (datesPlayed[i] < check) break;
+        }
+    }
+
+    let successStreak = 0;
+    for (let i = games.length - 1; i >= 0; i--) {
+        if (games[i].won) successStreak++;
+        else break;
+    }
+
+    return {
+        dishesAttempted,
+        attemptStreak,
+        dishSuccessesPercent,
+        successStreak,
+        averageWastePercent,
+        totalTrophies,
+        elegantPercent,
+        averageIngredients
+    };
+}
+
 // Get letter states for puzzle display: active, matched
 function getLetterStatesForDisplay() {
     const adjectives = gameState.adjectives || [];
@@ -586,6 +669,7 @@ async function processIngredient(ingredient) {
     }
 
     saveGameState();
+    if (gameState.isWon || gameState.isLost) recordGameCompleted();
     updateDisplay();
     loadRecipe();
     return true;
@@ -972,6 +1056,84 @@ function showHelpModal() {
     openModal('How to Play', getHelpContent());
 }
 
+// Stats modal content and open
+function getStatsContent() {
+    const s = getStats();
+    return `
+        <div class="stats-content">
+            <div class="stats-grid">
+                <div class="stats-cell">
+                    <div class="stats-label">Dishes attempted</div>
+                    <div class="stats-value">${s.dishesAttempted}</div>
+                </div>
+                <div class="stats-cell">
+                    <div class="stats-label">Attempt streak</div>
+                    <div class="stats-value">${s.attemptStreak}</div>
+                </div>
+                <div class="stats-cell">
+                    <div class="stats-label">Dish successes</div>
+                    <div class="stats-value">${s.dishSuccessesPercent}%</div>
+                </div>
+                <div class="stats-cell">
+                    <div class="stats-label">Success streak</div>
+                    <div class="stats-value">${s.successStreak}</div>
+                </div>
+                <div class="stats-cell">
+                    <div class="stats-label">Av. waste</div>
+                    <div class="stats-value">${s.averageWastePercent}%</div>
+                </div>
+                <div class="stats-cell">
+                    <div class="stats-label">Total trophies</div>
+                    <div class="stats-value">${s.totalTrophies}</div>
+                </div>
+                <div class="stats-cell">
+                    <div class="stats-label">Elegant dishes</div>
+                    <div class="stats-value">${s.elegantPercent}%</div>
+                </div>
+                <div class="stats-cell">
+                    <div class="stats-label">Av. ingredients</div>
+                    <div class="stats-value">${s.averageIngredients}</div>
+                </div>
+            </div>
+            <div class="stats-reset">
+                <p class="stats-reset-hint">To reset your profile FOREVER, type "RESET" in the box below and submit. <span class="stats-reset-underline">This action cannot be undone.</span></p>
+                <div class="stats-reset-row">
+                    <input type="text" id="statsResetInput" placeholder="RESET" autocomplete="off" aria-label="Type RESET to confirm">
+                    <button type="button" id="statsResetBtn" class="stats-reset-btn">CONFIRM</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function showStatsModal() {
+    openModal('STATISTICS', getStatsContent());
+    setTimeout(() => {
+        const input = document.getElementById('statsResetInput');
+        const btn = document.getElementById('statsResetBtn');
+        if (btn) btn.addEventListener('click', handleStatsReset);
+        if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleStatsReset(); });
+    }, 0);
+}
+
+function handleStatsReset() {
+    const input = document.getElementById('statsResetInput');
+    if (!input || (input.value || '').trim().toUpperCase() !== 'RESET') return;
+    try {
+        localStorage.removeItem(STATS_KEY);
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith('dish_of_the_day_')) keysToRemove.push(k);
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+        closeModal();
+        initGame();
+    } catch (e) {
+        console.error('Error resetting profile:', e);
+    }
+}
+
 // Modal functions
 function openModal(title, content) {
     document.getElementById('modalTitle').textContent = title;
@@ -1041,8 +1203,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Modal buttons
+    document.getElementById('statsBtn').addEventListener('click', showStatsModal);
     document.getElementById('helpBtn').addEventListener('click', showHelpModal);
-    
+
     document.getElementById('infoBtn').addEventListener('click', () => {
         openModal('About Dish of the Day', `<div class="about-content">
             <p>A daily word puzzle by Mike Kayatta.</p>
