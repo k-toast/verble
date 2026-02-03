@@ -683,11 +683,12 @@ function showGameOver() {
         }
 
         const gridHTML = buildVictoryGridHTML();
+        const wasteLabel = wastePercent <= 25 ? `Food waste: ${wastePercent}% 🏆` : `Food waste: ${wastePercent}%`;
         const content = `
             <p class="victory-message">${message}</p>
             ${gridHTML}
             <p class="victory-star">Star ingredient: ${starIngredient}</p>
-            <p class="victory-waste">Food waste: ${wastePercent}%</p>
+            <p class="victory-waste">${wasteLabel}</p>
             <div class="victory-actions">
                 <button id="modalShareBtn" class="victory-share-btn">Share</button>
             </div>
@@ -762,7 +763,7 @@ function generateShareText() {
 
     if (gameState.isWon) {
         text += `\nKey ingredient: ${starIngredient}\n`;
-        text += `⬛ Food waste: ${wastePercent}%`;
+        text += wastePercent <= 25 ? `⬛ Food waste: ${wastePercent}% 🏆` : `⬛ Food waste: ${wastePercent}%`;
     }
 
     return text;
@@ -951,11 +952,7 @@ function getHelpContent() {
         <div class="help-content">
             <p>Complete the puzzle by entering ingredients that share letters with the dish of the day.</p>
             <p>Each time you submit a valid ingredient, its letters will match against the dish one at a time, left to right.</p>
-            <p class="help-label">A valid ingredient is...</p>
-            <ul>
-                <li>Food</li>
-                <li>12 letters or less</li>
-            </ul>
+            <p>A valid ingredient is a food, a single word, and 12 letters or less.</p>
             <p class="help-label">Example</p>
             <p>Adding the ingredient <strong>BANANA</strong> to this:</p>
             <div class="help-example">
