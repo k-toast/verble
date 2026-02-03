@@ -1111,14 +1111,29 @@ function showStatsModal() {
     setTimeout(() => {
         const input = document.getElementById('statsResetInput');
         const btn = document.getElementById('statsResetBtn');
+        const modalContent = document.getElementById('modalContent');
         if (btn) btn.addEventListener('click', handleStatsReset);
         if (input) {
             input.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleStatsReset(); });
-            if (window.matchMedia('(max-width: 768px)').matches) {
+            if (window.matchMedia('(max-width: 768px)').matches && modalContent && window.visualViewport) {
+                function scrollResetInputAboveKeyboard() {
+                    const vv = window.visualViewport;
+                    const rect = input.getBoundingClientRect();
+                    const marginAboveKeyboard = 220;
+                    const visibleBottom = vv.height - marginAboveKeyboard;
+                    if (rect.bottom > visibleBottom) {
+                        modalContent.scrollTop += (rect.bottom - visibleBottom);
+                    }
+                }
                 input.addEventListener('focus', () => {
-                    requestAnimationFrame(() => {
-                        input.scrollIntoView({ block: 'center', behavior: 'smooth' });
-                    });
+                    setTimeout(scrollResetInputAboveKeyboard, 100);
+                    setTimeout(scrollResetInputAboveKeyboard, 400);
+                    window.visualViewport.addEventListener('resize', scrollResetInputAboveKeyboard);
+                    window.visualViewport.addEventListener('scroll', scrollResetInputAboveKeyboard);
+                });
+                input.addEventListener('blur', () => {
+                    window.visualViewport.removeEventListener('resize', scrollResetInputAboveKeyboard);
+                    window.visualViewport.removeEventListener('scroll', scrollResetInputAboveKeyboard);
                 });
             }
         }
