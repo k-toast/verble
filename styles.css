@@ -788,7 +788,7 @@ footer {
 }
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 20px 16px;
     margin-bottom: 28px;
 }
@@ -923,7 +923,7 @@ footer {
     border-radius: 4px;
 }
 
-/* Victory modal — message, grid, star, waste */
+/* Victory modal — message, grid, key ingredient, waste */
 .victory-message {
     text-align: center;
     margin-bottom: 16px;
@@ -931,17 +931,33 @@ footer {
 }
 
 .victory-grid {
+    list-style: decimal;
+    list-style-position: outside;
+    padding-left: 1.75em;
+    margin: 0 0 16px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    margin: 0 auto 16px;
-    width: fit-content;
+    gap: 6px;
 }
 
 .victory-grid-row {
     display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.victory-row-num {
+    flex-shrink: 0;
+    font-weight: 600;
+    color: var(--color-secondary);
+    min-width: 1.5em;
+}
+
+.victory-row-cells {
+    display: flex;
     gap: 4px;
-    justify-content: center;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
 }
 
 .victory-cell {
@@ -1078,11 +1094,7 @@ footer {
         margin-bottom: 2px;
     }
 
-    /* Stats modal: 2 cols × 4 rows, no horizontal scroll; reset input stays above keyboard via JS */
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px 12px;
-    }
+    /* Stats modal: no horizontal scroll; reset input stays above keyboard via JS */
     .stats-content {
         overflow-x: hidden;
         min-width: 0;

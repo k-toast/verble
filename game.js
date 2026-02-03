@@ -397,27 +397,24 @@ function getIndefiniteArticle(word) {
     return /[aeiou]/.test(first) ? 'an' : 'a';
 }
 
-// Build 12×5 victory grid HTML (white=unused, green=matched, grey=unmatched)
+// Build victory grid HTML: numbered list, only used cells (green=matched, grey=unmatched), left-aligned
 function buildVictoryGridHTML() {
-    const rows = 5;
-    const cols = 12;
-    let html = '<div class="victory-grid">';
-    for (let r = 0; r < rows; r++) {
-        html += '<div class="victory-grid-row">';
+    let html = '<ol class="victory-grid">';
+    for (let r = 0; r < gameState.history.length; r++) {
         const historyItem = gameState.history[r];
-        for (let c = 0; c < cols; c++) {
-            let cellClass = 'victory-cell victory-cell-unused';
-            if (historyItem && c < historyItem.result.length) {
-                const status = historyItem.result[c].status || 'plain';
-                cellClass = status === 'adj' || status === 'noun'
-                    ? 'victory-cell victory-cell-matched'
-                    : 'victory-cell victory-cell-unmatched';
-            }
-            html += `<div class="${cellClass}"></div>`;
+        if (!historyItem || !historyItem.result.length) continue;
+        const rowNum = r + 1;
+        html += `<li class="victory-grid-row"><span class="victory-row-num">${rowNum}.</span><span class="victory-row-cells">`;
+        for (let c = 0; c < historyItem.result.length; c++) {
+            const status = historyItem.result[c].status || 'plain';
+            const cellClass = status === 'adj' || status === 'noun'
+                ? 'victory-cell victory-cell-matched'
+                : 'victory-cell victory-cell-unmatched';
+            html += `<span class="${cellClass}"></span>`;
         }
-        html += '</div>';
+        html += '</span></li>';
     }
-    html += '</div>';
+    html += '</ol>';
     return html;
 }
 
@@ -737,7 +734,7 @@ function loadRecipe() {
     const starDiv = document.getElementById('starIngredientDisplay');
     if (starDiv) {
         const star = getStarIngredient();
-        starDiv.textContent = 'STAR INGREDIENT: ' + (star || '???');
+        starDiv.textContent = 'KEY INGREDIENT: ' + (star || '???') + ' 🔑';
     }
 
     const wasteDiv = document.getElementById('foodWasteDisplay');
@@ -771,7 +768,7 @@ function showGameOver() {
         const content = `
             <p class="victory-message">${message}</p>
             ${gridHTML}
-            <p class="victory-star">Star ingredient: ${starIngredient}</p>
+            <p class="victory-star">Key ingredient: ${starIngredient} 🔑</p>
             <p class="victory-waste">${wasteLabel}</p>
             <div class="victory-actions">
                 <button id="modalShareBtn" class="victory-share-btn">Share</button>
@@ -825,29 +822,27 @@ function generateShareText() {
         const noun = (gameState.noun || '').toLowerCase();
         const article = getIndefiniteArticle(gameState.adjectives[0] || '');
         if (gameState.isElegant) {
-            text += `You prepared ${article} ${adj} ${noun} with only ${moves} ingredients!\n\n`;
+            text += `I prepared ${article} ${adj} ${noun} with only ${moves} ingredients!\n\n`;
         } else {
-            text += `You prepared ${article} ${adj} ${noun}!\n\n`;
+            text += `I prepared ${article} ${adj} ${noun}!\n\n`;
         }
     } else {
         text += `The dish, she is ruined. (${moves} ingredients)\n\n`;
     }
 
-    text += 'secret recipe\n\n';
-
-    // Grid: only matched (green) and unmatched (black), no blanks
-    gameState.history.forEach((item) => {
+    // Grid: only matched (green) and unmatched (black), no blanks, numbered rows
+    gameState.history.forEach((item, index) => {
         const boxes = item.result.map(cell => {
             const status = cell.status || 'plain';
             if (status === 'adj' || status === 'noun') return '🟩';
             return '⬛';  // black for unmatched
         }).join('');
-        text += boxes + '\n';
+        text += `${index + 1}. ${boxes}\n`;
     });
 
     if (gameState.isWon) {
-        text += `\nKey ingredient: ${starIngredient}\n`;
-        text += wastePercent <= 25 ? `⬛ Food waste: ${wastePercent}% 🏆` : `⬛ Food waste: ${wastePercent}%`;
+        text += `\nKey ingredient: ${starIngredient} 🔑\n`;
+        text += wastePercent <= 25 ? `Food waste: ${wastePercent}% 🏆` : `Food waste: ${wastePercent}%`;
     }
 
     return text;
