@@ -445,21 +445,62 @@ function getLetterStatesForDisplay() {
     return result;
 }
 
+// Return the k-th (0-based) "matched" cell position in display order (adj line then noun line, left to right).
+// Used so flip tile position matches the cell that is visually "matched" for the k-th submission letter.
+function getKthMatchedPosition(letterStates, k) {
+    let count = 0;
+    for (let lineIndex = 0; lineIndex < 2; lineIndex++) {
+        const letters = lineIndex === 0 ? letterStates.adj : letterStates.noun;
+        for (let indexInLine = 0; indexInLine < letters.length; indexInLine++) {
+            if (letters[indexInLine].state === 'matched') {
+                if (count === k) return { lineIndex, indexInLine };
+                count++;
+            }
+        }
+    }
+    return null;
+}
+
 // Build puzzle display: two lines — adjective on line 1, noun on line 2, both centered
 function renderPuzzleStack() {
     const stack = document.getElementById('puzzleStack');
     if (!stack) return;
 
     const letterStates = getLetterStatesForDisplay();
+    const animating = animationState !== null;
+    const result = animating ? animationState.result : [];
+    const revealedCount = animating ? animationState.revealedCount : 0;
+    const currentMatch = revealedCount >= 1 ? result[revealedCount - 1] : null;
+    const isMatch = currentMatch && (currentMatch.status === 'adj' || currentMatch.status === 'noun');
+    const showFlipAt = isMatch ? { lineIndex: currentMatch.lineIndex, indexInLine: currentMatch.indexInLine } : null;
 
-    function appendLine(letters) {
+    function appendLine(letters, lineIndex) {
         const line = document.createElement('div');
         line.className = 'puzzle-line';
-        letters.forEach(({ char, state }) => {
+        letters.forEach(({ char, state }, indexInLine) => {
             if (state === 'matched') {
-                const box = document.createElement('div');
-                box.className = 'puzzle-letter puzzle-letter-matched puzzle-matched-box';
-                line.appendChild(box);
+                const isThisCellFlipping = showFlipAt && showFlipAt.lineIndex === lineIndex && showFlipAt.indexInLine === indexInLine;
+                if (!animating || !isThisCellFlipping) {
+                    const box = document.createElement('div');
+                    box.className = 'puzzle-letter puzzle-letter-matched puzzle-matched-box';
+                    line.appendChild(box);
+                } else {
+                    const tile = document.createElement('div');
+                    tile.className = 'puzzle-letter puzzle-flip-tile puzzle-flip-new';
+                    tile.dataset.line = String(lineIndex);
+                    tile.dataset.index = String(indexInLine);
+                    const inner = document.createElement('div');
+                    inner.className = 'puzzle-flip-inner';
+                    const front = document.createElement('div');
+                    front.className = 'puzzle-flip-front';
+                    front.textContent = char === ' ' ? '\u00A0' : char;
+                    const back = document.createElement('div');
+                    back.className = 'puzzle-flip-back';
+                    inner.appendChild(front);
+                    inner.appendChild(back);
+                    tile.appendChild(inner);
+                    line.appendChild(tile);
+                }
             } else {
                 const span = document.createElement('span');
                 span.className = `puzzle-letter puzzle-letter-${state}`;
@@ -471,8 +512,79 @@ function renderPuzzleStack() {
     }
 
     stack.innerHTML = '';
-    appendLine(letterStates.adj);
-    appendLine(letterStates.noun);
+    appendLine(letterStates.adj, 0);
+    appendLine(letterStates.noun, 1);
+
+    const newTile = stack.querySelector('.puzzle-flip-new');
+    if (newTile) {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                newTile.classList.remove('puzzle-flip-new');
+                newTile.classList.add('flipped');
+            });
+        });
+    }
+}
+
+// During letter-by-letter reveal: mark previous *match* flip tile as flipped, then add the next flip tile only for the current match
+function advancePuzzleFlip() {
+    const stack = document.getElementById('puzzleStack');
+    if (!stack || !animationState || animationState.revealedCount < 2) return;
+
+    const result = animationState.result;
+    const revealedCount = animationState.revealedCount;
+    const current = result[revealedCount - 1];
+    // Only flip when the current letter is a match; skip when it's plain (no flip for this letter)
+    if (!current || (current.status !== 'adj' && current.status !== 'noun')) return;
+
+    const letterStates = getLetterStatesForDisplay();
+    // Find the most recent previous *match* (not just previous letter), so we mark the right tile flipped when there are plain letters in between
+    let prevPosition = null;
+    for (let k = revealedCount - 2; k >= 0; k--) {
+        const p = result[k];
+        if (p && (p.status === 'adj' || p.status === 'noun')) {
+            prevPosition = { lineIndex: p.lineIndex, indexInLine: p.indexInLine };
+            break;
+        }
+    }
+    const currentPosition = { lineIndex: current.lineIndex, indexInLine: current.indexInLine };
+
+    // Mark the previous match's flip tile as flipped
+    if (prevPosition) {
+        const prevTile = stack.querySelector(`.puzzle-flip-tile[data-line="${prevPosition.lineIndex}"][data-index="${prevPosition.indexInLine}"]`);
+        if (prevTile) prevTile.classList.add('flipped');
+    }
+
+    const { lineIndex, indexInLine } = currentPosition;
+    const line = stack.children[lineIndex];
+    if (!line || indexInLine >= line.children.length) return;
+
+    const letters = lineIndex === 0 ? letterStates.adj : letterStates.noun;
+    const puzzleChar = letters[indexInLine] ? letters[indexInLine].char : current.letter;
+
+    const tile = document.createElement('div');
+    tile.className = 'puzzle-letter puzzle-flip-tile puzzle-flip-new';
+    tile.dataset.line = String(lineIndex);
+    tile.dataset.index = String(indexInLine);
+    const inner = document.createElement('div');
+    inner.className = 'puzzle-flip-inner';
+    const front = document.createElement('div');
+    front.className = 'puzzle-flip-front';
+    front.textContent = puzzleChar === ' ' ? '\u00A0' : puzzleChar;
+    const back = document.createElement('div');
+    back.className = 'puzzle-flip-back';
+    inner.appendChild(front);
+    inner.appendChild(back);
+    tile.appendChild(inner);
+
+    line.replaceChild(tile, line.children[indexInLine]);
+
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            tile.classList.remove('puzzle-flip-new');
+            tile.classList.add('flipped');
+        });
+    });
 }
 
 // Title-case a word for display (e.g. EARTHY -> Earthy)
@@ -531,6 +643,15 @@ function getStarIngredient() {
         }
     }
     return best;
+}
+
+// Match count for the star (top) ingredient
+function getStarIngredientMatchCount() {
+    const name = getStarIngredient();
+    if (!name) return 0;
+    const item = gameState.history.find(h => h.ingredient === name);
+    if (!item) return 0;
+    return item.result.filter(r => (r.status || '') === 'adj' || (r.status || '') === 'noun').length;
 }
 
 // Calculate waste percentage (letters not matched)
@@ -624,21 +745,18 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Process one letter: match against puzzle, update arrays, return status
-function matchOneLetter(letter, adjArrays, nounArray) {
-    let foundInAdjective = false;
-    for (let adjIdx = 0; adjIdx < adjArrays.length; adjIdx++) {
-        for (let j = 0; j < adjArrays[adjIdx].length; j++) {
-            if (adjArrays[adjIdx][j] === letter) {
-                adjArrays[adjIdx].splice(j, 1);
-                return { status: 'adj' };
-            }
+// Process one letter: match against puzzle (adj then noun) left-to-right, mark position used, return original puzzle index
+function matchOneLetter(letter, adjChars, nounChars, usedAdj, usedNoun) {
+    for (let j = 0; j < adjChars.length; j++) {
+        if (adjChars[j] === letter && !usedAdj[j]) {
+            usedAdj[j] = true;
+            return { status: 'adj', lineIndex: 0, charIndex: j };
         }
     }
-    for (let j = 0; j < nounArray.length; j++) {
-        if (nounArray[j] === letter) {
-            nounArray.splice(j, 1);
-            return { status: 'noun' };
+    for (let j = 0; j < nounChars.length; j++) {
+        if (nounChars[j] === letter && !usedNoun[j]) {
+            usedNoun[j] = true;
+            return { status: 'noun', lineIndex: 1, charIndex: j };
         }
     }
     return { status: 'plain' };
@@ -683,14 +801,14 @@ async function processIngredient(ingredient) {
 
     if (blockedFoods.has(ingredient)) {
         lastRejectedIngredient = ingredient;
-        showInputFeedback(`"${ingredient}" is not recognized as an ingredient in the panty.`, 'highlight');
+        showInputFeedback(`"${ingredient}" is not a recognized ingredient.`, 'highlight');
         if (input) input.setAttribute('aria-invalid', 'true');
         return false;
     }
 
     if (allowedFoods !== null && !allowedFoods.has(ingredient)) {
         lastRejectedIngredient = ingredient;
-        showInputFeedback(`"${ingredient}" is not recognized as an ingredient in the panty.`, 'highlight');
+        showInputFeedback(`"${ingredient}" is not a recognized ingredient.`, 'highlight');
         if (input) input.setAttribute('aria-invalid', 'true');
         return false;
     }
@@ -698,35 +816,45 @@ async function processIngredient(ingredient) {
     lastRejectedIngredient = null;
     if (input) input.setAttribute('aria-invalid', 'false');
 
-    const adjArrays = gameState.remainingAdjectives.map(a => (a || '').split(''));
-    const nounArray = (gameState.remainingNoun || '').split('');
+    const adjString = (gameState.remainingAdjectives[0] || '').trim();
+    const nounString = (gameState.remainingNoun || '').trim();
+    const adjChars = adjString.split('');
+    const nounChars = nounString.split('');
+    const usedAdj = adjChars.map(() => false);
+    const usedNoun = nounChars.map(() => false);
     const result = [];
 
-    // Disable input during animation
     if (input) input.disabled = true;
     if (submitBtn) submitBtn.disabled = true;
 
     animationState = {
         ingredient,
         result: [],
-        revealedCount: 0,
-        adjArrays,
-        nounArray
+        revealedCount: 0
     };
 
     for (let i = 0; i < ingredient.length; i++) {
         const letter = ingredient[i];
-        const { status } = matchOneLetter(letter, adjArrays, nounArray);
-        result.push({ letter, status });
+        const matchResult = matchOneLetter(letter, adjChars, nounChars, usedAdj, usedNoun);
+        const { status, lineIndex, charIndex } = matchResult;
+        const item = { letter, status };
+        if (status === 'adj' || status === 'noun') {
+            item.lineIndex = lineIndex;
+            item.indexInLine = charIndex;
+        }
+        result.push(item);
 
-        // Sync game state so renderPuzzleStack shows the green box for this match
-        gameState.remainingAdjectives = adjArrays.map(a => a.join(''));
-        gameState.remainingNoun = nounArray.join('');
+        gameState.remainingAdjectives = [adjChars.filter((_, idx) => !usedAdj[idx]).join('')];
+        gameState.remainingNoun = nounChars.filter((_, idx) => !usedNoun[idx]).join('');
 
         animationState.result = result;
         animationState.revealedCount = i + 1;
 
-        renderPuzzleStack();
+        if (i === 0) {
+            renderPuzzleStack();
+        } else {
+            advancePuzzleFlip();
+        }
         loadRecipe();
 
         const recipeContainer = document.getElementById('recipeContainer');
@@ -737,6 +865,9 @@ async function processIngredient(ingredient) {
         await sleep(LETTER_REVEAL_MS);
     }
 
+    const FLIP_DURATION_MS = 550;
+    await sleep(Math.max(0, FLIP_DURATION_MS - LETTER_REVEAL_MS));
+
     animationState = null;
     gameState.moves++;
     gameState.history.push({ ingredient, result });
@@ -746,7 +877,7 @@ async function processIngredient(ingredient) {
     const allCleared = allAdjsEmpty && nounEmpty;
     if (allCleared) {
         gameState.isWon = true;
-        gameState.isElegant = gameState.moves < 5;
+        gameState.isElegant = gameState.moves <= 3;
     } else if (gameState.moves >= 5) {
         gameState.isLost = true;
     }
@@ -763,7 +894,6 @@ async function processIngredient(ingredient) {
 }
 
 // Load and display recipe (history) - 5 slots with food waste
-// Handles animationState: during letter-by-letter reveal, renders partial slot with grow animation on new letter
 function loadRecipe() {
     const container = document.getElementById('recipeContainer');
     container.innerHTML = '';
@@ -799,17 +929,16 @@ function loadRecipe() {
         } else if (animating && i === historyCount) {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'recipe-item';
-            
+
             const partial = animationState.result;
-            partial.forEach((letterData, idx) => {
-                const box = document.createElement('div');
+            partial.forEach((letterData) => {
                 const statusClass = letterData.status || 'plain';
-                const isNew = idx === animationState.revealedCount - 1;
-                box.className = 'letter-box ' + statusClass + (isNew ? ' letter-grow' : '');
+                const box = document.createElement('div');
+                box.className = 'letter-box ' + statusClass;
                 box.textContent = letterData.letter;
                 itemDiv.appendChild(box);
             });
-            
+
             slotDiv.appendChild(itemDiv);
         } else {
             const placeholder = document.createElement('div');
@@ -824,7 +953,8 @@ function loadRecipe() {
     const starDiv = document.getElementById('starIngredientDisplay');
     if (starDiv) {
         const star = getStarIngredient();
-        starDiv.textContent = 'KEY INGREDIENT: ' + (star || '???') + ' 🔑';
+        const matchCount = getStarIngredientMatchCount();
+        starDiv.textContent = 'TOP INGREDIENT: ' + (star || '???') + (matchCount >= 6 ? ' ⭐' : '');
     }
 
     const wasteDiv = document.getElementById('foodWasteDisplay');
@@ -837,20 +967,23 @@ function loadRecipe() {
 // Show game over message as modal
 function showGameOver() {
     if (gameState.isWon) {
-        const adj = (gameState.adjectives[0] || '').toLowerCase();
-        const noun = (gameState.noun || '').toLowerCase();
-        const article = getIndefiniteArticle(gameState.adjectives[0] || '');
+        const adjRaw = gameState.adjectives[0] || '';
+        const nounRaw = gameState.noun || '';
+        const adj = adjRaw.replace(/\b\w/g, c => c.toUpperCase());
+        const noun = nounRaw.replace(/\b\w/g, c => c.toUpperCase());
         const wastePercent = getWastePercent();
         const starIngredient = getStarIngredient() || '???';
+        const starMatchCount = getStarIngredientMatchCount();
+        const topIngredientSuffix = starMatchCount >= 6 ? ' ⭐' : '';
 
         let title;
         let message;
         if (gameState.isElegant) {
             title = 'An elegant dish!';
-            message = `You prepared ${article} ${adj} ${noun} with only ${gameState.moves} ingredients!`;
+            message = `You prepared an elegant ${adj} ${noun} using only ${gameState.moves} ingredients!`;
         } else {
             title = 'An excellent dish!';
-            message = `You prepared ${article} ${adj} ${noun}!`;
+            message = `You prepared an excellent ${adj} ${noun} using ${gameState.moves} ingredients!`;
         }
         const isReplayPuzzle = currentPuzzle && currentPuzzle.date !== getHelsinkiDate();
         if (isReplayPuzzle && lastAttemptWasNewBest) title += ' - A NEW BEST!';
@@ -858,16 +991,17 @@ function showGameOver() {
         const gridHTML = buildVictoryGridHTML();
         const wasteLabel = wastePercent <= 25 ? `Food waste: ${wastePercent}% 🏆` : `Food waste: ${wastePercent}%`;
         const tryAgainBtn = isReplayPuzzle
-            ? '<button id="modalRetryBtn" class="victory-share-btn">Try again</button>'
+            ? '<button id="modalRetryBtn" class="victory-share-btn">TRY AGAIN</button>'
             : '';
+        const shareBtn = isReplayPuzzle ? '' : '<button id="modalShareBtn" class="victory-share-btn">SHARE</button>';
         const content = `
             <p class="victory-message">${message}</p>
             ${gridHTML}
-            <p class="victory-star">Key ingredient: ${starIngredient} 🔑</p>
+            <p class="victory-star">Top ingredient: ${starIngredient}${topIngredientSuffix}</p>
             <p class="victory-waste">${wasteLabel}</p>
             <div class="victory-actions">
                 ${tryAgainBtn}
-                <button id="modalShareBtn" class="victory-share-btn">Share</button>
+                ${shareBtn}
             </div>
         `;
         openModal(title, content);
@@ -886,11 +1020,13 @@ function showGameOver() {
             }
         }, 0);
     } else if (gameState.isLost) {
+        const isReplayPuzzle = currentPuzzle && currentPuzzle.date !== getHelsinkiDate();
+        const shareBtnHtml = isReplayPuzzle ? '' : '<button id="modalShareBtn" class="victory-share-btn">SHARE</button>';
         const content = `
             <p style="text-align: center; margin-bottom: 20px;">The dish, she is ruined.</p>
             <div style="text-align: center; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                <button id="modalRetryBtn" style="padding: 10px 20px; font-size: 1em; background: #111827; color: #FBF8F1; border: 1px solid #111827; cursor: pointer; font-weight: 500;">Try again</button>
-                <button id="modalShareBtn" style="padding: 10px 20px; font-size: 1em; background: transparent; color: #374151; border: 1px solid #D1D5DB; cursor: pointer; font-weight: 500;">Share</button>
+                <button id="modalRetryBtn" class="victory-share-btn">TRY AGAIN</button>
+                ${shareBtnHtml}
             </div>
         `;
         openModal('Oof!', content);
@@ -911,23 +1047,26 @@ function showGameOver() {
     }
 }
 
-// Generate share text — matches victory modal: message, grid (green/black only, no blanks), key ingredient, food waste
+// Generate share text — matches victory modal: message, grid (green/black only, no blanks), top ingredient, food waste
 function generateShareText() {
     const puzzleNum = getPuzzleNumber(currentPuzzle);
     const moves = gameState.moves;
     const wastePercent = getWastePercent();
     const starIngredient = getStarIngredient() || '???';
+    const starMatchCount = getStarIngredientMatchCount();
+    const topIngredientSuffix = starMatchCount >= 6 ? ' ⭐' : '';
 
     let text = `dish of the day #${puzzleNum}\n\n`;
 
     if (gameState.isWon) {
-        const adj = (gameState.adjectives[0] || '').toLowerCase();
-        const noun = (gameState.noun || '').toLowerCase();
-        const article = getIndefiniteArticle(gameState.adjectives[0] || '');
+        const adjRaw = gameState.adjectives[0] || '';
+        const nounRaw = gameState.noun || '';
+        const adj = adjRaw.replace(/\b\w/g, c => c.toUpperCase());
+        const noun = nounRaw.replace(/\b\w/g, c => c.toUpperCase());
         if (gameState.isElegant) {
-            text += `I prepared ${article} ${adj} ${noun} with only ${moves} ingredients!\n\n`;
+            text += `I prepared an elegant ${adj} ${noun} using only ${moves} ingredients!\n\n`;
         } else {
-            text += `I prepared ${article} ${adj} ${noun}!\n\n`;
+            text += `I prepared an excellent ${adj} ${noun} using ${moves} ingredients!\n\n`;
         }
     } else {
         text += `The dish, she is ruined. (${moves} ingredients)\n\n`;
@@ -944,7 +1083,7 @@ function generateShareText() {
     });
 
     if (gameState.isWon) {
-        text += `\nKey ingredient: ${starIngredient} 🔑\n`;
+        text += `\nTop ingredient: ${starIngredient}${topIngredientSuffix}\n`;
         text += wastePercent <= 25 ? `Food waste: ${wastePercent}% 🏆` : `Food waste: ${wastePercent}%`;
     }
 
@@ -1243,7 +1382,7 @@ function getHelpContent() {
                 <img src="assets/clean-after.png" alt="Challenge dish after: BANANA letters matched" class="help-image">
             </div>
             <p>With the <strong>A</strong>, <strong>N</strong>, <strong>A</strong>, <strong>N</strong>, and <strong>A</strong> matching and the <strong>B</strong> discarded.</p>
-            <p>A dish is prepared successfully if all of its letters are matched using five ingredients or less.</p>
+            <p>A dish is prepared successfully if all of its letters are matched using five ingredients or less. An elegant dish is one completed with 3 or fewer ingredients.</p>
         </div>
     `;
 }
@@ -1292,7 +1431,7 @@ function getStatsContent() {
                 </div>
             </div>
             <div class="stats-reset">
-                <p class="stats-reset-hint">To reset your profile FOREVER, type "RESET" in the box below and submit. <span class="stats-reset-underline">This action cannot be undone.</span></p>
+                <p class="stats-reset-hint">To reset your profile, type "RESET" into the box below and confirm. <span class="stats-reset-underline">This action cannot be undone.</span></p>
                 <div class="stats-reset-row">
                     <input type="text" id="statsResetInput" placeholder="RESET" autocomplete="off" aria-label="Type RESET to confirm">
                     <button type="button" id="statsResetBtn" class="stats-reset-btn">CONFIRM</button>

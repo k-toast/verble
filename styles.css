@@ -324,6 +324,105 @@ h1 {
     border-color: var(--color-success);
 }
 
+/* Wordle-style flip tile — puzzle (dish); 3D flip with perspective in transform to avoid ancestor overflow flattening */
+.puzzle-flip-tile,
+.letter-box-flip-tile {
+    position: relative;
+}
+
+.puzzle-flip-tile {
+    width: 0.95em;
+    height: 0.95em;
+    min-width: 20px;
+    min-height: 20px;
+    display: inline-block;
+    flex-shrink: 0;
+    vertical-align: middle;
+}
+
+.letter-box-flip-tile {
+    width: 30px;
+    height: 30px;
+    display: inline-block;
+    flex-shrink: 0;
+    font-size: 0.85em;
+    font-weight: 600;
+    font-family: 'Outfit', sans-serif;
+}
+
+/* Inner fills the tile and rotates; perspective() in transform keeps 3D visible with overflow ancestors.
+   Wordle-style top-to-bottom card flip (rotateX). */
+.puzzle-flip-inner,
+.letter-flip-inner {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+    transition: transform 0.55s cubic-bezier(0.32, 0.72, 0, 1);
+    -webkit-transition: transform 0.55s cubic-bezier(0.32, 0.72, 0, 1);
+    transform: perspective(800px) rotateX(0deg);
+    -webkit-transform: perspective(800px) rotateX(0deg);
+}
+
+.puzzle-flip-tile.flipped .puzzle-flip-inner,
+.letter-box-flip-tile.flipped .letter-flip-inner {
+    transform: perspective(800px) rotateX(180deg);
+    -webkit-transform: perspective(800px) rotateX(180deg);
+}
+
+.puzzle-flip-front,
+.puzzle-flip-back,
+.letter-flip-front,
+.letter-flip-back {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: 4px;
+    border: 1px solid var(--color-border);
+}
+
+.puzzle-flip-front,
+.letter-flip-front {
+    background: var(--color-surface);
+    color: var(--color-primary);
+    font-size: inherit;
+    font-weight: 700;
+    font-family: inherit;
+}
+
+.puzzle-flip-back,
+.letter-flip-back {
+    background: var(--color-success);
+    border-color: var(--color-success);
+    transform: rotateX(180deg);
+}
+
+.letter-flip-back.letter-flip-back-plain {
+    background: var(--color-eliminated);
+    border-color: var(--color-eliminated);
+}
+
+.puzzle-flip-tile .puzzle-flip-back,
+.puzzle-flip-tile .puzzle-flip-front {
+    font-size: inherit;
+    line-height: 1.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .puzzle-flip-inner,
+    .letter-flip-inner {
+        transition: none;
+    }
+    .puzzle-flip-tile.flipped .puzzle-flip-inner,
+    .letter-box-flip-tile.flipped .letter-flip-inner {
+        transform: perspective(800px) rotateX(180deg);
+    }
+}
+
 /* ==========================================================================
    Input Section — Tool, not headline
    ========================================================================== */
@@ -331,7 +430,7 @@ h1 {
 .input-section {
     display: flex;
     flex-direction: column;
-    margin-bottom: var(--section-buffer);
+    margin-bottom: 12px;
     flex-shrink: 0;
     overflow: visible;
 }
@@ -509,15 +608,15 @@ h1 {
     font-weight: 500;
     line-height: 1.35;
     color: var(--color-secondary);
-    margin: 2px 8px 0 8px;
+    margin: 8px 8px 0 8px;
     min-height: 2.7em;
     padding-bottom: 0;
     text-align: left;
 }
 
-/* Reduce input-feedback min-height when empty so buffer matches header→TODAY'S CHALLENGE */
+/* Keep reserved height when empty so validation message doesn't shift layout */
 .input-feedback:empty {
-    min-height: 0;
+    min-height: 2.7em;
 }
 
 .input-feedback.error {
@@ -557,22 +656,6 @@ header.solved .dish-name {
     .letter-box {
         transition: none;
     }
-}
-
-/* Letter grow animation — appears letter-by-letter on submission */
-.letter-box.letter-grow {
-    animation: letterGrow 0.12s ease-out;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .letter-box.letter-grow {
-        animation: none;
-    }
-}
-
-@keyframes letterGrow {
-    from { opacity: 0; transform: scale(0.4); }
-    to { opacity: 1; transform: scale(1); }
 }
 
 /* Matched (adj or noun) — success/active */
@@ -652,25 +735,24 @@ footer {
    ========================================================================== */
 
 .nav-btn {
-    min-width: 38px;
-    height: 38px;
-    padding: 0 10px;
+    padding: 10px 18px;
+    font-size: 0.75em;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--color-surface);
-    color: var(--color-primary);
-    border: 1px solid var(--color-border);
+    background: var(--color-surface-elevated);
+    color: var(--color-muted);
+    border: 1px solid var(--color-border-button);
     cursor: pointer;
-    font-size: 0.95em;
     font-weight: 600;
-    transition: border-color 0.15s, background 0.15s;
+    letter-spacing: 0.05em;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
     border-radius: 4px;
 }
 
 .nav-btn:hover:not(:disabled) {
-    border-color: var(--color-secondary);
-    background: var(--color-background);
+    border-color: var(--color-border-button);
+    color: var(--color-secondary);
 }
 
 .nav-btn:focus-visible {
@@ -771,19 +853,20 @@ footer {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--color-surface);
-    color: var(--color-primary);
-    border: 1px solid var(--color-border);
+    background: var(--color-surface-elevated);
+    color: var(--color-muted);
+    border: 1px solid var(--color-border-button);
     cursor: pointer;
-    font-size: 0.95em;
+    font-size: 0.75em;
     font-weight: 600;
-    transition: border-color 0.15s, background 0.15s;
+    letter-spacing: 0.05em;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
     border-radius: 4px;
 }
 
 .icon-btn:hover {
-    border-color: var(--color-secondary);
-    background: var(--color-background);
+    border-color: var(--color-border-button);
+    color: var(--color-secondary);
 }
 
 .icon-btn:focus-visible {
@@ -969,10 +1052,10 @@ footer {
     padding: 0;
 }
 .icon-btn-stats img {
-    filter: brightness(0);
+    filter: brightness(0) opacity(0.75);
 }
 .icon-btn-stats:hover img {
-    filter: brightness(0) opacity(0.8);
+    filter: brightness(0) opacity(1);
 }
 
 /* Help modal — Wordle-style layout */
@@ -1021,7 +1104,7 @@ footer {
     border-radius: 4px;
 }
 
-/* Victory modal — message, grid, key ingredient, waste */
+/* Victory modal — message, grid, top ingredient, waste */
 .victory-message {
     text-align: center;
     margin-bottom: 16px;
@@ -1103,24 +1186,30 @@ footer {
 }
 
 .victory-share-btn {
-    padding: 10px 20px;
-    font-size: 1em;
-    background: var(--color-secondary);
-    color: var(--color-surface);
-    border: 1px solid var(--color-secondary);
+    padding: 10px 18px;
+    font-size: 0.75em;
+    background: var(--color-surface-elevated);
+    color: var(--color-muted);
+    border: 1px solid var(--color-border-button);
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
     border-radius: 4px;
 }
 
 .victory-share-btn:hover {
-    background: var(--color-primary);
-    border-color: var(--color-primary);
+    border-color: var(--color-border-button);
+    color: var(--color-secondary);
 }
 
 .victory-share-btn:focus-visible {
     outline: 2px solid var(--color-border-focus);
     outline-offset: 2px;
+}
+
+.victory-share-btn:active {
+    background: var(--color-border);
 }
 
 /* ==========================================================================
@@ -1207,10 +1296,11 @@ footer {
     /* Stats icon: show without filter so it doesn’t render as black box */
     .icon-btn-stats img {
         filter: none;
+        opacity: 0.75;
     }
     .icon-btn-stats:hover img {
         filter: none;
-        opacity: 0.85;
+        opacity: 1;
     }
 }
 
@@ -1403,7 +1493,6 @@ footer {
         font-size: 0.75em;
     }
 
-    .nav-btn,
     .icon-btn {
         width: 32px;
         height: 32px;
@@ -1411,9 +1500,8 @@ footer {
     }
 
     .footer-left .nav-btn {
-        width: auto;
-        min-width: 32px;
-        padding: 0 8px;
+        padding: 8px 14px;
+        font-size: 0.75em;
     }
 }
 
@@ -1485,7 +1573,6 @@ footer {
         height: 14px;
     }
 
-    .nav-btn,
     .icon-btn {
         width: 28px;
         height: 28px;
@@ -1493,9 +1580,8 @@ footer {
     }
 
     .footer-left .nav-btn {
-        width: auto;
-        min-width: 28px;
-        padding: 0 6px;
+        padding: 6px 12px;
+        font-size: 0.75em;
     }
 }
 
@@ -1558,16 +1644,14 @@ footer {
         height: 12px;
     }
 
-    .nav-btn,
     .icon-btn {
         width: 28px;
         height: 28px;
     }
 
     .footer-left .nav-btn {
-        width: auto;
-        min-width: 28px;
-        padding: 0 6px;
+        padding: 6px 12px;
+        font-size: 0.75em;
     }
 }
 
