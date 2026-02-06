@@ -2008,20 +2008,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('aboutContactEmail'),
                 document.getElementById('aboutContactMessage')
             ].filter(Boolean);
+            const MARGIN_ABOVE_KEYBOARD = 280;
             function scrollFocusedAboveKeyboard() {
                 const active = document.activeElement;
                 if (!active || !aboutInputs.includes(active)) return;
-                const rect = active.getBoundingClientRect();
-                const marginAboveKeyboard = 220;
-                const visibleBottom = window.visualViewport.height - marginAboveKeyboard;
-                if (rect.bottom > visibleBottom) {
-                    modalContent.scrollTop += (rect.bottom - visibleBottom);
-                }
+                const vv = window.visualViewport;
+                const modalRect = modalContent.getBoundingClientRect();
+                const visibleBottom = vv.height - MARGIN_ABOVE_KEYBOARD;
+                const visibleHeight = visibleBottom - modalRect.top;
+                if (visibleHeight <= 0) return;
+                const elBottomInContent = active.offsetTop + active.offsetHeight;
+                const scrollToShowBottom = elBottomInContent - visibleHeight;
+                const maxScroll = Math.max(0, modalContent.scrollHeight - modalContent.clientHeight);
+                const targetScroll = Math.max(0, Math.min(scrollToShowBottom, maxScroll));
+                modalContent.scrollTop = targetScroll;
             }
             aboutInputs.forEach((el) => {
                 el.addEventListener('focus', () => {
                     setTimeout(scrollFocusedAboveKeyboard, 100);
                     setTimeout(scrollFocusedAboveKeyboard, 400);
+                    setTimeout(scrollFocusedAboveKeyboard, 800);
                     window.visualViewport.addEventListener('resize', scrollFocusedAboveKeyboard);
                     window.visualViewport.addEventListener('scroll', scrollFocusedAboveKeyboard);
                 });
