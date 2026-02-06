@@ -1022,9 +1022,15 @@ footer {
     font-weight: 600;
     color: var(--color-secondary);
     min-width: 0;
+    min-height: 1.2em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* Placeholder reserves space so every row has same height (tile + ID line) */
+.archive-tile-num-placeholder {
+    visibility: hidden;
 }
 
 .archive-list {

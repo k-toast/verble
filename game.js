@@ -1490,6 +1490,10 @@ function renderArchiveCalendar() {
         if (dayIndex < 0 || dayIndex >= daysInMonth) {
             tile.classList.add('archive-calendar-tile-empty');
             wrapper.appendChild(tile);
+            const emptyNum = document.createElement('span');
+            emptyNum.className = 'archive-tile-num archive-tile-num-placeholder';
+            emptyNum.setAttribute('aria-hidden', 'true');
+            wrapper.appendChild(emptyNum);
             gridEl.appendChild(wrapper);
             continue;
         }
@@ -1574,6 +1578,10 @@ function renderArchiveCalendar() {
         } else {
             tile.classList.add('archive-calendar-tile-empty');
             wrapper.appendChild(tile);
+            const emptyNum = document.createElement('span');
+            emptyNum.className = 'archive-tile-num archive-tile-num-placeholder';
+            emptyNum.setAttribute('aria-hidden', 'true');
+            wrapper.appendChild(emptyNum);
         }
         gridEl.appendChild(wrapper);
     }
