@@ -319,6 +319,26 @@ function saveGameState() {
 
 const STATS_KEY = 'dish_of_the_day_stats';
 const ATTEMPTS_KEY = 'dish_of_the_day_attempts';
+const DARK_MODE_KEY = 'dish_of_the_day_dark_mode';
+
+function isDarkMode() {
+    try {
+        return localStorage.getItem(DARK_MODE_KEY) === '1';
+    } catch (e) {
+        return false;
+    }
+}
+
+function setDarkMode(enabled) {
+    document.documentElement.setAttribute('data-theme', enabled ? 'dark' : 'light');
+    try {
+        if (enabled) {
+            localStorage.setItem(DARK_MODE_KEY, '1');
+        } else {
+            localStorage.removeItem(DARK_MODE_KEY);
+        }
+    } catch (e) {}
+}
 
 // Load attempts data (per-puzzle first + best)
 function getAttemptsData() {
@@ -1734,6 +1754,16 @@ function showHelpModal() {
 function getSettingsContent() {
     return `
         <div class="settings-content">
+            <div class="settings-dark-mode">
+                <div class="settings-dark-mode-label">
+                    <span class="settings-dark-mode-title">Dark mode</span>
+                    <span class="settings-dark-mode-hint">Use a dark theme.</span>
+                </div>
+                <label class="settings-toggle">
+                    <input type="checkbox" id="settingsDarkModeCheckbox" role="switch" aria-label="Dark mode">
+                    <span class="settings-toggle-track"></span>
+                </label>
+            </div>
             <div class="stats-reset">
                 <p class="stats-reset-hint">To reset your profile, type "RESET" into the box below and confirm. <span class="stats-reset-underline">This action cannot be undone.</span></p>
                 <div class="stats-reset-row">
@@ -1748,6 +1778,15 @@ function getSettingsContent() {
 function showSettingsModal() {
     openModal('Settings', getSettingsContent());
     setTimeout(() => {
+        const darkCheckbox = document.getElementById('settingsDarkModeCheckbox');
+        if (darkCheckbox) {
+            darkCheckbox.checked = isDarkMode();
+            darkCheckbox.setAttribute('aria-checked', darkCheckbox.checked);
+            darkCheckbox.addEventListener('change', () => {
+                setDarkMode(darkCheckbox.checked);
+                darkCheckbox.setAttribute('aria-checked', darkCheckbox.checked);
+            });
+        }
         const input = document.getElementById('settingsResetInput');
         const btn = document.getElementById('settingsResetBtn');
         const modalContent = document.getElementById('modalContent');
@@ -1895,6 +1934,7 @@ function closeModal() {
 
 // Event listeners
 document.addEventListener('DOMContentLoaded', async () => {
+    setDarkMode(isDarkMode());
     await loadPuzzles();
     await loadFoodLists();
     initGame();
