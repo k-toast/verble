@@ -164,39 +164,71 @@ body.archive-view .main-scroll-area {
 }
 
 /* ==========================================================================
-   Header — Typography-based hierarchy
+   Header — NYT-style game bar
    ========================================================================== */
 
-header {
-    text-align: center;
-    margin-bottom: var(--section-buffer);
+#gameHeader.game-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 10px;
+    margin-bottom: calc(var(--section-buffer) * 1.5);
+    border-bottom: 1px solid var(--color-border);
     flex-shrink: 0;
+    gap: 12px;
+}
+
+.game-header-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    min-width: 0;
 }
 
 h1 {
     font-family: 'Outfit', sans-serif;
-    font-size: clamp(1.4em, 5vw, 2em);
+    font-size: clamp(1.2em, 4vw, 1.6em);
     color: var(--ink-primary);
-    margin-bottom: 8px;
+    margin-bottom: 0;
     font-weight: 700;
     letter-spacing: -0.02em;
     text-transform: lowercase;
+    line-height: 1;
 }
 
-.date-line {
+.game-header-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
     color: var(--color-secondary);
-    font-size: 0.85em;
+    font-size: 0.75em;
     font-weight: 500;
     white-space: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
     min-width: 0;
-    letter-spacing: 0.02em;
+    line-height: 1.1;
+}
+
+.puzzle-number {
+    letter-spacing: 0.16em;
+}
+
+.puzzle-separator {
+    opacity: 0.6;
 }
 
 .dish-name {
     color: var(--color-secondary);
     font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.game-header-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
 }
 
 /* ==========================================================================
@@ -1044,6 +1076,11 @@ footer {
     justify-content: flex-end;
 }
 
+.footer-replay-controls {
+    gap: 6px;
+    align-items: center;
+}
+
 /* ==========================================================================
    Icon Buttons — No colored backgrounds, editorial
    ========================================================================== */
@@ -1077,6 +1114,11 @@ footer {
 
 .icon-btn:active {
     background: var(--color-border);
+}
+
+.icon-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* ==========================================================================

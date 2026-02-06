@@ -239,7 +239,7 @@ function updateReplayViewClass() {
     document.body.classList.toggle('replay-view', !!isReplay);
 }
 
-// Show TODAY'S DISH button only when on archive screen or viewing a replay (not today's puzzle)
+// Show TODAY button only when on archive screen or viewing a replay (not today's puzzle)
 function updateFooterTodayButton() {
     const btn = document.getElementById('retryBtn');
     if (!btn) return;
@@ -247,9 +247,34 @@ function updateFooterTodayButton() {
     const onReplayPuzzle = currentView === 'game' && currentPuzzle && currentPuzzle.date !== getHelsinkiDate();
     const show = onArchiveScreen || onReplayPuzzle;
     btn.style.display = show ? '' : 'none';
-    btn.textContent = "TODAY'S DISH";
-    btn.setAttribute('aria-label', "Today's dish");
-    btn.setAttribute('title', "Today's dish");
+    btn.textContent = 'TODAY';
+    btn.setAttribute('aria-label', 'Today');
+    btn.setAttribute('title', 'Today');
+    updateFooterReplayControls();
+}
+
+// Show/hide and enable/disable footer prev puzzle, REPLAY, next puzzle (when viewing an archive puzzle)
+function updateFooterReplayControls() {
+    const container = document.getElementById('footerReplayControls');
+    const prevPuzzleBtn = document.getElementById('prevPuzzleBtn');
+    const nextPuzzleBtn = document.getElementById('nextPuzzleBtn');
+    if (!container || !prevPuzzleBtn || !nextPuzzleBtn) return;
+
+    const onReplayPuzzle = currentView === 'game' && currentPuzzle && puzzles.length > 0 && currentPuzzle.date !== getRealHelsinkiDate();
+    container.style.display = onReplayPuzzle ? 'flex' : 'none';
+    if (!onReplayPuzzle) return;
+
+    const idx = puzzles.findIndex(p => p.date === currentPuzzle.date);
+    const hasPrev = idx > 0;
+    const hasNext = idx >= 0 && idx < puzzles.length - 1;
+    const nextPuzzle = hasNext ? puzzles[idx + 1] : null;
+    const nextIsToday = nextPuzzle && nextPuzzle.date === getRealHelsinkiDate();
+
+    prevPuzzleBtn.disabled = !hasPrev;
+    nextPuzzleBtn.disabled = !hasNext;
+    prevPuzzleBtn.setAttribute('aria-label', hasPrev ? 'Previous puzzle' : 'No previous puzzle');
+    nextPuzzleBtn.setAttribute('aria-label', hasNext ? (nextIsToday ? 'Today\'s puzzle' : 'Next puzzle') : 'No next puzzle');
+    nextPuzzleBtn.setAttribute('title', hasNext ? (nextIsToday ? 'Today\'s puzzle' : 'Next puzzle') : 'No next puzzle');
 }
 
 function resetGameState() {
@@ -1340,6 +1365,21 @@ function getArchiveYearOptions() {
     return [...combined].sort((a, b) => a - b);
 }
 
+// Earliest and latest (year, month) that have puzzles; null if no puzzles
+function getArchiveMonthRange() {
+    if (!puzzles.length) return null;
+    const dates = puzzles.map(p => (p.date || '').trim()).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
+    if (!dates.length) return null;
+    const minDate = dates.reduce((a, b) => (a <= b ? a : b));
+    const maxDate = dates.reduce((a, b) => (a >= b ? a : b));
+    return {
+        minYear: parseInt(minDate.slice(0, 4), 10),
+        minMonth: parseInt(minDate.slice(5, 7), 10),
+        maxYear: parseInt(maxDate.slice(0, 4), 10),
+        maxMonth: parseInt(maxDate.slice(5, 7), 10)
+    };
+}
+
 function earnedTrophyForDate(dateStr) {
     const entry = getAttemptsData()[dateStr];
     // best is only set when the player won, so its presence means a completed puzzle; trophy = waste <= 25%
@@ -1387,8 +1427,14 @@ function renderArchiveCalendar() {
     }
     const attempts = getAttemptsData();
 
+    const range = getArchiveMonthRange();
+    const canGoPrev = range && (archiveCalendarYear > range.minYear || (archiveCalendarYear === range.minYear && archiveCalendarMonth > range.minMonth));
+    const canGoNext = range && (archiveCalendarYear < range.maxYear || (archiveCalendarYear === range.maxYear && archiveCalendarMonth < range.maxMonth));
+
     if (prevBtn) {
+        prevBtn.disabled = !canGoPrev;
         prevBtn.onclick = () => {
+            if (!canGoPrev) return;
             if (archiveCalendarMonth === 1) {
                 archiveCalendarMonth = 12;
                 archiveCalendarYear--;
@@ -1399,7 +1445,9 @@ function renderArchiveCalendar() {
         };
     }
     if (nextBtn) {
+        nextBtn.disabled = !canGoNext;
         nextBtn.onclick = () => {
+            if (!canGoNext) return;
             if (archiveCalendarMonth === 12) {
                 archiveCalendarMonth = 1;
                 archiveCalendarYear++;
@@ -1545,6 +1593,35 @@ function renderArchiveCalendar() {
 // ARCHIVE button: show archive view
 function handleArchive() {
     showArchiveView();
+}
+
+// Footer: previous puzzle in archive (when viewing a replay)
+function handlePrevPuzzle() {
+    if (!currentPuzzle || !puzzles.length) return;
+    const idx = puzzles.findIndex(p => p.date === currentPuzzle.date);
+    if (idx <= 0) return;
+    loadPuzzle(puzzles[idx - 1]);
+}
+
+// Footer: next puzzle in archive; if next is today, go to today's puzzle (not archive version)
+function handleNextPuzzle() {
+    if (!currentPuzzle || !puzzles.length) return;
+    const idx = puzzles.findIndex(p => p.date === currentPuzzle.date);
+    if (idx < 0 || idx >= puzzles.length - 1) return;
+    const nextPuzzle = puzzles[idx + 1];
+    if (nextPuzzle.date === getRealHelsinkiDate()) {
+        debugDateOverride = null;
+        try { localStorage.removeItem('dish_of_the_day_debug_date'); } catch (e) {}
+        const todayPuzzle = findTodayPuzzle();
+        if (todayPuzzle) loadPuzzle(todayPuzzle);
+    } else {
+        loadPuzzle(nextPuzzle);
+    }
+}
+
+// Footer: replay current puzzle (reset and play again)
+function handleReplayClick() {
+    handleRetry();
 }
 
 // Reset debug date override
@@ -1821,9 +1898,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Navigation buttons
     const prevBtn = document.getElementById('prevBtn');
     const retryBtn = document.getElementById('retryBtn');
-    
+
     prevBtn.addEventListener('click', handleArchive);
     retryBtn.addEventListener('click', handleTodayClick);
+
+    // Footer replay controls (when viewing an archive puzzle)
+    const prevPuzzleBtn = document.getElementById('prevPuzzleBtn');
+    const nextPuzzleBtn = document.getElementById('nextPuzzleBtn');
+    const replayBtn = document.getElementById('replayBtn');
+    if (prevPuzzleBtn) prevPuzzleBtn.addEventListener('click', handlePrevPuzzle);
+    if (nextPuzzleBtn) nextPuzzleBtn.addEventListener('click', handleNextPuzzle);
+    if (replayBtn) replayBtn.addEventListener('click', handleReplayClick);
 
     // Reset to Today button
     const resetToTodayBtn = document.getElementById('resetToTodayBtn');
