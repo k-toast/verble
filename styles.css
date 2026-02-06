@@ -48,21 +48,6 @@
 }
 
 /* ==========================================================================
-   Archive & Replay — Neutral warm gray theme (gentle & elegant)
-   ========================================================================== */
-
-body.archive-view,
-body.replay-view {
-    /* Warmer, slightly darker gray for clearer contrast with default (#F5F4F1) */
-    --color-background:       #D9D7D2;
-
-    /* Neutral gray borders (no brown tint) */
-    --color-border:           #B5B3AE;
-    --color-border-surface:   #A5A39E;
-    --color-border-button:    #95938E;
-}
-
-/* ==========================================================================
    Dark theme — Wordle/NYT-style (same tokens, dark palette)
    ========================================================================== */
 
@@ -90,14 +75,6 @@ html[data-theme="dark"] {
 
     --color-overlay:         rgba(0, 0, 0, 0.65);
     --color-border-subtle:   rgba(255, 255, 255, 0.08);
-}
-
-html[data-theme="dark"] body.archive-view,
-html[data-theme="dark"] body.replay-view {
-    --color-background:       #1c1c1e;
-    --color-border:          #3a3a3c;
-    --color-border-surface:  #48484a;
-    --color-border-button:   #545456;
 }
 
 /* Dark theme: header/footer icons and submit icon — white, lighter default + clear hover */
@@ -981,6 +958,12 @@ footer {
     opacity: 1;
 }
 
+/* Replay button: blue border when puzzle is complete (matches input focus) */
+.game-footer .footer-replay-controls .nav-btn.replay-complete {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 0;
+}
+
 /* ==========================================================================
    Archive — Scrollable list of past puzzles
    ========================================================================== */
@@ -1227,6 +1210,16 @@ footer {
 .footer-replay-controls {
     gap: 6px;
     align-items: center;
+}
+
+/* Replay + arrows: same height in footer (nav-btn matches icon-btn) */
+.game-footer .footer-replay-controls .nav-btn {
+    height: 38px;
+    padding-top: 0;
+    padding-bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* ==========================================================================
@@ -1889,6 +1882,11 @@ footer {
         min-width: 36px;
         min-height: 36px;
     }
+    .game-footer .footer-replay-controls .nav-btn {
+        height: 36px;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
 
     .puzzle-section {
         margin-bottom: 12px;
@@ -2172,6 +2170,11 @@ footer {
         min-width: 32px;
         min-height: 32px;
     }
+    .game-footer .footer-replay-controls .nav-btn {
+        height: 32px;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
 
     /* Archive tiles: extra compact */
     .archive-calendar-tile {
@@ -2274,6 +2277,11 @@ footer {
         min-width: 28px;
         min-height: 28px;
     }
+    .game-footer .footer-replay-controls .nav-btn {
+        height: 28px;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
 }
 
 /* ==========================================================================
@@ -2350,6 +2358,11 @@ footer {
         height: 28px;
         min-width: 28px;
         min-height: 28px;
+    }
+    .game-footer .footer-replay-controls .nav-btn {
+        height: 28px;
+        padding-top: 0;
+        padding-bottom: 0;
     }
 }
 

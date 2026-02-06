@@ -267,10 +267,12 @@ function updateFooterReplayControls() {
     const container = document.getElementById('footerReplayControls');
     const prevPuzzleBtn = document.getElementById('prevPuzzleBtn');
     const nextPuzzleBtn = document.getElementById('nextPuzzleBtn');
+    const replayBtn = document.getElementById('replayBtn');
     if (!container || !prevPuzzleBtn || !nextPuzzleBtn) return;
 
     const onReplayPuzzle = currentView === 'game' && currentPuzzle && puzzles.length > 0 && currentPuzzle.date !== getRealHelsinkiDate();
     container.style.display = onReplayPuzzle ? 'flex' : 'none';
+    if (replayBtn) replayBtn.classList.toggle('replay-complete', onReplayPuzzle && (gameState.isWon || gameState.isLost));
     if (!onReplayPuzzle) return;
 
     const idx = puzzles.findIndex(p => p.date === currentPuzzle.date);
@@ -1095,6 +1097,7 @@ function loadRecipe() {
 
 // Show game over message as modal
 function showGameOver() {
+    updateFooterTodayButton();
     if (gameState.isWon) {
         const adjRaw = gameState.adjectives[0] || '';
         const nounRaw = gameState.noun || '';
