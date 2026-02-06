@@ -1877,7 +1877,9 @@ async function handleAboutFormSubmit(e) {
 // Modal functions
 function openModal(title, content) {
     document.getElementById('modalTitle').textContent = title;
-    document.getElementById('modalContent').innerHTML = content || '<p style="color: #8080a4; text-align: center;">Coming soon...</p>';
+    const modalContent = document.getElementById('modalContent');
+    modalContent.innerHTML = content || '<p style="color: #8080a4; text-align: center;">Coming soon...</p>';
+    modalContent.scrollTop = 0;
     document.getElementById('modalOverlay').style.display = 'flex';
 }
 
@@ -1997,6 +1999,37 @@ document.addEventListener('DOMContentLoaded', async () => {
                     showGameView();
                 }
             };
+        }
+        // On mobile: keep focused input/textarea above keyboard when About form is used
+        const modalContent = document.getElementById('modalContent');
+        if (window.matchMedia('(max-width: 768px)').matches && modalContent && window.visualViewport) {
+            const aboutInputs = [
+                document.getElementById('aboutContactName'),
+                document.getElementById('aboutContactEmail'),
+                document.getElementById('aboutContactMessage')
+            ].filter(Boolean);
+            function scrollFocusedAboveKeyboard() {
+                const active = document.activeElement;
+                if (!active || !aboutInputs.includes(active)) return;
+                const rect = active.getBoundingClientRect();
+                const marginAboveKeyboard = 220;
+                const visibleBottom = window.visualViewport.height - marginAboveKeyboard;
+                if (rect.bottom > visibleBottom) {
+                    modalContent.scrollTop += (rect.bottom - visibleBottom);
+                }
+            }
+            aboutInputs.forEach((el) => {
+                el.addEventListener('focus', () => {
+                    setTimeout(scrollFocusedAboveKeyboard, 100);
+                    setTimeout(scrollFocusedAboveKeyboard, 400);
+                    window.visualViewport.addEventListener('resize', scrollFocusedAboveKeyboard);
+                    window.visualViewport.addEventListener('scroll', scrollFocusedAboveKeyboard);
+                });
+                el.addEventListener('blur', () => {
+                    window.visualViewport.removeEventListener('resize', scrollFocusedAboveKeyboard);
+                    window.visualViewport.removeEventListener('scroll', scrollFocusedAboveKeyboard);
+                });
+            });
         }
     }
     document.getElementById('infoBtn').addEventListener('click', () => {
