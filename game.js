@@ -25,7 +25,7 @@ let currentView = 'game'; // 'game' | 'archive'
 
 // Animation state for letter-by-letter reveal
 let animationState = null; // { ingredient, result, revealedCount, adjArrays, nounArray }
-const LETTER_REVEAL_MS = 300;
+const LETTER_REVEAL_MS = 1300;
 
 // Get real Helsinki timezone date string (YYYY-MM-DD) - without debug override
 function getRealHelsinkiDate() {
@@ -537,7 +537,6 @@ function advancePuzzleFlip() {
     // Only flip when the current letter is a match; skip when it's plain (no flip for this letter)
     if (!current || (current.status !== 'adj' && current.status !== 'noun')) return;
 
-    const letterStates = getLetterStatesForDisplay();
     // Find the most recent previous *match* (not just previous letter), so we mark the right tile flipped when there are plain letters in between
     let prevPosition = null;
     for (let k = revealedCount - 2; k >= 0; k--) {
@@ -559,6 +558,7 @@ function advancePuzzleFlip() {
     const line = stack.children[lineIndex];
     if (!line || indexInLine >= line.children.length) return;
 
+    const letterStates = getLetterStatesForDisplay();
     const letters = lineIndex === 0 ? letterStates.adj : letterStates.noun;
     const puzzleChar = letters[indexInLine] ? letters[indexInLine].char : current.letter;
 
@@ -762,6 +762,41 @@ function matchOneLetter(letter, adjChars, nounChars, usedAdj, usedNoun) {
     return { status: 'plain' };
 }
 
+// Build active (remaining) letters arrays from display states, preserving original indices.
+function buildActiveFromStates(states) {
+    const chars = [];
+    const indices = [];
+    for (let i = 0; i < states.length; i++) {
+        const s = states[i];
+        if (s && s.state === 'active') {
+            chars.push(s.char);
+            indices.push(i);
+        }
+    }
+    return { chars, indices };
+}
+
+// Match one letter against active arrays (adj → noun) in display order; returns original index.
+function matchOneLetterActive(letter, activeAdj, activeNoun) {
+    for (let j = 0; j < activeAdj.chars.length; j++) {
+        if (activeAdj.chars[j] === letter) {
+            const originalIndex = activeAdj.indices[j];
+            activeAdj.chars.splice(j, 1);
+            activeAdj.indices.splice(j, 1);
+            return { status: 'adj', lineIndex: 0, indexInLine: originalIndex };
+        }
+    }
+    for (let j = 0; j < activeNoun.chars.length; j++) {
+        if (activeNoun.chars[j] === letter) {
+            const originalIndex = activeNoun.indices[j];
+            activeNoun.chars.splice(j, 1);
+            activeNoun.indices.splice(j, 1);
+            return { status: 'noun', lineIndex: 1, indexInLine: originalIndex };
+        }
+    }
+    return { status: 'plain' };
+}
+
 // Process an ingredient - letters match against combined puzzle left-to-right (adj → noun)
 // Returns a Promise that resolves to true if accepted, false if rejected (validation failure)
 async function processIngredient(ingredient) {
@@ -816,13 +851,11 @@ async function processIngredient(ingredient) {
     lastRejectedIngredient = null;
     if (input) input.setAttribute('aria-invalid', 'false');
 
-    const adjString = (gameState.remainingAdjectives[0] || '').trim();
-    const nounString = (gameState.remainingNoun || '').trim();
-    const adjChars = adjString.split('');
-    const nounChars = nounString.split('');
-    const usedAdj = adjChars.map(() => false);
-    const usedNoun = nounChars.map(() => false);
     const result = [];
+    // Build active arrays from current display state so we can match in original-index space.
+    const initialStates = getLetterStatesForDisplay();
+    const activeAdj = buildActiveFromStates(initialStates.adj);
+    const activeNoun = buildActiveFromStates(initialStates.noun);
 
     if (input) input.disabled = true;
     if (submitBtn) submitBtn.disabled = true;
@@ -835,17 +868,17 @@ async function processIngredient(ingredient) {
 
     for (let i = 0; i < ingredient.length; i++) {
         const letter = ingredient[i];
-        const matchResult = matchOneLetter(letter, adjChars, nounChars, usedAdj, usedNoun);
-        const { status, lineIndex, charIndex } = matchResult;
+        const matchResult = matchOneLetterActive(letter, activeAdj, activeNoun);
+        const { status, lineIndex, indexInLine } = matchResult;
         const item = { letter, status };
         if (status === 'adj' || status === 'noun') {
             item.lineIndex = lineIndex;
-            item.indexInLine = charIndex;
+            item.indexInLine = indexInLine;
         }
         result.push(item);
 
-        gameState.remainingAdjectives = [adjChars.filter((_, idx) => !usedAdj[idx]).join('')];
-        gameState.remainingNoun = nounChars.filter((_, idx) => !usedNoun[idx]).join('');
+        gameState.remainingAdjectives = [activeAdj.chars.join('')];
+        gameState.remainingNoun = activeNoun.chars.join('');
 
         animationState.result = result;
         animationState.revealedCount = i + 1;
