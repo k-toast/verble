@@ -25,7 +25,7 @@ let currentView = 'game'; // 'game' | 'archive'
 
 // Animation state for letter-by-letter reveal
 let animationState = null; // { ingredient, result, revealedCount, adjArrays, nounArray }
-const LETTER_REVEAL_MS = 1300;
+const LETTER_REVEAL_MS = 300;
 
 // Get real Helsinki timezone date string (YYYY-MM-DD) - without debug override
 function getRealHelsinkiDate() {
@@ -417,31 +417,47 @@ function getStats() {
     };
 }
 
-// Get letter states for puzzle display: active, matched
+// Set of "lineIndex,indexInLine" for positions that have been matched (from history + current animation).
+function getMatchedPositionKeys() {
+    const keys = new Set();
+    for (const item of (gameState.history || [])) {
+        if (!item.result) continue;
+        for (const r of item.result) {
+            if ((r.status === 'adj' || r.status === 'noun') && typeof r.lineIndex === 'number' && typeof r.indexInLine === 'number') {
+                keys.add(`${r.lineIndex},${r.indexInLine}`);
+            }
+        }
+    }
+    if (animationState && animationState.result) {
+        for (const r of animationState.result) {
+            if ((r.status === 'adj' || r.status === 'noun') && typeof r.lineIndex === 'number' && typeof r.indexInLine === 'number') {
+                keys.add(`${r.lineIndex},${r.indexInLine}`);
+            }
+        }
+    }
+    return keys;
+}
+
+// Get letter states for puzzle display: active, matched (by position so repeated letters are correct).
 function getLetterStatesForDisplay() {
     const adjectives = gameState.adjectives || [];
     const noun = gameState.noun || '';
-    const remainingAdjs = gameState.remainingAdjectives || [];
-    const remainingNoun = (gameState.remainingNoun || '').trim();
+    const matchedKeys = getMatchedPositionKeys();
     const result = { adj: [], noun: [] };
 
-    function processWord(original, remaining) {
+    function processLine(original, lineIndex) {
         const letters = [];
-        let rem = remaining.split('');
-        for (const c of original) {
-            const pos = rem.indexOf(c);
-            if (pos >= 0) {
-                rem.splice(pos, 1);
-                letters.push({ char: c, state: 'active' });
-            } else {
-                letters.push({ char: c, state: 'matched' });
-            }
+        const chars = (original || '').trim().split('');
+        for (let indexInLine = 0; indexInLine < chars.length; indexInLine++) {
+            const key = `${lineIndex},${indexInLine}`;
+            const state = matchedKeys.has(key) ? 'matched' : 'active';
+            letters.push({ char: chars[indexInLine], state });
         }
         return letters;
     }
 
-    result.adj = processWord((adjectives[0] || '').trim(), (remainingAdjs[0] || '').trim());
-    result.noun = processWord(noun.trim(), remainingNoun);
+    result.adj = processLine(adjectives[0] || '', 0);
+    result.noun = processLine(noun, 1);
     return result;
 }
 
@@ -895,11 +911,15 @@ async function processIngredient(ingredient) {
             recipeContainer.lastElementChild?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         }
 
-        await sleep(LETTER_REVEAL_MS);
+        // Only pause for the reveal interval when we triggered a flip; skip the beat for unmatched letters.
+        const didFlip = status === 'adj' || status === 'noun';
+        await sleep(didFlip ? LETTER_REVEAL_MS : 0);
     }
 
     const FLIP_DURATION_MS = 550;
-    await sleep(Math.max(0, FLIP_DURATION_MS - LETTER_REVEAL_MS));
+    const lastItem = result[result.length - 1];
+    const lastLetterFlipped = lastItem && (lastItem.status === 'adj' || lastItem.status === 'noun');
+    await sleep(lastLetterFlipped ? Math.max(0, FLIP_DURATION_MS - LETTER_REVEAL_MS) : 0);
 
     animationState = null;
     gameState.moves++;
@@ -960,19 +980,11 @@ function loadRecipe() {
             
             slotDiv.appendChild(itemDiv);
         } else if (animating && i === historyCount) {
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'recipe-item';
-
-            const partial = animationState.result;
-            partial.forEach((letterData) => {
-                const statusClass = letterData.status || 'plain';
-                const box = document.createElement('div');
-                box.className = 'letter-box ' + statusClass;
-                box.textContent = letterData.letter;
-                itemDiv.appendChild(box);
-            });
-
-            slotDiv.appendChild(itemDiv);
+            // During flip animation show nothing here; letters appear all at once when flips are done.
+            const placeholder = document.createElement('div');
+            placeholder.className = 'recipe-placeholder';
+            placeholder.textContent = '???';
+            slotDiv.appendChild(placeholder);
         } else {
             const placeholder = document.createElement('div');
             placeholder.className = 'recipe-placeholder';

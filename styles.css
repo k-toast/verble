@@ -674,6 +674,11 @@ header.solved .dish-name {
     font-weight: 500;
 }
 
+/* Recipe slot during flip animation — empty cells until letters appear at once */
+.letter-box.recipe-letter-pending {
+    opacity: 0.5;
+}
+
 /* Star ingredient display — hidden on main screen, kept for future use */
 .star-ingredient {
     display: none;
