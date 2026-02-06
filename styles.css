@@ -81,7 +81,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     padding: calc(20px + env(safe-area-inset-top, 0px)) calc(20px + env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) calc(20px + env(safe-area-inset-left, 0px));
     color: var(--ink-primary);
     overflow: hidden;
@@ -99,6 +99,8 @@ body {
     padding: 40px;
     max-width: 600px;
     width: 100%;
+    flex: 1;
+    min-height: 0;
     max-height: calc(100dvh - 40px);
     display: flex;
     flex-direction: column;
@@ -116,25 +118,13 @@ body {
     flex-direction: column;
 }
 
-/* Middle area: content-sized for game; when archive is shown, constrained and scrollable */
+/* Middle area: always scrollable; header and footer stay fixed */
 .main-scroll-area {
-    flex: 0 1 auto;
+    flex: 1;
     min-height: 0;
-    overflow: visible;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-}
-
-/* When archive is visible, lock header/footer positions and make middle scroll */
-body.archive-view .container {
-    flex: 1;
-    min-height: 0;
-    max-height: 100dvh;
-}
-
-body.archive-view .main-scroll-area {
-    flex: 1;
-    overflow: hidden;
 }
 
 /* ==========================================================================
@@ -590,7 +580,7 @@ h1 {
 
 .recipe-section {
     margin-bottom: 0;
-    flex: 1;
+    flex: 0 1 auto;
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -609,11 +599,10 @@ h1 {
     display: flex;
     flex-direction: column;
     gap: 0;
-    flex: 1;
+    flex: 0 1 auto;
     min-height: 0;
     overflow-y: auto;
     padding-bottom: calc(var(--section-buffer) / 2);
-    justify-content: flex-end;
 }
 
 .recipe-slot {
@@ -953,12 +942,14 @@ footer {
     flex-direction: column;
     align-items: center;
     gap: 4px;
+    min-width: 0;
 }
 
 .archive-calendar-tile {
     aspect-ratio: 1;
     width: 100%;
     min-height: 44px;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -968,10 +959,12 @@ footer {
     border-radius: 4px;
     font-size: 1.1em;
     padding: 4px;
+    overflow: hidden;
 }
 
 .archive-tile-main {
     flex-shrink: 0;
+    min-width: 0;
     font-weight: 600;
     font-size: 1.4em;
     line-height: 1.2;
@@ -990,6 +983,8 @@ footer {
     margin-top: auto;
     padding-top: 2px;
     font-size: 0.75em;
+    min-width: 0;
+    flex-shrink: 0;
 }
 
 .archive-tile-ll {
@@ -1026,6 +1021,10 @@ footer {
     font-size: 0.7em;
     font-weight: 600;
     color: var(--color-secondary);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .archive-list {
@@ -1499,9 +1498,15 @@ footer {
         overflow-y: auto;
     }
 
-    /* No inner scroll: game fits viewport; body handles any overscroll for pull-to-refresh */
+    /* Middle scrolls; overscroll may trigger pull-to-refresh on some devices */
     #gameContainer {
-        overflow: hidden;
+        overflow-y: auto;
+        overscroll-behavior-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .archive-calendar-grid {
+        overscroll-behavior-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     /* Compact layout for phones so whole game fits without scrolling */
@@ -1514,12 +1519,22 @@ footer {
         --section-buffer: 14px;
     }
 
+    /* Tighter header so middle has more room; proportional rhythm with desktop */
+    #gameHeader.game-header {
+        margin-bottom: var(--section-buffer);
+        padding-bottom: 8px;
+    }
+
     .puzzle-section {
-        margin-bottom: 11px;
+        margin-bottom: 12px;
     }
 
     .puzzle-display {
         padding: 14px 12px;
+    }
+
+    .input-section {
+        margin-bottom: 10px;
     }
 
     .recipe-section h2 {
@@ -1558,6 +1573,21 @@ footer {
     .icon-btn:hover .icon-btn-img {
         filter: none;
         opacity: 1;
+    }
+
+    /* Archive tiles: keep content inside borders on small viewports */
+    .archive-calendar-tile {
+        padding: 2px;
+        min-height: 36px;
+    }
+    .archive-tile-main {
+        font-size: 1.1em;
+    }
+    .archive-tile-bottom {
+        font-size: 0.65em;
+    }
+    .archive-tile-num {
+        font-size: 0.6em;
     }
 }
 
@@ -1648,6 +1678,11 @@ footer {
         --section-buffer: 12px;
     }
 
+    #gameHeader.game-header {
+        margin-bottom: var(--section-buffer);
+        padding-bottom: 6px;
+    }
+
     h1 {
         font-size: 1.5em;
         margin-bottom: 4px;
@@ -1659,6 +1694,10 @@ footer {
 
     .puzzle-section {
         margin-bottom: 9px;
+    }
+
+    .input-section {
+        margin-bottom: 8px;
     }
 
     .puzzle-label {
@@ -1750,6 +1789,21 @@ footer {
     .footer-left .nav-btn {
         padding: 8px 14px;
         font-size: 0.75em;
+    }
+
+    /* Archive tiles: extra compact */
+    .archive-calendar-tile {
+        min-height: 32px;
+        padding: 2px;
+    }
+    .archive-tile-main {
+        font-size: 1em;
+    }
+    .archive-tile-bottom {
+        font-size: 0.6em;
+    }
+    .archive-tile-num {
+        font-size: 0.55em;
     }
 }
 
