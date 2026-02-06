@@ -234,7 +234,7 @@ function updatePuzzleLabel() {
     if (!el || !currentPuzzle) return;
     const today = getHelsinkiDate();
     const isToday = currentPuzzle.date === today;
-    el.textContent = isToday ? "TODAY'S CHALLENGE" : 'REPLAY CHALLENGE';
+    el.textContent = isToday ? "DISH OF THE DAY" : 'DISH OF THE PAST';
     if (countdownWrap) countdownWrap.style.display = isToday ? '' : 'none';
 }
 
@@ -244,17 +244,21 @@ function updateReplayViewClass() {
     document.body.classList.toggle('replay-view', !!isReplay);
 }
 
-// Show TODAY button only when on archive screen or viewing a replay (not today's puzzle)
+// Show ARCHIVE only in game view (hide on archive screen). Show TODAY on archive screen or when viewing a replay.
 function updateFooterTodayButton() {
-    const btn = document.getElementById('retryBtn');
-    if (!btn) return;
+    const prevBtn = document.getElementById('prevBtn');
+    const retryBtn = document.getElementById('retryBtn');
+    if (prevBtn) {
+        prevBtn.style.display = currentView === 'game' ? '' : 'none';
+    }
+    if (!retryBtn) return;
     const onArchiveScreen = currentView === 'archive';
     const onReplayPuzzle = currentView === 'game' && currentPuzzle && currentPuzzle.date !== getHelsinkiDate();
-    const show = onArchiveScreen || onReplayPuzzle;
-    btn.style.display = show ? '' : 'none';
-    btn.textContent = 'TODAY';
-    btn.setAttribute('aria-label', 'Today');
-    btn.setAttribute('title', 'Today');
+    const showToday = onArchiveScreen || onReplayPuzzle;
+    retryBtn.style.display = showToday ? '' : 'none';
+    retryBtn.textContent = 'TODAY';
+    retryBtn.setAttribute('aria-label', 'Today');
+    retryBtn.setAttribute('title', 'Today');
     updateFooterReplayControls();
 }
 
@@ -457,6 +461,9 @@ function getStats() {
         else break;
     }
 
+    const attemptsData = getAttemptsData();
+    const totalStars = Object.keys(attemptsData).filter(dateStr => hadStarIngredientForDate(dateStr)).length;
+
     return {
         dishesAttempted,
         attemptStreak,
@@ -464,6 +471,7 @@ function getStats() {
         successStreak,
         averageWastePercent,
         totalTrophies,
+        totalStars,
         elegantPercent,
         averageIngredients
     };
@@ -752,7 +760,6 @@ function updateDisplay() {
             if (header) header.classList.remove('solved');
             if (gameStatus) gameStatus.textContent = 'Game over. Try again or move to next puzzle.';
         }
-        showGameOver();
     } else {
         input.disabled = false;
         if (header) header.classList.remove('solved');
@@ -771,11 +778,19 @@ function updatePreviousButtonState() {
 
 // Show inline feedback near input
 // style: '' (default), 'error', or 'highlight' (blue)
+const SUBMIT_FOR_REVIEW_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdAPkSeB_acSdPLHas0YJFrj4-nlYGqhXSt72PZpghnTOLMNw/viewform?usp=sharing&ouid=112269985430641044011';
+
 function showInputFeedback(message, style) {
     const el = document.getElementById('inputFeedback');
     if (!el) return;
-    el.textContent = message || '';
     el.className = 'input-feedback' + (style ? ' ' + style : '');
+    if (!message) {
+        el.textContent = '';
+        return;
+    }
+    const escaped = message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    const link = `<a href="${SUBMIT_FOR_REVIEW_URL}" target="_blank" rel="noopener noreferrer" class="input-feedback-review-link">Submit for review?</a>`;
+    el.innerHTML = `<span class="input-feedback-text">${escaped}</span> ${link}`;
 }
 
 // Update input validation state (length limit) and submit button
@@ -980,6 +995,9 @@ async function processIngredient(ingredient) {
     }
     updateDisplay();
     loadRecipe();
+    if (gameState.isWon || gameState.isLost) {
+        showGameOver();
+    }
     return true;
 }
 
@@ -1085,10 +1103,8 @@ function showGameOver() {
 
         const gridHTML = buildVictoryGridHTML();
         const wasteLabel = wastePercent <= TROPHY_WASTE_PERCENT ? `Food waste: ${wastePercent}% 🏆` : `Food waste: ${wastePercent}%`;
-        const tryAgainBtn = isReplayPuzzle
-            ? '<button id="modalRetryBtn" class="victory-share-btn">TRY AGAIN</button>'
-            : '';
-        const shareBtn = isReplayPuzzle ? '' : '<button id="modalShareBtn" class="victory-share-btn">SHARE</button>';
+        const tryAgainBtn = isReplayPuzzle ? '' : '<button id="modalRetryBtn" class="victory-share-btn">TRY AGAIN</button>';
+        const shareBtn = '<button id="modalShareBtn" class="victory-share-btn">SHARE</button>';
         const content = `
             <p class="victory-message">${message}</p>
             ${gridHTML}
@@ -1116,27 +1132,22 @@ function showGameOver() {
         }, 0);
     } else if (gameState.isLost) {
         const isReplayPuzzle = currentPuzzle && currentPuzzle.date !== getHelsinkiDate();
-        const shareBtnHtml = isReplayPuzzle ? '' : '<button id="modalShareBtn" class="victory-share-btn">SHARE</button>';
+        const tryAgainBtnHtml = isReplayPuzzle ? '' : '<button id="modalRetryBtn" class="victory-share-btn">TRY AGAIN</button>';
         const content = `
             <p style="text-align: center; margin-bottom: 20px;">The dish, she is ruined.</p>
             <div style="text-align: center; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                <button id="modalRetryBtn" class="victory-share-btn">TRY AGAIN</button>
-                ${shareBtnHtml}
+                ${tryAgainBtnHtml}
             </div>
         `;
         openModal('Oof!', content);
         
         setTimeout(() => {
             const modalRetryBtn = document.getElementById('modalRetryBtn');
-            const modalShareBtn = document.getElementById('modalShareBtn');
             if (modalRetryBtn) {
                 modalRetryBtn.addEventListener('click', () => {
                     closeModal();
                     handleRetry();
                 });
-            }
-            if (modalShareBtn) {
-                modalShareBtn.addEventListener('click', handleShare);
             }
         }, 0);
     }
@@ -1151,7 +1162,7 @@ function generateShareText() {
     const starMatchCount = getStarIngredientMatchCount();
     const topIngredientSuffix = starMatchCount >= STAR_MATCH_THRESHOLD ? ' ⭐' : '';
 
-    let text = `dish of the day #${puzzleNum}\n\n`;
+    let text = `wordish #${puzzleNum}\n\n`;
 
     if (gameState.isWon) {
         const adjRaw = gameState.adjectives[0] || '';
@@ -1193,13 +1204,24 @@ function handleShare() {
     
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(shareText).then(() => {
-            alert('Results copied to clipboard!');
+            showCopiedModal();
         }).catch(() => {
             copyToClipboardFallback(shareText);
         });
     } else {
         copyToClipboardFallback(shareText);
     }
+}
+
+function showCopiedModal() {
+    const modalEl = document.querySelector('.modal');
+    if (modalEl) modalEl.classList.add('modal--copy-success');
+    openModal('', '<p class="copy-success-message">RESULTS COPIED TO CLIPBOARD</p>');
+    if (window.copiedModalTimeout) clearTimeout(window.copiedModalTimeout);
+    window.copiedModalTimeout = setTimeout(() => {
+        closeModal();
+        window.copiedModalTimeout = null;
+    }, 2500);
 }
 
 function copyToClipboardFallback(text) {
@@ -1211,7 +1233,7 @@ function copyToClipboardFallback(text) {
     textarea.select();
     try {
         document.execCommand('copy');
-        alert('Results copied to clipboard!');
+        showCopiedModal();
     } catch (err) {
         alert('Could not copy to clipboard. Please copy manually:\n\n' + text);
     }
@@ -1618,7 +1640,12 @@ function handleNextPuzzle() {
 
 // Footer: replay current puzzle (reset and play again)
 function handleReplayClick() {
-    handleRetry();
+    if (!currentPuzzle) return;
+    const puzzle = currentPuzzle;
+    try {
+        localStorage.removeItem(`dish_of_the_day_${puzzle.date}`);
+    } catch (_) {}
+    loadPuzzle(puzzle);
 }
 
 // Reset debug date override
@@ -1704,69 +1731,29 @@ function showHelpModal() {
     openModal('How to Play', getHelpContent());
 }
 
-function showSettingsModal() {
-    openModal('Settings', '<p class="settings-placeholder">Settings (placeholder).</p>');
-}
-
-// Stats modal content and open
-function getStatsContent() {
-    const s = getStats();
+function getSettingsContent() {
     return `
-        <div class="stats-content">
-            <div class="stats-grid">
-                <div class="stats-cell">
-                    <div class="stats-label">Dishes attempted</div>
-                    <div class="stats-value">${s.dishesAttempted}</div>
-                </div>
-                <div class="stats-cell">
-                    <div class="stats-label">Attempt streak</div>
-                    <div class="stats-value">${s.attemptStreak}</div>
-                </div>
-                <div class="stats-cell">
-                    <div class="stats-label">Dish successes</div>
-                    <div class="stats-value">${s.dishSuccessesPercent}%</div>
-                </div>
-                <div class="stats-cell">
-                    <div class="stats-label">Success streak</div>
-                    <div class="stats-value">${s.successStreak}</div>
-                </div>
-                <div class="stats-cell">
-                    <div class="stats-label">Av. waste</div>
-                    <div class="stats-value">${s.averageWastePercent}%</div>
-                </div>
-                <div class="stats-cell">
-                    <div class="stats-label">Total trophies</div>
-                    <div class="stats-value">${s.totalTrophies}</div>
-                </div>
-                <div class="stats-cell">
-                    <div class="stats-label">Elegant dishes</div>
-                    <div class="stats-value">${s.elegantPercent}%</div>
-                </div>
-                <div class="stats-cell">
-                    <div class="stats-label">Av. ingredients</div>
-                    <div class="stats-value">${s.averageIngredients}</div>
-                </div>
-            </div>
+        <div class="settings-content">
             <div class="stats-reset">
                 <p class="stats-reset-hint">To reset your profile, type "RESET" into the box below and confirm. <span class="stats-reset-underline">This action cannot be undone.</span></p>
                 <div class="stats-reset-row">
-                    <input type="text" id="statsResetInput" placeholder="type here" autocomplete="off" aria-label="Type RESET to confirm">
-                    <button type="button" id="statsResetBtn" class="stats-reset-btn">CONFIRM</button>
+                    <input type="text" id="settingsResetInput" placeholder="type here" autocomplete="off" aria-label="Type RESET to confirm">
+                    <button type="button" id="settingsResetBtn" class="stats-reset-btn">CONFIRM</button>
                 </div>
             </div>
         </div>
     `;
 }
 
-function showStatsModal() {
-    openModal('STATISTICS', getStatsContent());
+function showSettingsModal() {
+    openModal('Settings', getSettingsContent());
     setTimeout(() => {
-        const input = document.getElementById('statsResetInput');
-        const btn = document.getElementById('statsResetBtn');
+        const input = document.getElementById('settingsResetInput');
+        const btn = document.getElementById('settingsResetBtn');
         const modalContent = document.getElementById('modalContent');
-        if (btn) btn.addEventListener('click', handleStatsReset);
+        if (btn) btn.addEventListener('click', handleProfileReset);
         if (input) {
-            input.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleStatsReset(); });
+            input.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleProfileReset(); });
             if (window.matchMedia('(max-width: 768px)').matches && modalContent && window.visualViewport) {
                 function scrollResetInputAboveKeyboard() {
                     const vv = window.visualViewport;
@@ -1792,8 +1779,47 @@ function showStatsModal() {
     }, 0);
 }
 
-function handleStatsReset() {
-    const input = document.getElementById('statsResetInput');
+// Stats modal content and open
+function getStatsContent() {
+    const s = getStats();
+    return `
+        <div class="stats-content">
+            <div class="stats-grid">
+                <div class="stats-cell">
+                    <div class="stats-label">Dishes Prepared</div>
+                    <div class="stats-value">${s.dishesAttempted}</div>
+                </div>
+                <div class="stats-cell">
+                    <div class="stats-label">Win Streak</div>
+                    <div class="stats-value">${s.successStreak}</div>
+                </div>
+                <div class="stats-cell">
+                    <div class="stats-label">Total Trophies</div>
+                    <div class="stats-value">${s.totalTrophies} 🏆</div>
+                </div>
+                <div class="stats-cell">
+                    <div class="stats-label">Total Stars</div>
+                    <div class="stats-value">${s.totalStars} ⭐</div>
+                </div>
+                <div class="stats-cell">
+                    <div class="stats-label">Av. Ingredients</div>
+                    <div class="stats-value">${s.averageIngredients}</div>
+                </div>
+                <div class="stats-cell">
+                    <div class="stats-label">Av. Waste</div>
+                    <div class="stats-value">${s.averageWastePercent}%</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function showStatsModal() {
+    openModal('My Stats', getStatsContent());
+}
+
+function handleProfileReset() {
+    const input = document.getElementById('settingsResetInput');
     if (!input || (input.value || '').trim().toUpperCase() !== 'RESET') return;
     try {
         localStorage.removeItem(STATS_KEY);
@@ -1810,6 +1836,44 @@ function handleStatsReset() {
     }
 }
 
+// About modal contact form — submit via Web3Forms API, show result in modal
+async function handleAboutFormSubmit(e) {
+    e.preventDefault();
+    const form = e.target;
+    const statusEl = document.getElementById('aboutContactStatus');
+    if (!form || !statusEl) return;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Sending…';
+    }
+    statusEl.style.display = 'block';
+    statusEl.textContent = '';
+    statusEl.classList.remove('about-contact-status--error');
+    const formData = new FormData(form);
+    try {
+        const res = await fetch('https://api.web3forms.com/submit', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+            statusEl.textContent = 'Thanks, your message was sent.';
+            form.style.display = 'none';
+        } else {
+            statusEl.textContent = data.message || 'Something went wrong. Please try again.';
+            statusEl.classList.add('about-contact-status--error');
+        }
+    } catch (err) {
+        statusEl.textContent = 'Could not send. Please try again later.';
+        statusEl.classList.add('about-contact-status--error');
+    }
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Send';
+    }
+}
+
 // Modal functions
 function openModal(title, content) {
     document.getElementById('modalTitle').textContent = title;
@@ -1819,6 +1883,12 @@ function openModal(title, content) {
 
 function closeModal() {
     document.getElementById('modalOverlay').style.display = 'none';
+    const modalEl = document.querySelector('.modal');
+    if (modalEl) modalEl.classList.remove('modal--copy-success');
+    if (window.copiedModalTimeout) {
+        clearTimeout(window.copiedModalTimeout);
+        window.copiedModalTimeout = null;
+    }
 }
 
 // Event listeners
@@ -1889,13 +1959,49 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('settingsBtn').addEventListener('click', showSettingsModal);
     document.getElementById('helpBtn').addEventListener('click', showHelpModal);
 
+    const WEB3FORMS_ACCESS_KEY = '0f17baa3-f330-4950-9e12-bddefff7b16a';
+    const PANTRY_SUBMIT_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdAPkSeB_acSdPLHas0YJFrj4-nlYGqhXSt72PZpghnTOLMNw/viewform?usp=sharing&ouid=112269985430641044011';
     const aboutContent = `<div class="about-content">
-            <p>A daily word puzzle by Mike Kayatta.</p>
-            <p>You are playing an early test version, so you might encounter unexpected bugs or changes, unfinished features, or weird placeholders.</p>
-            <p>Right now, there are 50 puzzles. Eventually, they will be served daily, but for now you can feel free to cheat using <strong>ARCHIVE</strong> to open the calendar and pick any puzzle, or <strong>TODAY</strong> to return to today's puzzle. When viewing a past puzzle, the footer shows <strong>previous puzzle</strong>, <strong>REPLAY</strong>, and <strong>next puzzle</strong> to move between puzzles or replay.</p>
+            <p>Wordish was made by Mike Kayatta.</p>
+            <p>If you're looking for a fantastic first ingredient for <a href="#" id="aboutPuzzle001Link" class="about-content-link">puzzle #001</a>, why not try <strong>ANGELICA</strong>?</p>
+            <p>If you'd like to submit an ingredient for possible inclusion, you can <a href="${PANTRY_SUBMIT_URL}" target="_blank" rel="noopener noreferrer" class="about-content-link">do so here</a>. For other inquiries and comments, use the contact form below.</p>
+            <form id="aboutContactForm" class="about-contact-form" action="https://api.web3forms.com/submit" method="POST">
+                <input type="hidden" name="access_key" value="${WEB3FORMS_ACCESS_KEY}">
+                <input type="hidden" name="subject" value="Wordish contact">
+                <label class="about-form-label" for="aboutContactName">Name</label>
+                <input type="text" id="aboutContactName" name="name" class="about-form-input" required autocomplete="name">
+                <label class="about-form-label" for="aboutContactEmail">Email</label>
+                <input type="email" id="aboutContactEmail" name="email" class="about-form-input" required autocomplete="email">
+                <label class="about-form-label" for="aboutContactMessage">Message</label>
+                <textarea id="aboutContactMessage" name="message" class="about-form-textarea" required rows="4"></textarea>
+                <button type="submit" class="about-form-submit">Send</button>
+            </form>
+            <p id="aboutContactStatus" class="about-contact-status" aria-live="polite" style="display: none;"></p>
         </div>`;
+    function attachAboutModalHandlers() {
+        const form = document.getElementById('aboutContactForm');
+        const statusEl = document.getElementById('aboutContactStatus');
+        if (form) {
+            form.style.display = '';
+            if (statusEl) { statusEl.style.display = 'none'; statusEl.textContent = ''; }
+            form.onsubmit = null;
+            form.onsubmit = handleAboutFormSubmit;
+        }
+        const puzzle001Link = document.getElementById('aboutPuzzle001Link');
+        if (puzzle001Link) {
+            puzzle001Link.onclick = (e) => {
+                e.preventDefault();
+                closeModal();
+                if (puzzles.length > 0) {
+                    loadPuzzle(puzzles[0]);
+                    showGameView();
+                }
+            };
+        }
+    }
     document.getElementById('infoBtn').addEventListener('click', () => {
-        openModal('About Dish of the Day', aboutContent);
+        openModal('About Wordish', aboutContent);
+        attachAboutModalHandlers();
     });
 
     // Mobile hamburger menu: toggle dropdown and menu item actions
@@ -1920,7 +2026,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             else closeMobileMenu();
         });
         document.getElementById('menuMobileAbout').addEventListener('click', () => {
-            openModal('About Dish of the Day', aboutContent);
+            openModal('About Wordish', aboutContent);
+            attachAboutModalHandlers();
             closeMobileMenu();
         });
         document.getElementById('menuMobileHelp').addEventListener('click', () => {

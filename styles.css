@@ -736,7 +736,6 @@ h1 {
     font-size: 0.8em;
     font-weight: 500;
     line-height: 1.35;
-    color: var(--color-secondary);
     margin: 4px 8px 0 8px;
     min-height: calc(1.35em - 4px);
     padding-top: 4px;
@@ -744,17 +743,29 @@ h1 {
     text-align: left;
 }
 
+.input-feedback .input-feedback-text {
+    color: #4b5563;
+}
+
+.input-feedback .input-feedback-review-link {
+    color: var(--color-secondary);
+    text-decoration: underline;
+}
+.input-feedback .input-feedback-review-link:hover {
+    color: var(--color-primary);
+}
+
 /* Keep reserved height when empty so validation message doesn't shift layout */
 .input-feedback:empty {
     min-height: calc(1.35em - 4px);
 }
 
-.input-feedback.error {
-    color: var(--color-primary);
+.input-feedback.error .input-feedback-text {
+    color: #4b5563;
 }
 
-.input-feedback.highlight {
-    color: var(--color-border-focus);
+.input-feedback.highlight .input-feedback-text {
+    color: #4b5563;
 }
 
 /* Header win state */
@@ -1237,6 +1248,7 @@ footer {
     font-size: 1.1em;
     font-weight: 600;
     color: var(--color-primary);
+    text-transform: uppercase;
 }
 
 .modal-close {
@@ -1272,12 +1284,112 @@ footer {
     outline-offset: 2px;
 }
 
+/* Copy-success modal — compact, no header, centered message */
+.modal--copy-success .modal-header {
+    display: none;
+}
+.modal--copy-success .modal {
+    max-width: 340px;
+}
+.modal--copy-success .modal-content {
+    text-align: center;
+    padding: 28px 24px;
+}
+.copy-success-message {
+    margin: 0;
+    font-size: 1em;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--color-primary);
+}
+
 /* About modal — paragraph spacing */
 .about-content p {
     margin-bottom: 12px;
 }
 .about-content > p:last-child {
     margin-bottom: 0;
+}
+.about-content-link {
+    color: var(--color-secondary);
+    text-decoration: underline;
+}
+.about-content-link:hover {
+    color: var(--color-primary);
+}
+
+/* About modal — contact form (matches site inputs/buttons) */
+.about-contact-form {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 100%;
+}
+.about-form-label {
+    font-size: 0.8em;
+    font-weight: 500;
+    color: var(--color-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.about-form-input,
+.about-form-textarea {
+    font-family: inherit;
+    font-size: 0.95em;
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background: var(--color-surface);
+    color: var(--color-primary);
+}
+.about-form-input:focus,
+.about-form-textarea:focus {
+    outline: none;
+}
+.about-form-input:focus-visible,
+.about-form-textarea:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+}
+.about-form-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+.about-form-submit {
+    margin-top: 4px;
+    padding: 10px 18px;
+    font-size: 0.75em;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    background: var(--color-surface-elevated);
+    color: var(--color-muted);
+    border: 1px solid var(--color-border-button);
+    border-radius: 4px;
+    cursor: pointer;
+    align-self: flex-start;
+}
+.about-form-submit:hover:not(:disabled) {
+    border-color: var(--color-border-button);
+    color: var(--color-secondary);
+}
+.about-form-submit:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+}
+.about-form-submit:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+.about-contact-status {
+    margin-top: 8px;
+    font-size: 0.9em;
+    color: var(--color-secondary);
+}
+.about-contact-status--error {
+    color: var(--color-primary);
 }
 
 /* Stats modal */
@@ -1315,6 +1427,11 @@ footer {
     border-top: 1px solid var(--color-border);
     padding-top: 16px;
     margin-top: 4px;
+}
+.settings-content .stats-reset {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 0;
 }
 .stats-reset-hint {
     margin-bottom: 8px;
@@ -1630,6 +1747,17 @@ footer {
         display: none !important;
     }
 
+    /* Footer: replay arrow buttons same size as ARCHIVE/TODAY on mobile */
+    .game-footer .footer-left .nav-btn {
+        min-height: 36px;
+    }
+    .game-footer .footer-replay-controls .icon-btn {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        min-height: 36px;
+    }
+
     .puzzle-section {
         margin-bottom: 12px;
     }
@@ -1661,8 +1789,9 @@ footer {
         margin-bottom: 2px;
     }
 
-    /* Stats modal: no horizontal scroll; reset input stays above keyboard via JS */
-    .stats-content {
+    /* Stats and Settings modals: no horizontal scroll; reset input stays above keyboard via JS */
+    .stats-content,
+    .settings-content {
         overflow-x: hidden;
         min-width: 0;
     }
@@ -1894,6 +2023,13 @@ footer {
     .footer-left .nav-btn {
         padding: 8px 14px;
         font-size: 0.75em;
+        min-height: 32px;
+    }
+    .game-footer .footer-replay-controls .icon-btn {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        min-height: 32px;
     }
 
     /* Archive tiles: extra compact */
@@ -1989,6 +2125,13 @@ footer {
     .footer-left .nav-btn {
         padding: 6px 12px;
         font-size: 0.75em;
+        min-height: 28px;
+    }
+    .game-footer .footer-replay-controls .icon-btn {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        min-height: 28px;
     }
 }
 
@@ -2059,6 +2202,13 @@ footer {
     .footer-left .nav-btn {
         padding: 6px 12px;
         font-size: 0.75em;
+        min-height: 28px;
+    }
+    .game-footer .footer-replay-controls .icon-btn {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        min-height: 28px;
     }
 }
 
