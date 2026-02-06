@@ -28,6 +28,11 @@ let archiveCalendarYear = 2026;
 // Animation state for letter-by-letter reveal
 let animationState = null; // { ingredient, result, revealedCount, adjArrays, nounArray }
 const LETTER_REVEAL_MS = 300;
+const MAX_MOVES = 5;
+const ELEGANT_MAX_MOVES = 3;
+const STAR_MATCH_THRESHOLD = 6;
+const TROPHY_WASTE_PERCENT = 25;
+const MAX_INGREDIENT_LENGTH = 12;
 
 // Get real Helsinki timezone date string (YYYY-MM-DD) - without debug override
 function getRealHelsinkiDate() {
@@ -342,7 +347,7 @@ function getHadStarIngredient() {
     if (!gameState.history || !gameState.history.length) return false;
     return gameState.history.some(item => {
         const matches = (item.result || []).filter(r => r.status === 'adj' || r.status === 'noun').length;
-        return matches >= 6;
+        return matches >= STAR_MATCH_THRESHOLD;
     });
 }
 
@@ -394,7 +399,7 @@ function recordGameCompleted() {
             moves: gameState.moves,
             wastePercent,
             elegant: !!gameState.isElegant,
-            trophy: wastePercent <= 25
+            trophy: wastePercent <= TROPHY_WASTE_PERCENT
         };
         let data = { games: [] };
         try {
@@ -672,7 +677,7 @@ function buildVictoryGridHTML() {
         if (!historyItem || !historyItem.result.length) continue;
         const rowNum = r + 1;
         const matchCount = (historyItem.result || []).filter(c => c.status === 'adj' || c.status === 'noun').length;
-        const starHtml = matchCount >= 6 ? '<span class="victory-row-star">⭐</span>' : '';
+        const starHtml = matchCount >= STAR_MATCH_THRESHOLD ? '<span class="victory-row-star">⭐</span>' : '';
         html += `<li class="victory-grid-row"><span class="victory-row-num">${rowNum}.</span><span class="victory-row-cells">`;
         for (let c = 0; c < historyItem.result.length; c++) {
             const status = historyItem.result[c].status || 'plain';
@@ -792,7 +797,7 @@ function updateInputValidationState() {
     }
 
     const len = currentValue.length;
-    if (len >= 13) {
+    if (len > MAX_INGREDIENT_LENGTH) {
         showInputFeedback('That ingredient has more than 12 letters.', 'highlight');
         input.setAttribute('aria-invalid', 'true');
         submitBtn.disabled = true;
@@ -808,23 +813,6 @@ function updateInputValidationState() {
 // Sleep helper for animation delays
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-// Process one letter: match against puzzle (adj then noun) left-to-right, mark position used, return original puzzle index
-function matchOneLetter(letter, adjChars, nounChars, usedAdj, usedNoun) {
-    for (let j = 0; j < adjChars.length; j++) {
-        if (adjChars[j] === letter && !usedAdj[j]) {
-            usedAdj[j] = true;
-            return { status: 'adj', lineIndex: 0, charIndex: j };
-        }
-    }
-    for (let j = 0; j < nounChars.length; j++) {
-        if (nounChars[j] === letter && !usedNoun[j]) {
-            usedNoun[j] = true;
-            return { status: 'noun', lineIndex: 1, charIndex: j };
-        }
-    }
-    return { status: 'plain' };
 }
 
 // Build active (remaining) letters arrays from display states, preserving original indices.
@@ -872,13 +860,13 @@ async function processIngredient(ingredient) {
     ingredient = ingredient.toUpperCase().trim();
     showInputFeedback('');
 
-    if (ingredient.length > 12) {
+    if (ingredient.length > MAX_INGREDIENT_LENGTH) {
         showInputFeedback('That ingredient has more than 12 letters.', 'highlight');
         if (input) input.setAttribute('aria-invalid', 'true');
         return false;
     }
 
-    if (!/^[A-Z]{2,12}$/.test(ingredient)) {
+    if (!new RegExp(`^[A-Z]{2,${MAX_INGREDIENT_LENGTH}}$`).test(ingredient)) {
         showInputFeedback('Enter 2–12 letters', 'error');
         if (input) input.setAttribute('aria-invalid', 'true');
         return false;
@@ -979,8 +967,8 @@ async function processIngredient(ingredient) {
     const allCleared = allAdjsEmpty && nounEmpty;
     if (allCleared) {
         gameState.isWon = true;
-        gameState.isElegant = gameState.moves <= 3;
-    } else if (gameState.moves >= 5) {
+        gameState.isElegant = gameState.moves <= ELEGANT_MAX_MOVES;
+    } else if (gameState.moves >= MAX_MOVES) {
         gameState.isLost = true;
     }
 
@@ -1000,7 +988,7 @@ function loadRecipe() {
     const container = document.getElementById('recipeContainer');
     container.innerHTML = '';
 
-    const maxSlots = 5;
+    const maxSlots = MAX_MOVES;
     const historyCount = gameState.history.length;
     const animating = animationState !== null;
     const totalSlots = animating ? historyCount + 1 : historyCount;
@@ -1028,7 +1016,7 @@ function loadRecipe() {
             });
 
             const matchCount = (item.result || []).filter(r => r.status === 'adj' || r.status === 'noun').length;
-            if (matchCount >= 6) {
+            if (matchCount >= STAR_MATCH_THRESHOLD) {
                 const starEl = document.createElement('span');
                 starEl.className = 'recipe-row-star';
                 starEl.textContent = '⭐';
@@ -1057,7 +1045,7 @@ function loadRecipe() {
     if (starDiv) {
         const star = getStarIngredient();
         const matchCount = getStarIngredientMatchCount();
-        starDiv.textContent = 'TOP INGREDIENT: ' + (star || '???') + (matchCount >= 6 ? ' ⭐' : '');
+        starDiv.textContent = 'TOP INGREDIENT: ' + (star || '???') + (matchCount >= STAR_MATCH_THRESHOLD ? ' ⭐' : '');
     }
 
     const wasteDiv = document.getElementById('foodWasteDisplay');
@@ -1077,7 +1065,7 @@ function showGameOver() {
         const wastePercent = getWastePercent();
         const starIngredient = getStarIngredient() || '???';
         const starMatchCount = getStarIngredientMatchCount();
-        const topIngredientSuffix = starMatchCount >= 6 ? ' ⭐' : '';
+        const topIngredientSuffix = starMatchCount >= STAR_MATCH_THRESHOLD ? ' ⭐' : '';
 
         const isReplayPuzzle = currentPuzzle && currentPuzzle.date !== getHelsinkiDate();
         let title;
@@ -1096,7 +1084,7 @@ function showGameOver() {
         }
 
         const gridHTML = buildVictoryGridHTML();
-        const wasteLabel = wastePercent <= 25 ? `Food waste: ${wastePercent}% 🏆` : `Food waste: ${wastePercent}%`;
+        const wasteLabel = wastePercent <= TROPHY_WASTE_PERCENT ? `Food waste: ${wastePercent}% 🏆` : `Food waste: ${wastePercent}%`;
         const tryAgainBtn = isReplayPuzzle
             ? '<button id="modalRetryBtn" class="victory-share-btn">TRY AGAIN</button>'
             : '';
@@ -1161,7 +1149,7 @@ function generateShareText() {
     const wastePercent = getWastePercent();
     const starIngredient = getStarIngredient() || '???';
     const starMatchCount = getStarIngredientMatchCount();
-    const topIngredientSuffix = starMatchCount >= 6 ? ' ⭐' : '';
+    const topIngredientSuffix = starMatchCount >= STAR_MATCH_THRESHOLD ? ' ⭐' : '';
 
     let text = `dish of the day #${puzzleNum}\n\n`;
 
@@ -1187,13 +1175,13 @@ function generateShareText() {
             return '⬛';  // black for unmatched
         }).join('');
         const matchCount = (item.result || []).filter(c => c.status === 'adj' || c.status === 'noun').length;
-        const rowStar = matchCount >= 6 ? ' ⭐' : '';
+        const rowStar = matchCount >= STAR_MATCH_THRESHOLD ? ' ⭐' : '';
         text += `${index + 1}. ${boxes}${rowStar}\n`;
     });
 
     if (gameState.isWon) {
         text += `\nTop ingredient: ${starIngredient}${topIngredientSuffix}\n`;
-        text += wastePercent <= 25 ? `Food waste: ${wastePercent}% 🏆` : `Food waste: ${wastePercent}%`;
+        text += wastePercent <= TROPHY_WASTE_PERCENT ? `Food waste: ${wastePercent}% 🏆` : `Food waste: ${wastePercent}%`;
     }
 
     return text;
@@ -1382,8 +1370,8 @@ function getArchiveMonthRange() {
 
 function earnedTrophyForDate(dateStr) {
     const entry = getAttemptsData()[dateStr];
-    // best is only set when the player won, so its presence means a completed puzzle; trophy = waste <= 25%
-    return entry && entry.best && entry.best.waste <= 25;
+    // best is only set when the player won, so its presence means a completed puzzle; trophy = waste <= TROPHY_WASTE_PERCENT
+    return entry && entry.best && entry.best.waste <= TROPHY_WASTE_PERCENT;
 }
 
 // Derive star-ingredient from saved game state (for attempts saved before we stored hadStarIngredient)
@@ -1395,7 +1383,7 @@ function getHadStarIngredientFromSavedState(dateStr) {
         if (!parsed || !Array.isArray(parsed.history)) return false;
         return parsed.history.some(item => {
             const matches = (item.result || []).filter(r => r.status === 'adj' || r.status === 'noun').length;
-            return matches >= 6;
+            return matches >= STAR_MATCH_THRESHOLD;
         });
     } catch (_) {
         return false;
@@ -1514,7 +1502,7 @@ function renderArchiveCalendar() {
             const num = getPuzzleNumber(puzzle);
             const entry = getAttemptEntryForDate(dateStr);
             const completed = !!entry;
-            const won = entry && (entry.best || entry.first.won);
+            const won = entry && entry.first && (entry.best || entry.first.won);
             const trophy = earnedTrophyForDate(dateStr);
             const star = hadStarIngredientForDate(dateStr);
 
@@ -1526,7 +1514,8 @@ function renderArchiveCalendar() {
             } else {
                 const main = document.createElement('span');
                 main.className = 'archive-tile-main';
-                main.textContent = won ? String(entry.best ? entry.best.moves : entry.first.moves) : 'X';
+                const movesVal = entry.first ? (won ? (entry.best ? entry.best.moves : entry.first.moves) : 'X') : '?';
+                main.textContent = String(movesVal);
                 tile.appendChild(main);
                 if (won && (trophy || star)) {
                     const bottom = document.createElement('div');
@@ -1550,7 +1539,7 @@ function renderArchiveCalendar() {
             tile.setAttribute('role', 'button');
             tile.setAttribute('tabindex', '0');
             const ariaParts = [`Puzzle ${num}`];
-            if (completed) ariaParts.push(won ? `${entry.best ? entry.best.moves : entry.first.moves} ingredients` : 'Not completed');
+            if (completed) ariaParts.push(entry.first ? (won ? `${entry.best ? entry.best.moves : entry.first.moves} ingredients` : 'Not completed') : '?');
             if (trophy) ariaParts.push('food waste trophy');
             if (star) ariaParts.push('star ingredient');
             tile.setAttribute('aria-label', ariaParts.join(', '));
@@ -1638,35 +1627,6 @@ function resetDebugDate() {
 // Handle reset to today button
 function handleResetToToday() {
     resetDebugDate();
-}
-
-// Handle navigation (previous or next)
-function handleNavigate(direction) {
-    if (direction === 'prev') {
-        const prevBtn = document.getElementById('prevBtn');
-        if (prevBtn && prevBtn.disabled) return;
-    }
-
-    const currentDate = getHelsinkiDate();
-    const targetDate = direction === 'prev' ? decrementDate(currentDate) : incrementDate(currentDate);
-    const targetPuzzle = puzzles.find(p => p.date === targetDate);
-
-    debugDateOverride = targetDate;
-    try {
-        localStorage.setItem('dish_of_the_day_debug_date', targetDate);
-    } catch (error) {
-        console.error('Error saving debug date to localStorage:', error);
-    }
-
-    if (targetPuzzle) {
-        loadPuzzle(targetPuzzle);
-    } else {
-        initGame();
-    }
-}
-
-function handlePrevious() {
-    handleNavigate('prev');
 }
 
 // Countdown timer to midnight Helsinki time
@@ -1925,7 +1885,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         openModal('About Dish of the Day', `<div class="about-content">
             <p>A daily word puzzle by Mike Kayatta.</p>
             <p>You are playing an early test version, so you might encounter unexpected bugs or changes, unfinished features, or weird placeholders.</p>
-            <p>Right now, there are 50 puzzles. Eventually, they will be served daily, but for now you can feel free to cheat using the <strong>&lt;</strong> <strong>R</strong> and <strong>&gt;</strong> buttons at the bottom of the game, which move between the available puzzles and even allow you to replay.</p>
+            <p>Right now, there are 50 puzzles. Eventually, they will be served daily, but for now you can feel free to cheat using <strong>ARCHIVE</strong> to open the calendar and pick any puzzle, or <strong>TODAY</strong> to return to today's puzzle. When viewing a past puzzle, the footer shows <strong>previous puzzle</strong>, <strong>REPLAY</strong>, and <strong>next puzzle</strong> to move between puzzles or replay.</p>
         </div>`);
     });
     

@@ -44,12 +44,12 @@
 **Changes:**
 - Puzzle letters: `transition: opacity 0.15s` for active→matched; matched letters use `line-through` instead of underline
 - Tile reveal: `tileReveal` animation (~150ms) when a new ingredient row appears
-- Inline validation: "Enter 2–20 letters" and "Already used" near input; no modal
+- Inline validation: "Enter 2–12 letters" and "Already used" near input; no modal
 - Win: "Solved" banner, header `.solved` class (dish name in green), ARIA live region
 - Lose: "Try again" and "Share" buttons in modal; ARIA live region for game-over message
 - `prefers-reduced-motion: reduce` disables letter and tile animations
 
-**Verify:** Submit invalid input (e.g. "A" or "123") → "Enter 2–20 letters". Submit same ingredient twice → "Already used". Solve puzzle → "Solved" banner and green dish name. Lose → modal with "Try again" and "Share".
+**Verify:** Submit invalid input (e.g. "A" or "123") → "Enter 2–12 letters". Submit same ingredient twice → "Already used". Solve puzzle → "Solved" banner and green dish name. Lose → modal with "Try again" and "Share".
 
 ---
 
