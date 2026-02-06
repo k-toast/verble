@@ -27,8 +27,9 @@
             <div class="puzzle-column">
             <div class="puzzle-section">
                 <div class="puzzle-label-wrap">
-                <span id="puzzleLabel" class="puzzle-label">TODAY'S CHALLENGE</span><span id="countdownInLabel" class="countdown-in-label"> - Next in: <span id="countdownTimer">--:--</span></span>
-            </div>
+                    <span id="puzzleLabel" class="puzzle-label">TODAY'S CHALLENGE</span>
+                    <span id="countdownInLabel" class="countdown-in-label">NEXT IN: <span id="countdownTimer">--:--</span></span>
+                </div>
                 <div class="puzzle-display">
                     <div class="puzzle-stack" id="puzzleStack"></div>
                 </div>
@@ -45,7 +46,7 @@
                         aria-describedby="inputFeedback"
                         aria-invalid="false"
                     >
-                    <button id="submitBtn" type="button" aria-label="Submit"><span class="submit-text">SUBMIT</span><span class="submit-arrow" aria-hidden="true">↑</span></button>
+                    <button id="submitBtn" type="button" aria-label="Submit"><img src="assets/icons/submit.svg" alt="" width="24" height="24" class="submit-icon"></button>
                 </div>
                 <div id="inputFeedback" class="input-feedback" role="status" aria-live="polite"></div>
             </div>
@@ -60,8 +61,18 @@
         </div>
 
         <div id="archiveContainer" class="archive-container" style="display: none;">
-            <h2 class="archive-title">Archive</h2>
-            <div id="archiveList" class="archive-list"></div>
+            <div class="archive-controls">
+                <button type="button" id="archivePrevMonthBtn" class="icon-btn archive-nav-btn" title="Previous month" aria-label="Previous month"><img src="assets/icons/arrow-chevron-left.svg" alt="" width="24" height="24" class="icon-btn-img"></button>
+                <div class="archive-controls-center">
+                    <select id="archiveMonthSelect" class="archive-select" aria-label="Month"></select>
+                    <select id="archiveYearSelect" class="archive-select" aria-label="Year"></select>
+                </div>
+                <button type="button" id="archiveNextMonthBtn" class="icon-btn archive-nav-btn" title="Next month" aria-label="Next month"><img src="assets/icons/arrow-chevron-right.svg" alt="" width="24" height="24" class="icon-btn-img"></button>
+            </div>
+            <div class="archive-days-header" aria-hidden="true">
+                <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+            </div>
+            <div id="archiveCalendarGrid" class="archive-calendar-grid"></div>
         </div>
         </div>
 
@@ -72,9 +83,10 @@
                 <button id="retryBtn" class="nav-btn" title="Today's dish" aria-label="Today's dish" style="display: none;">TODAY'S DISH</button>
             </div>
             <div class="footer-right">
-                <button id="statsBtn" class="icon-btn icon-btn-stats" title="Statistics" aria-label="Statistics"><img src="assets/stats-icon.png" alt="" width="20" height="20"></button>
-                <button id="helpBtn" class="icon-btn" title="Help">?</button>
-                <button id="infoBtn" class="icon-btn" title="Info">i</button>
+                <button id="statsBtn" class="icon-btn icon-btn-stats" title="Statistics" aria-label="Statistics"><img src="assets/icons/stats.svg" alt="" width="24" height="24" class="icon-btn-img"></button>
+                <button id="settingsBtn" class="icon-btn" title="Settings" aria-label="Settings"><img src="assets/icons/settings.svg" alt="" width="24" height="24" class="icon-btn-img"></button>
+                <button id="helpBtn" class="icon-btn" title="Help" aria-label="Help"><img src="assets/icons/help.svg" alt="" width="24" height="24" class="icon-btn-img"></button>
+                <button id="infoBtn" class="icon-btn" title="Info" aria-label="Info"><img src="assets/icons/info.svg" alt="" width="24" height="24" class="icon-btn-img"></button>
             </div>
         </footer>
         </div>

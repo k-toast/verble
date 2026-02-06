@@ -22,6 +22,8 @@ let blockedFoods = new Set();
 let lastRejectedIngredient = null;
 let lastAttemptWasNewBest = false;
 let currentView = 'game'; // 'game' | 'archive'
+let archiveCalendarMonth = 1;   // 1–12, default set when opening archive
+let archiveCalendarYear = 2026;
 
 // Animation state for letter-by-letter reveal
 let animationState = null; // { ingredient, result, revealedCount, adjArrays, nounArray }
@@ -188,6 +190,7 @@ function initGame() {
     if (!currentPuzzle) {
         document.getElementById('noPuzzleMessage').style.display = 'block';
         document.getElementById('gameContainer').style.display = 'none';
+        updateReplayViewClass();
         updatePreviousButtonState();
         updateFooterTodayButton();
         startCountdownTimer();
@@ -212,6 +215,7 @@ function initGame() {
     }
 
     gameState.puzzleDate = puzzleDate;
+    updateReplayViewClass();
     updateDisplay();
     loadRecipe();
     updatePuzzleLabel();
@@ -227,6 +231,12 @@ function updatePuzzleLabel() {
     const isToday = currentPuzzle.date === today;
     el.textContent = isToday ? "TODAY'S CHALLENGE" : 'REPLAY CHALLENGE';
     if (countdownWrap) countdownWrap.style.display = isToday ? '' : 'none';
+}
+
+// Keep body.replay-view in sync so archive puzzles get the parchment theme
+function updateReplayViewClass() {
+    const isReplay = currentView === 'game' && currentPuzzle && currentPuzzle.date !== getHelsinkiDate();
+    document.body.classList.toggle('replay-view', !!isReplay);
 }
 
 // Show TODAY'S DISH button only when on archive screen or viewing a replay (not today's puzzle)
@@ -302,6 +312,15 @@ function isBetterRun(movesA, wasteA, movesB, wasteB) {
     return (movesA < movesB) || (movesA === movesB && wasteA < wasteB);
 }
 
+// Whether any ingredient in history had 6+ matching letters (star ingredient)
+function getHadStarIngredient() {
+    if (!gameState.history || !gameState.history.length) return false;
+    return gameState.history.some(item => {
+        const matches = (item.result || []).filter(r => r.status === 'adj' || r.status === 'noun').length;
+        return matches >= 6;
+    });
+}
+
 // Record first/best attempt for this puzzle. Call on game end (win or loss). Returns { isNewBest } for wins.
 function recordAttempts() {
     if (!gameState.isWon && !gameState.isLost) return { isNewBest: false };
@@ -309,6 +328,7 @@ function recordAttempts() {
     const moves = gameState.moves;
     const waste = getWastePercent();
     const won = gameState.isWon;
+    const hadStarIngredient = getHadStarIngredient();
 
     const data = getAttemptsData();
     const existing = data[date];
@@ -317,10 +337,12 @@ function recordAttempts() {
     if (!existing) {
         data[date] = {
             first: { moves, waste, won },
-            best: won ? { moves, waste } : null
+            best: won ? { moves, waste } : null,
+            hadStarIngredient: hadStarIngredient
         };
         if (won) isNewBest = true;
     } else {
+        data[date].hadStarIngredient = existing.hadStarIngredient || hadStarIngredient;
         if (won) {
             const prevBest = existing.best;
             const thisRun = { moves, waste };
@@ -617,13 +639,15 @@ function getIndefiniteArticle(word) {
     return /[aeiou]/.test(first) ? 'an' : 'a';
 }
 
-// Build victory grid HTML: numbered list, only used cells (green=matched, grey=unmatched), left-aligned
+// Build victory grid HTML: numbered list, only used cells (green=matched, grey=unmatched), star if 6+ matches
 function buildVictoryGridHTML() {
     let html = '<ol class="victory-grid">';
     for (let r = 0; r < gameState.history.length; r++) {
         const historyItem = gameState.history[r];
         if (!historyItem || !historyItem.result.length) continue;
         const rowNum = r + 1;
+        const matchCount = (historyItem.result || []).filter(c => c.status === 'adj' || c.status === 'noun').length;
+        const starHtml = matchCount >= 6 ? '<span class="victory-row-star">⭐</span>' : '';
         html += `<li class="victory-grid-row"><span class="victory-row-num">${rowNum}.</span><span class="victory-row-cells">`;
         for (let c = 0; c < historyItem.result.length; c++) {
             const status = historyItem.result[c].status || 'plain';
@@ -632,7 +656,7 @@ function buildVictoryGridHTML() {
                 : 'victory-cell victory-cell-unmatched';
             html += `<span class="${cellClass}"></span>`;
         }
-        html += '</span></li>';
+        html += `</span>${starHtml}</li>`;
     }
     html += '</ol>';
     return html;
@@ -977,6 +1001,15 @@ function loadRecipe() {
                 box.textContent = letterData.letter;
                 itemDiv.appendChild(box);
             });
+
+            const matchCount = (item.result || []).filter(r => r.status === 'adj' || r.status === 'noun').length;
+            if (matchCount >= 6) {
+                const starEl = document.createElement('span');
+                starEl.className = 'recipe-row-star';
+                starEl.textContent = '⭐';
+                starEl.setAttribute('aria-label', '6 or more matching letters');
+                itemDiv.appendChild(starEl);
+            }
             
             slotDiv.appendChild(itemDiv);
         } else if (animating && i === historyCount) {
@@ -1021,17 +1054,21 @@ function showGameOver() {
         const starMatchCount = getStarIngredientMatchCount();
         const topIngredientSuffix = starMatchCount >= 6 ? ' ⭐' : '';
 
+        const isReplayPuzzle = currentPuzzle && currentPuzzle.date !== getHelsinkiDate();
         let title;
         let message;
-        if (gameState.isElegant) {
+        if (isReplayPuzzle && lastAttemptWasNewBest) {
+            title = 'A new best!';
+        } else if (gameState.isElegant) {
             title = 'An elegant dish!';
-            message = `You prepared an elegant ${adj} ${noun} using only ${gameState.moves} ingredients!`;
         } else {
             title = 'An excellent dish!';
+        }
+        if (gameState.isElegant) {
+            message = `You prepared an elegant ${adj} ${noun} using only ${gameState.moves} ingredients!`;
+        } else {
             message = `You prepared an excellent ${adj} ${noun} using ${gameState.moves} ingredients!`;
         }
-        const isReplayPuzzle = currentPuzzle && currentPuzzle.date !== getHelsinkiDate();
-        if (isReplayPuzzle && lastAttemptWasNewBest) title += ' - A NEW BEST!';
 
         const gridHTML = buildVictoryGridHTML();
         const wasteLabel = wastePercent <= 25 ? `Food waste: ${wastePercent}% 🏆` : `Food waste: ${wastePercent}%`;
@@ -1117,14 +1154,16 @@ function generateShareText() {
         text += `The dish, she is ruined. (${moves} ingredients)\n\n`;
     }
 
-    // Grid: only matched (green) and unmatched (black), no blanks, numbered rows
+    // Grid: only matched (green) and unmatched (black), no blanks, numbered rows; star after row if 6+ matches
     gameState.history.forEach((item, index) => {
         const boxes = item.result.map(cell => {
             const status = cell.status || 'plain';
             if (status === 'adj' || status === 'noun') return '🟩';
             return '⬛';  // black for unmatched
         }).join('');
-        text += `${index + 1}. ${boxes}\n`;
+        const matchCount = (item.result || []).filter(c => c.status === 'adj' || c.status === 'noun').length;
+        const rowStar = matchCount >= 6 ? ' ⭐' : '';
+        text += `${index + 1}. ${boxes}${rowStar}\n`;
     });
 
     if (gameState.isWon) {
@@ -1191,6 +1230,7 @@ function loadPuzzle(puzzle) {
     }
 
     gameState.puzzleDate = puzzleDate;
+    updateReplayViewClass();
     updateDisplay();
     loadRecipe();
     updatePuzzleLabel();
@@ -1249,14 +1289,19 @@ function handleRetry() {
     // Don't auto-focus input - let user tap when ready (avoids mobile keyboard popup)
 }
 
-// Show archive view and render list
+// Show archive view and render calendar
 function showArchiveView() {
     currentView = 'archive';
     document.body.classList.add('archive-view');
+    updateReplayViewClass();
     document.getElementById('noPuzzleMessage').style.display = 'none';
     document.getElementById('gameContainer').style.display = 'none';
     document.getElementById('archiveContainer').style.display = 'flex';
-    renderArchiveList();
+    const today = getRealHelsinkiDate();
+    const [y, m] = today.split('-').map(Number);
+    archiveCalendarYear = y;
+    archiveCalendarMonth = m;
+    renderArchiveCalendar();
     updateFooterTodayButton();
 }
 
@@ -1264,6 +1309,7 @@ function showArchiveView() {
 function showGameView() {
     currentView = 'game';
     document.body.classList.remove('archive-view');
+    updateReplayViewClass();
     document.getElementById('archiveContainer').style.display = 'none';
     const hasPuzzle = currentPuzzle && puzzles.find(p => p.date === currentPuzzle.date);
     if (!hasPuzzle) {
@@ -1276,47 +1322,224 @@ function showGameView() {
     updateFooterTodayButton();
 }
 
-// Build and render archive list (all past puzzles: date < today, with or without attempts)
-function renderArchiveList() {
-    const listEl = document.getElementById('archiveList');
-    if (!listEl) return;
-    const attempts = getAttemptsData();
-    const today = getRealHelsinkiDate();
-    const pastPuzzles = puzzles.filter(p => p.date < today).sort((a, b) => b.date.localeCompare(a.date));
-    listEl.innerHTML = '';
-    pastPuzzles.forEach(puzzle => {
-        const date = puzzle.date;
-        const entry = attempts[date];
-        const num = getPuzzleNumber(puzzle);
-        const name = [...getPuzzleAdjectives(puzzle), puzzle.noun].filter(Boolean).map(w => titleCase(w)).join(' ');
-        let row1Ingredients, row1Waste, row2Text;
-        if (entry && entry.first) {
-            const first = entry.first;
-            const best = entry.best;
-            row1Ingredients = first.won ? String(first.moves) : 'fail';
-            row1Waste = first.won ? `${first.waste}%` : 'fail';
-            row2Text = best
-                ? `Best attempt: ingredients used: ${best.moves}, food waste: ${best.waste}%`
-                : 'Best attempt: —';
-        } else {
-            row1Ingredients = '—';
-            row1Waste = '—';
-            row2Text = 'Best attempt: —';
-        }
-        const item = document.createElement('div');
-        item.className = 'archive-item';
-        item.dataset.date = date;
-        item.innerHTML = `
-            <div class="archive-item-row1">#${num} ${name}, ingredients used: ${row1Ingredients}, food waste: ${row1Waste}</div>
-            <div class="archive-item-row2">${row2Text}</div>
-        `;
-        item.addEventListener('click', () => {
-            loadPuzzle(puzzle);
-            showGameView();
-            updatePuzzleLabel();
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+function getDaysInMonth(year, month) {
+    return new Date(year, month, 0).getDate();
+}
+
+function getFirstDayOfMonth(year, month) {
+    return new Date(year, month - 1, 1).getDay();
+}
+
+function getArchiveYearOptions() {
+    const currentYear = new Date().getFullYear();
+    if (!puzzles.length) return [currentYear - 1, currentYear, currentYear + 1];
+    const fromPuzzles = [...new Set(puzzles.map(p => (p.date || '').slice(0, 4)).filter(Boolean))].map(Number).sort((a, b) => a - b);
+    const combined = new Set([...fromPuzzles, currentYear]);
+    return [...combined].sort((a, b) => a - b);
+}
+
+function earnedTrophyForDate(dateStr) {
+    const entry = getAttemptsData()[dateStr];
+    // best is only set when the player won, so its presence means a completed puzzle; trophy = waste <= 25%
+    return entry && entry.best && entry.best.waste <= 25;
+}
+
+// Derive star-ingredient from saved game state (for attempts saved before we stored hadStarIngredient)
+function getHadStarIngredientFromSavedState(dateStr) {
+    try {
+        const raw = localStorage.getItem(`dish_of_the_day_${dateStr}`);
+        if (!raw) return false;
+        const parsed = JSON.parse(raw);
+        if (!parsed || !Array.isArray(parsed.history)) return false;
+        return parsed.history.some(item => {
+            const matches = (item.result || []).filter(r => r.status === 'adj' || r.status === 'noun').length;
+            return matches >= 6;
         });
-        listEl.appendChild(item);
+    } catch (_) {
+        return false;
+    }
+}
+
+function hadStarIngredientForDate(dateStr) {
+    const entry = getAttemptsData()[dateStr];
+    if (entry && entry.hadStarIngredient === true) return true;
+    return getHadStarIngredientFromSavedState(dateStr);
+}
+
+function getAttemptEntryForDate(dateStr) {
+    return getAttemptsData()[dateStr];
+}
+
+// Build and render archive calendar (month/year dropdowns + 7-column grid, puzzle # and trophy per tile)
+function renderArchiveCalendar() {
+    const monthSelect = document.getElementById('archiveMonthSelect');
+    const yearSelect = document.getElementById('archiveYearSelect');
+    const gridEl = document.getElementById('archiveCalendarGrid');
+    const prevBtn = document.getElementById('archivePrevMonthBtn');
+    const nextBtn = document.getElementById('archiveNextMonthBtn');
+    if (!monthSelect || !yearSelect || !gridEl) return;
+
+    let yearOpts = getArchiveYearOptions();
+    if (!yearOpts.includes(archiveCalendarYear)) {
+        yearOpts = [...yearOpts, archiveCalendarYear].sort((a, b) => a - b);
+    }
+    const attempts = getAttemptsData();
+
+    if (prevBtn) {
+        prevBtn.onclick = () => {
+            if (archiveCalendarMonth === 1) {
+                archiveCalendarMonth = 12;
+                archiveCalendarYear--;
+            } else {
+                archiveCalendarMonth--;
+            }
+            renderArchiveCalendar();
+        };
+    }
+    if (nextBtn) {
+        nextBtn.onclick = () => {
+            if (archiveCalendarMonth === 12) {
+                archiveCalendarMonth = 1;
+                archiveCalendarYear++;
+            } else {
+                archiveCalendarMonth++;
+            }
+            renderArchiveCalendar();
+        };
+    }
+
+    monthSelect.innerHTML = '';
+    MONTH_NAMES.forEach((name, i) => {
+        const opt = document.createElement('option');
+        opt.value = String(i + 1);
+        opt.textContent = name;
+        monthSelect.appendChild(opt);
     });
+    monthSelect.value = String(archiveCalendarMonth);
+    monthSelect.onchange = () => {
+        archiveCalendarMonth = parseInt(monthSelect.value, 10);
+        renderArchiveCalendar();
+    };
+
+    yearSelect.innerHTML = '';
+    yearOpts.forEach(y => {
+        const opt = document.createElement('option');
+        opt.value = String(y);
+        opt.textContent = String(y);
+        yearSelect.appendChild(opt);
+    });
+    yearSelect.value = String(archiveCalendarYear);
+    yearSelect.onchange = () => {
+        archiveCalendarYear = parseInt(yearSelect.value, 10);
+        renderArchiveCalendar();
+    };
+
+    const firstDay = getFirstDayOfMonth(archiveCalendarYear, archiveCalendarMonth);
+    const daysInMonth = getDaysInMonth(archiveCalendarYear, archiveCalendarMonth);
+    const pad = n => String(n).padStart(2, '0');
+    const today = getRealHelsinkiDate();
+
+    const rowsNeeded = Math.ceil((firstDay + daysInMonth) / 7);
+    const totalCells = rowsNeeded * 7;
+
+    gridEl.innerHTML = '';
+    for (let i = 0; i < totalCells; i++) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'archive-cell-wrapper';
+        const tile = document.createElement('div');
+        tile.className = 'archive-calendar-tile';
+        const dayIndex = i - firstDay;
+        if (dayIndex < 0 || dayIndex >= daysInMonth) {
+            tile.classList.add('archive-calendar-tile-empty');
+            wrapper.appendChild(tile);
+            gridEl.appendChild(wrapper);
+            continue;
+        }
+        const day = dayIndex + 1;
+        const dateStr = `${archiveCalendarYear}-${pad(archiveCalendarMonth)}-${pad(day)}`;
+        const isPastOrToday = dateStr <= today;
+        const puzzle = isPastOrToday ? puzzles.find(p => p.date === dateStr) : null;
+        if (puzzle) {
+            tile.classList.add('archive-calendar-tile-filled');
+            const num = getPuzzleNumber(puzzle);
+            const entry = getAttemptEntryForDate(dateStr);
+            const completed = !!entry;
+            const won = entry && (entry.best || entry.first.won);
+            const trophy = earnedTrophyForDate(dateStr);
+            const star = hadStarIngredientForDate(dateStr);
+
+            if (!completed) {
+                const q = document.createElement('span');
+                q.className = 'archive-tile-main archive-tile-q';
+                q.textContent = '?';
+                tile.appendChild(q);
+            } else {
+                const main = document.createElement('span');
+                main.className = 'archive-tile-main';
+                main.textContent = won ? String(entry.best ? entry.best.moves : entry.first.moves) : 'X';
+                tile.appendChild(main);
+                if (won && (trophy || star)) {
+                    const bottom = document.createElement('div');
+                    bottom.className = 'archive-tile-bottom';
+                    if (trophy) {
+                        const ll = document.createElement('span');
+                        ll.className = 'archive-tile-ll';
+                        ll.textContent = '🏆';
+                        bottom.appendChild(ll);
+                    }
+                    if (star) {
+                        const lr = document.createElement('span');
+                        lr.className = 'archive-tile-lr';
+                        lr.textContent = '⭐';
+                        bottom.appendChild(lr);
+                    }
+                    tile.appendChild(bottom);
+                }
+            }
+            tile.dataset.date = dateStr;
+            tile.setAttribute('role', 'button');
+            tile.setAttribute('tabindex', '0');
+            const ariaParts = [`Puzzle ${num}`];
+            if (completed) ariaParts.push(won ? `${entry.best ? entry.best.moves : entry.first.moves} ingredients` : 'Not completed');
+            if (trophy) ariaParts.push('food waste trophy');
+            if (star) ariaParts.push('star ingredient');
+            tile.setAttribute('aria-label', ariaParts.join(', '));
+            tile.addEventListener('click', () => {
+                if (dateStr === today) {
+                    debugDateOverride = null;
+                    try { localStorage.removeItem('dish_of_the_day_debug_date'); } catch (e) {}
+                    const todayPuzzle = findTodayPuzzle();
+                    if (todayPuzzle) {
+                        loadPuzzle(todayPuzzle);
+                        showGameView();
+                        updatePuzzleLabel();
+                        updateReplayViewClass();
+                    }
+                } else {
+                    loadPuzzle(puzzle);
+                    showGameView();
+                    updatePuzzleLabel();
+                }
+            });
+            tile.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    tile.click();
+                }
+            });
+            wrapper.appendChild(tile);
+            const numEl = document.createElement('span');
+            numEl.className = 'archive-tile-num';
+            numEl.textContent = `#${num}`;
+            wrapper.appendChild(numEl);
+        } else {
+            tile.classList.add('archive-calendar-tile-empty');
+            wrapper.appendChild(tile);
+        }
+        gridEl.appendChild(wrapper);
+    }
 }
 
 // ARCHIVE button: show archive view
@@ -1427,13 +1650,17 @@ function getHelpContent() {
                 <img src="assets/clean-after.png" alt="Challenge dish after: BANANA letters matched" class="help-image">
             </div>
             <p>With the <strong>A</strong>, <strong>N</strong>, <strong>A</strong>, <strong>N</strong>, and <strong>A</strong> matching and the <strong>B</strong> discarded.</p>
-            <p>A dish is prepared successfully if all of its letters are matched using five ingredients or less. An elegant dish is one completed with 3 or fewer ingredients.</p>
+            <p>A dish is prepared successfully if all of its letters are matched using five ingredients or fewer.</p>
         </div>
     `;
 }
 
 function showHelpModal() {
     openModal('How to Play', getHelpContent());
+}
+
+function showSettingsModal() {
+    openModal('Settings', '<p class="settings-placeholder">Settings (placeholder).</p>');
 }
 
 // Stats modal content and open
@@ -1478,7 +1705,7 @@ function getStatsContent() {
             <div class="stats-reset">
                 <p class="stats-reset-hint">To reset your profile, type "RESET" into the box below and confirm. <span class="stats-reset-underline">This action cannot be undone.</span></p>
                 <div class="stats-reset-row">
-                    <input type="text" id="statsResetInput" placeholder="RESET" autocomplete="off" aria-label="Type RESET to confirm">
+                    <input type="text" id="statsResetInput" placeholder="type here" autocomplete="off" aria-label="Type RESET to confirm">
                     <button type="button" id="statsResetBtn" class="stats-reset-btn">CONFIRM</button>
                 </div>
             </div>
@@ -1606,6 +1833,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Modal buttons
     document.getElementById('statsBtn').addEventListener('click', showStatsModal);
+    document.getElementById('settingsBtn').addEventListener('click', showSettingsModal);
     document.getElementById('helpBtn').addEventListener('click', showHelpModal);
 
     document.getElementById('infoBtn').addEventListener('click', () => {

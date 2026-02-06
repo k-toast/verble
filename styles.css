@@ -44,6 +44,21 @@
 }
 
 /* ==========================================================================
+   Archive & Replay — Neutral warm gray theme (gentle & elegant)
+   ========================================================================== */
+
+body.archive-view,
+body.replay-view {
+    /* Warmer, slightly darker gray for clearer contrast with default (#F5F4F1) */
+    --color-background:       #D9D7D2;
+
+    /* Neutral gray borders (no brown tint) */
+    --color-border:           #B5B3AE;
+    --color-border-surface:   #A5A39E;
+    --color-border-button:    #95938E;
+}
+
+/* ==========================================================================
    Reset & Base
    ========================================================================== */
 
@@ -235,6 +250,9 @@ h1 {
 }
 
 .puzzle-label-wrap {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
     margin-bottom: 10px;
 }
 
@@ -269,7 +287,7 @@ h1 {
     background: var(--color-surface-elevated);
     padding: 20px 18px;
     border-radius: 4px;
-    border: 2px solid var(--color-border-surface);
+    border: 1px solid var(--color-border-surface);
 }
 
 /* Puzzle display — two lines: adjectives, then noun, both centered */
@@ -514,9 +532,24 @@ h1 {
     opacity: 1;
 }
 
-/* Desktop: show "SUBMIT" text, hide arrow */
-.submit-arrow {
-    display: none;
+.submit-icon {
+    display: block;
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
+#submitBtn .submit-icon {
+    filter: brightness(0) opacity(0.8);
+}
+
+#submitBtn:hover:not(:disabled) .submit-icon,
+#submitBtn:focus-visible .submit-icon {
+    filter: brightness(0) opacity(1);
+}
+
+#submitBtn:disabled .submit-icon {
+    filter: brightness(0) opacity(0.4);
 }
 
 /* ==========================================================================
@@ -578,6 +611,13 @@ h1 {
     min-width: 0;
     justify-content: flex-start;
     align-items: center;
+}
+
+.recipe-row-star {
+    margin-left: 6px;
+    font-size: 1em;
+    line-height: 1;
+    flex-shrink: 0;
 }
 
 .recipe-placeholder {
@@ -798,6 +838,162 @@ footer {
     text-transform: uppercase;
     letter-spacing: 0.06em;
     flex-shrink: 0;
+}
+
+.archive-controls {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-shrink: 0;
+}
+
+.archive-controls #archivePrevMonthBtn {
+    grid-column: 1;
+    justify-self: center;
+}
+
+.archive-controls-center {
+    grid-column: 2 / 7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.archive-controls #archiveNextMonthBtn {
+    grid-column: 7;
+    justify-self: center;
+}
+
+.archive-nav-btn {
+    flex-shrink: 0;
+}
+
+.archive-select {
+    font-family: inherit;
+    font-size: 0.95em;
+    font-weight: 500;
+    color: var(--color-primary);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+
+.archive-select:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+}
+
+.archive-days-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 6px;
+    font-size: 0.75em;
+    font-weight: 600;
+    color: var(--color-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-align: center;
+}
+
+.archive-days-header span {
+    display: block;
+}
+
+.archive-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    column-gap: 4px;
+    row-gap: 18px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    align-content: start;
+}
+
+.archive-cell-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.archive-calendar-tile {
+    aspect-ratio: 1;
+    width: 100%;
+    min-height: 44px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: 4px;
+    font-size: 1.1em;
+    padding: 4px;
+}
+
+.archive-tile-main {
+    flex-shrink: 0;
+    font-weight: 600;
+    font-size: 1.4em;
+    line-height: 1.2;
+}
+
+.archive-tile-q {
+    font-size: 1.2em;
+    color: var(--color-muted);
+}
+
+.archive-tile-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: auto;
+    padding-top: 2px;
+    font-size: 0.75em;
+}
+
+.archive-tile-ll {
+    flex-shrink: 0;
+}
+
+.archive-tile-lr {
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.archive-calendar-tile-empty {
+    background: var(--color-background);
+    border-color: var(--color-border);
+    opacity: 0.7;
+}
+
+.archive-calendar-tile-filled {
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.archive-calendar-tile-filled:hover {
+    border-color: var(--color-border-surface);
+    background: var(--color-surface-elevated);
+}
+
+.archive-calendar-tile-filled:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+}
+
+.archive-tile-num {
+    font-size: 0.7em;
+    font-weight: 600;
+    color: var(--color-secondary);
 }
 
 .archive-list {
@@ -1030,7 +1226,11 @@ footer {
 }
 .stats-reset-row input:focus {
     outline: none;
-    border-color: var(--color-border-surface);
+}
+
+.stats-reset-row input:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
 }
 .stats-reset-btn {
     padding: 6px 12px;
@@ -1047,19 +1247,24 @@ footer {
     color: var(--color-secondary);
     border-color: var(--color-border-surface);
 }
-.icon-btn-stats img {
+.icon-btn .icon-btn-img {
     display: block;
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     object-fit: contain;
+    pointer-events: none;
 }
-.icon-btn-stats {
+
+.icon-btn {
     padding: 0;
 }
-.icon-btn-stats img {
+
+.icon-btn .icon-btn-img {
     filter: brightness(0) opacity(0.75);
 }
-.icon-btn-stats:hover img {
+
+.icon-btn:hover .icon-btn-img,
+.icon-btn:focus-visible .icon-btn-img {
     filter: brightness(0) opacity(1);
 }
 
@@ -1144,6 +1349,11 @@ footer {
     gap: 4px;
     flex-wrap: nowrap;
     justify-content: flex-start;
+}
+
+.victory-row-star {
+    margin-left: 4px;
+    flex-shrink: 0;
 }
 
 .victory-cell {
@@ -1299,11 +1509,11 @@ footer {
     }
 
     /* Stats icon: show without filter so it doesn’t render as black box */
-    .icon-btn-stats img {
+    .icon-btn .icon-btn-img {
         filter: none;
         opacity: 0.75;
     }
-    .icon-btn-stats:hover img {
+    .icon-btn:hover .icon-btn-img {
         filter: none;
         opacity: 1;
     }
@@ -1331,15 +1541,6 @@ footer {
     }
 
     /* Mobile: arrow button inline with input to save vertical space */
-    .submit-text {
-        display: none;
-    }
-
-    .submit-arrow {
-        display: inline;
-        font-size: 1.2em;
-        line-height: 1;
-    }
 
     .input-wrapper {
         flex-direction: row;
