@@ -72,6 +72,7 @@ html {
     overflow-x: hidden;
     overflow-y: hidden;
     height: 100dvh;
+    max-width: 100%;
 }
 
 body {
@@ -79,6 +80,7 @@ body {
     background: var(--color-background);
     height: 100dvh;
     max-height: 100dvh;
+    max-width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -88,6 +90,7 @@ body {
     overflow-x: hidden;
     overflow-y: hidden;
     overscroll-behavior: none;
+    overscroll-behavior-x: none;
     position: relative;
     width: 100%;
     min-width: 0;
@@ -141,6 +144,8 @@ body {
 
 .puzzle-column {
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -174,6 +179,8 @@ body {
     border-bottom: 1px solid var(--color-border);
     flex-shrink: 0;
     gap: 12px;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .game-header-left {
@@ -227,6 +234,59 @@ h1 {
     align-items: center;
     gap: 6px;
     flex-shrink: 0;
+}
+
+.header-icons-desktop {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.header-menu-mobile {
+    display: none;
+    position: relative;
+}
+
+.menu-mobile-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    min-width: 140px;
+    background: var(--color-surface-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 6px 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+}
+
+.menu-mobile-dropdown button {
+    display: block;
+    width: 100%;
+    padding: 10px 16px;
+    text-align: left;
+    font-family: inherit;
+    font-size: 0.75em;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--color-primary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.menu-mobile-dropdown button:hover,
+.menu-mobile-dropdown button:focus-visible {
+    background: var(--color-border);
+}
+
+.menu-mobile-dropdown button:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: -2px;
 }
 
 /* ==========================================================================
@@ -1488,21 +1548,25 @@ footer {
    ========================================================================== */
 
 @media (max-width: 768px) {
-    /* Allow pull-to-refresh: body scroll root; no horizontal scroll */
+    /* Allow pull-to-refresh: body scroll root; no horizontal scroll or swipe */
     html {
         overflow-x: hidden;
         overflow-y: scroll;
         -webkit-overflow-scrolling: touch;
+        max-width: 100%;
     }
 
     body {
         overflow-x: hidden;
         overflow-y: scroll;
         overscroll-behavior-y: auto;
+        overscroll-behavior-x: none;
         min-height: 100dvh;
         max-height: none;
+        max-width: 100%;
         justify-content: flex-start;
         -webkit-overflow-scrolling: touch;
+        touch-action: pan-y pinch-zoom;
     }
 
     /* 1px overflow enables pull-to-refresh when content fits viewport */
@@ -1530,6 +1594,15 @@ footer {
     /* Spacing scaled ~0.45× from desktop to maintain proportional rhythm */
     .container {
         max-height: 100dvh;
+        max-width: 100%;
+    }
+    .content-wrapper {
+        max-width: 100%;
+    }
+    .main-scroll-area,
+    #gameContainer,
+    .archive-container {
+        max-width: 100%;
     }
 
     :root {
@@ -1540,6 +1613,17 @@ footer {
     #gameHeader.game-header {
         margin-bottom: calc(var(--section-buffer) * 1.5);
         padding-bottom: 8px;
+    }
+
+    /* Mobile: one hamburger menu instead of four icons */
+    .header-icons-desktop {
+        display: none;
+    }
+    .header-menu-mobile {
+        display: block;
+    }
+    .menu-mobile-dropdown[hidden] {
+        display: none !important;
     }
 
     .puzzle-section {

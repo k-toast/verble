@@ -1889,14 +1889,59 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('settingsBtn').addEventListener('click', showSettingsModal);
     document.getElementById('helpBtn').addEventListener('click', showHelpModal);
 
-    document.getElementById('infoBtn').addEventListener('click', () => {
-        openModal('About Dish of the Day', `<div class="about-content">
+    const aboutContent = `<div class="about-content">
             <p>A daily word puzzle by Mike Kayatta.</p>
             <p>You are playing an early test version, so you might encounter unexpected bugs or changes, unfinished features, or weird placeholders.</p>
             <p>Right now, there are 50 puzzles. Eventually, they will be served daily, but for now you can feel free to cheat using <strong>ARCHIVE</strong> to open the calendar and pick any puzzle, or <strong>TODAY</strong> to return to today's puzzle. When viewing a past puzzle, the footer shows <strong>previous puzzle</strong>, <strong>REPLAY</strong>, and <strong>next puzzle</strong> to move between puzzles or replay.</p>
-        </div>`);
+        </div>`;
+    document.getElementById('infoBtn').addEventListener('click', () => {
+        openModal('About Dish of the Day', aboutContent);
     });
-    
+
+    // Mobile hamburger menu: toggle dropdown and menu item actions
+    const menuMobileBtn = document.getElementById('menuMobileBtn');
+    const menuMobileDropdown = document.getElementById('menuMobileDropdown');
+    function closeMobileMenu() {
+        if (menuMobileDropdown && !menuMobileDropdown.hasAttribute('hidden')) {
+            menuMobileDropdown.setAttribute('hidden', '');
+            if (menuMobileBtn) menuMobileBtn.setAttribute('aria-expanded', 'false');
+        }
+    }
+    function openMobileMenu() {
+        if (menuMobileDropdown && menuMobileBtn) {
+            menuMobileDropdown.removeAttribute('hidden');
+            menuMobileBtn.setAttribute('aria-expanded', 'true');
+        }
+    }
+    if (menuMobileBtn && menuMobileDropdown) {
+        menuMobileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (menuMobileDropdown.hasAttribute('hidden')) openMobileMenu();
+            else closeMobileMenu();
+        });
+        document.getElementById('menuMobileAbout').addEventListener('click', () => {
+            openModal('About Dish of the Day', aboutContent);
+            closeMobileMenu();
+        });
+        document.getElementById('menuMobileHelp').addEventListener('click', () => {
+            showHelpModal();
+            closeMobileMenu();
+        });
+        document.getElementById('menuMobileStats').addEventListener('click', () => {
+            showStatsModal();
+            closeMobileMenu();
+        });
+        document.getElementById('menuMobileSettings').addEventListener('click', () => {
+            showSettingsModal();
+            closeMobileMenu();
+        });
+        document.addEventListener('click', (e) => {
+            if (menuMobileDropdown && !menuMobileDropdown.hasAttribute('hidden') &&
+                !menuMobileDropdown.contains(e.target) && e.target !== menuMobileBtn) {
+                closeMobileMenu();
+            }
+        });
+    }
     document.getElementById('modalClose').addEventListener('click', closeModal);
     
     document.getElementById('modalOverlay').addEventListener('click', (e) => {
@@ -1905,9 +1950,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
     
-    // Close modal on Escape key
+    // Close modal and mobile menu on Escape key
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
+            closeMobileMenu();
             closeModal();
         }
     });
