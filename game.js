@@ -1996,6 +1996,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.visualViewport.addEventListener('scroll', updateKeyboardState);
     }
 
+    // Prevent scroll on mobile when keyboard closed; allow pull-to-refresh (pull down at top)
+    if (window.matchMedia('(max-width: 768px)').matches) {
+        let touchStartY = 0;
+        let touchStartX = 0;
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length) {
+                touchStartY = e.touches[0].clientY;
+                touchStartX = e.touches[0].clientX;
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (e) => {
+            if (document.documentElement.classList.contains('keyboard-open')) return;
+            if (e.target.closest('.modal-content')) return;
+            const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+            const currentY = e.touches[0].clientY;
+            const currentX = e.touches[0].clientX;
+            const deltaY = currentY - touchStartY;
+            const deltaX = currentX - touchStartX;
+            const wouldScrollDown = scrollTop > 0 || (scrollTop === 0 && deltaY < 0);
+            const wouldScrollHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
+            if (wouldScrollDown || wouldScrollHorizontal) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    }
+
     // Blur input when tapping outside to close keyboard
     document.addEventListener('touchstart', (e) => {
         const input = document.getElementById('ingredientInput');

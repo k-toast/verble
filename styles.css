@@ -1579,8 +1579,12 @@ footer {
         overflow-y: auto;
     }
 
-    /* Middle scrolls; overscroll may trigger pull-to-refresh on some devices */
+    /* When keyboard closed: no inner scroll so only body is scroll root (PTR); JS prevents scroll */
     #gameContainer {
+        overflow-y: hidden;
+    }
+    /* When keyboard open: middle can scroll so input can stay visible */
+    html.keyboard-open #gameContainer {
         overflow-y: auto;
         overscroll-behavior-y: auto;
         -webkit-overflow-scrolling: touch;
