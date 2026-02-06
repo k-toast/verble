@@ -1,352 +1,1192 @@
 [
   {
-    "date": "2026-01-25",
+    "date": "2026-01-28",
     "adjectives": [
       "APPEALING"
     ],
     "noun": "CANNOLI"
   },
   {
-    "date": "2026-01-26",
+    "date": "2026-01-29",
     "adjectives": [
-      "SUCCULENT"
+      "SINFUL"
     ],
     "noun": "CARPACCIO"
   },
   {
-    "date": "2026-01-27",
-    "adjectives": [
-      "SINFUL"
-    ],
-    "noun": "COUSCOUS"
-  },
-  {
-    "date": "2026-01-28",
+    "date": "2026-01-30",
     "adjectives": [
       "CLEAN"
     ],
-    "noun": "GYRO"
+    "noun": "BRUSCHETTA"
   },
   {
-    "date": "2026-01-29",
+    "date": "2026-01-31",
     "adjectives": [
       "DRAMATIC"
     ],
     "noun": "PIEROGI"
   },
   {
-    "date": "2026-01-30",
+    "date": "2026-02-01",
     "adjectives": [
       "SOULFUL"
+    ],
+    "noun": "COUSCOUS"
+  },
+  {
+    "date": "2026-02-02",
+    "adjectives": [
+      "PLEASING"
     ],
     "noun": "PUDDING"
   },
   {
-    "date": "2026-01-31",
+    "date": "2026-02-03",
     "adjectives": [
-      "PLEASING"
+      "GLORIOUS"
     ],
     "noun": "LASAGNA"
   },
   {
-    "date": "2026-02-01",
-    "adjectives": [
-      "GLORIOUS"
-    ],
-    "noun": "GELATO"
-  },
-  {
-    "date": "2026-02-02",
+    "date": "2026-02-04",
     "adjectives": [
       "FRAGRANT"
     ],
     "noun": "TEMPURA"
   },
   {
-    "date": "2026-02-03",
-    "adjectives": [
-      "TIMELESS"
-    ],
-    "noun": "SAUCE"
-  },
-  {
-    "date": "2026-02-04",
-    "adjectives": [
-      "RUSTIC"
-    ],
-    "noun": "MARINARA"
-  },
-  {
     "date": "2026-02-05",
     "adjectives": [
-      "GENTLE"
-    ],
-    "noun": "PASTA"
-  },
-  {
-    "date": "2026-02-06",
-    "adjectives": [
-      "CHARISMATIC"
-    ],
-    "noun": "SORBET"
-  },
-  {
-    "date": "2026-02-07",
-    "adjectives": [
-      "INDELIBLE"
+      "TIMELESS"
     ],
     "noun": "RISOTTO"
   },
   {
-    "date": "2026-02-08",
+    "date": "2026-02-06",
     "adjectives": [
-      "IRRESISTIBLE"
-    ],
-    "noun": "PITA"
-  },
-  {
-    "date": "2026-02-09",
-    "adjectives": [
-      "CLASSIC"
+      "RUSTIC"
     ],
     "noun": "CASSOULET"
   },
   {
+    "date": "2026-02-07",
+    "adjectives": [
+      "GENTLE"
+    ],
+    "noun": "CARBONARA"
+  },
+  {
+    "date": "2026-02-08",
+    "adjectives": [
+      "CHARISMATIC"
+    ],
+    "noun": "GYRO"
+  },
+  {
+    "date": "2026-02-09",
+    "adjectives": [
+      "INDELIBLE"
+    ],
+    "noun": "GELATO"
+  },
+  {
     "date": "2026-02-10",
     "adjectives": [
-      "INDULGENT"
+      "IRRESISTIBLE"
     ],
-    "noun": "ONIGIRI"
+    "noun": "DAL"
   },
   {
     "date": "2026-02-11",
     "adjectives": [
-      "OPULENT"
+      "CLASSIC"
     ],
-    "noun": "BRUSCHETTA"
+    "noun": "MARINARA"
   },
   {
     "date": "2026-02-12",
     "adjectives": [
-      "AMBROSIAL"
+      "INDULGENT"
     ],
-    "noun": "POUTINE"
+    "noun": "SORBET"
   },
   {
     "date": "2026-02-13",
     "adjectives": [
-      "PALATABLE"
+      "OPULENT"
     ],
-    "noun": "FALAFEL"
+    "noun": "TANDOORI"
   },
   {
     "date": "2026-02-14",
     "adjectives": [
-      "INTENSE"
+      "AMBROSIAL"
     ],
-    "noun": "AIOLI"
+    "noun": "SUNDAE"
   },
   {
     "date": "2026-02-15",
+    "adjectives": [
+      "INTENSE"
+    ],
+    "noun": "PANCAKES"
+  },
+  {
+    "date": "2026-02-16",
     "adjectives": [
       "GRAND"
     ],
     "noun": "MINESTRONE"
   },
   {
-    "date": "2026-02-16",
+    "date": "2026-02-17",
     "adjectives": [
       "BRIGHT"
     ],
-    "noun": "SASHIMI"
-  },
-  {
-    "date": "2026-02-17",
-    "adjectives": [
-      "RAPTUROUS"
-    ],
-    "noun": "CARBONARA"
+    "noun": "BOLOGNESE"
   },
   {
     "date": "2026-02-18",
     "adjectives": [
-      "LUSCIOUS"
-    ],
-    "noun": "TACOS"
-  },
-  {
-    "date": "2026-02-19",
-    "adjectives": [
-      "BALANCED"
-    ],
-    "noun": "TANDOORI"
-  },
-  {
-    "date": "2026-02-20",
-    "adjectives": [
-      "SOOTHING"
-    ],
-    "noun": "SOUP"
-  },
-  {
-    "date": "2026-02-21",
-    "adjectives": [
-      "COMFORTING"
-    ],
-    "noun": "PESTO"
-  },
-  {
-    "date": "2026-02-22",
-    "adjectives": [
-      "RADIANT"
-    ],
-    "noun": "CREPE"
-  },
-  {
-    "date": "2026-02-23",
-    "adjectives": [
-      "BOLD"
-    ],
-    "noun": "COOKIES"
-  },
-  {
-    "date": "2026-02-24",
-    "adjectives": [
-      "TEMPTING"
-    ],
-    "noun": "SUNDAE"
-  },
-  {
-    "date": "2026-02-25",
-    "adjectives": [
-      "MAGNETIC"
+      "RAPTUROUS"
     ],
     "noun": "PANINI"
   },
   {
+    "date": "2026-02-19",
+    "adjectives": [
+      "LUSCIOUS"
+    ],
+    "noun": "ONIGIRI"
+  },
+  {
+    "date": "2026-02-20",
+    "adjectives": [
+      "BALANCED"
+    ],
+    "noun": "POUTINE"
+  },
+  {
+    "date": "2026-02-21",
+    "adjectives": [
+      "SOOTHING"
+    ],
+    "noun": "FALAFEL"
+  },
+  {
+    "date": "2026-02-22",
+    "adjectives": [
+      "COMFORTING"
+    ],
+    "noun": "SAUCE"
+  },
+  {
+    "date": "2026-02-23",
+    "adjectives": [
+      "RADIANT"
+    ],
+    "noun": "TIRAMISU"
+  },
+  {
+    "date": "2026-02-24",
+    "adjectives": [
+      "BOLD"
+    ],
+    "noun": "RATATOUILLE"
+  },
+  {
+    "date": "2026-02-25",
+    "adjectives": [
+      "TEMPTING"
+    ],
+    "noun": "SASHIMI"
+  },
+  {
     "date": "2026-02-26",
     "adjectives": [
-      "SIMPLE"
+      "MAGNETIC"
     ],
-    "noun": "NACHOS"
+    "noun": "COOKIES"
   },
   {
     "date": "2026-02-27",
     "adjectives": [
-      "HARMONIOUS"
+      "SIMPLE"
     ],
-    "noun": "CHILI"
+    "noun": "CROISSANT"
   },
   {
     "date": "2026-02-28",
     "adjectives": [
-      "SILKEN"
+      "HARMONIOUS"
     ],
-    "noun": "RATATOUILLE"
+    "noun": "AIOLI"
   },
   {
     "date": "2026-03-01",
     "adjectives": [
       "SERIOUS"
     ],
-    "noun": "CURRY"
+    "noun": "FOCACCIA"
   },
   {
     "date": "2026-03-02",
     "adjectives": [
       "SUBTLE"
     ],
-    "noun": "BOLOGNESE"
+    "noun": "MEATBALLS"
   },
   {
     "date": "2026-03-03",
     "adjectives": [
       "ALLURING"
     ],
-    "noun": "TAMALE"
+    "noun": "BURRITO"
   },
   {
     "date": "2026-03-04",
     "adjectives": [
       "IMMACULATE"
     ],
-    "noun": "PAELLA"
+    "noun": "TACOS"
   },
   {
     "date": "2026-03-05",
     "adjectives": [
       "PLUSH"
     ],
-    "noun": "DONUT"
+    "noun": "TORTELLINI"
   },
   {
     "date": "2026-03-06",
     "adjectives": [
       "SUMPTUOUS"
     ],
-    "noun": "PANCAKES"
+    "noun": "NACHOS"
   },
   {
     "date": "2026-03-07",
     "adjectives": [
       "LUSH"
     ],
-    "noun": "TIRAMISU"
+    "noun": "CHIMICHANGA"
   },
   {
     "date": "2026-03-08",
     "adjectives": [
-      "RICH"
+      "THEATRICAL"
     ],
-    "noun": "BURRITO"
+    "noun": "PESTO"
   },
   {
     "date": "2026-03-09",
     "adjectives": [
-      "THEATRICAL"
-    ],
-    "noun": "RAMEN"
-  },
-  {
-    "date": "2026-03-10",
-    "adjectives": [
       "AROMATIC"
-    ],
-    "noun": "SUSHI"
-  },
-  {
-    "date": "2026-03-11",
-    "adjectives": [
-      "ECSTATIC"
-    ],
-    "noun": "CAKE"
-  },
-  {
-    "date": "2026-03-12",
-    "adjectives": [
-      "CRISP"
     ],
     "noun": "PARFAIT"
   },
   {
-    "date": "2026-03-13",
+    "date": "2026-03-10",
+    "adjectives": [
+      "ECSTATIC"
+    ],
+    "noun": "POLENTA"
+  },
+  {
+    "date": "2026-03-11",
+    "adjectives": [
+      "CRISP"
+    ],
+    "noun": "SAUERKRAUT"
+  },
+  {
+    "date": "2026-03-12",
     "adjectives": [
       "EPICUREAN"
     ],
-    "noun": "STEW"
+    "noun": "TAMALE"
+  },
+  {
+    "date": "2026-03-13",
+    "adjectives": [
+      "ROBUST"
+    ],
+    "noun": "PORCHETTA"
   },
   {
     "date": "2026-03-14",
     "adjectives": [
-      "ROBUST"
+      "ELEGANT"
     ],
-    "noun": "OMELET"
+    "noun": "CIABATTA"
   },
   {
     "date": "2026-03-15",
     "adjectives": [
-      "ELEGANT"
+      "TENDER"
+    ],
+    "noun": "SHAKSHUKA"
+  },
+  {
+    "date": "2026-03-16",
+    "adjectives": [
+      "SMOOTH"
+    ],
+    "noun": "PANETTONE"
+  },
+  {
+    "date": "2026-03-17",
+    "adjectives": [
+      "SILKY"
+    ],
+    "noun": "SPRINGROLL"
+  },
+  {
+    "date": "2026-03-18",
+    "adjectives": [
+      "DELECTABLE"
+    ],
+    "noun": "CREPE"
+  },
+  {
+    "date": "2026-03-19",
+    "adjectives": [
+      "REFINED"
+    ],
+    "noun": "GELATINA"
+  },
+  {
+    "date": "2026-03-20",
+    "adjectives": [
+      "POLISHED"
+    ],
+    "noun": "GNOCCHI"
+  },
+  {
+    "date": "2026-03-21",
+    "adjectives": [
+      "ARTISANAL"
+    ],
+    "noun": "PAELLA"
+  },
+  {
+    "date": "2026-03-22",
+    "adjectives": [
+      "HEARTY"
+    ],
+    "noun": "CASSEROLE"
+  },
+  {
+    "date": "2026-03-23",
+    "adjectives": [
+      "SATISFYING"
+    ],
+    "noun": "CHILI"
+  },
+  {
+    "date": "2026-03-24",
+    "adjectives": [
+      "MEMORABLE"
+    ],
+    "noun": "MUFFIN"
+  },
+  {
+    "date": "2026-03-25",
+    "adjectives": [
+      "DISTINCTIVE"
+    ],
+    "noun": "PITA"
+  },
+  {
+    "date": "2026-03-26",
+    "adjectives": [
+      "REMARKABLE"
+    ],
+    "noun": "CURRY"
+  },
+  {
+    "date": "2026-03-27",
+    "adjectives": [
+      "PRISTINE"
+    ],
+    "noun": "RAVIOLI"
+  },
+  {
+    "date": "2026-03-28",
+    "adjectives": [
+      "AIRY"
+    ],
+    "noun": "SPANAKOPITA"
+  },
+  {
+    "date": "2026-03-29",
+    "adjectives": [
+      "LIGHT"
+    ],
+    "noun": "TTEOKBOKKI"
+  },
+  {
+    "date": "2026-03-30",
+    "adjectives": [
+      "DELICATE"
+    ],
+    "noun": "CUSTARD"
+  },
+  {
+    "date": "2026-03-31",
+    "adjectives": [
+      "HEFTY"
+    ],
+    "noun": "CHAKCHOUKA"
+  },
+  {
+    "date": "2026-04-01",
+    "adjectives": [
+      "ABUNDANT"
+    ],
+    "noun": "BRIOCHE"
+  },
+  {
+    "date": "2026-04-02",
+    "adjectives": [
+      "BOUNTIFUL"
+    ],
+    "noun": "PASTRY"
+  },
+  {
+    "date": "2026-04-03",
+    "adjectives": [
+      "LAVISH"
+    ],
+    "noun": "RILLETTES"
+  },
+  {
+    "date": "2026-04-04",
+    "adjectives": [
+      "ELEVATED"
+    ],
+    "noun": "RISSOLE"
+  },
+  {
+    "date": "2026-04-05",
+    "adjectives": [
+      "TRADITIONAL"
+    ],
+    "noun": "SOUP"
+  },
+  {
+    "date": "2026-04-06",
+    "adjectives": [
+      "AUTHENTIC"
+    ],
+    "noun": "HUMMUS"
+  },
+  {
+    "date": "2026-04-07",
+    "adjectives": [
+      "GENUINE"
+    ],
+    "noun": "OMELETTE"
+  },
+  {
+    "date": "2026-04-08",
+    "adjectives": [
+      "WHOLESOME"
+    ],
+    "noun": "SAMOSA"
+  },
+  {
+    "date": "2026-04-09",
+    "adjectives": [
+      "STIMULATING"
+    ],
+    "noun": "CAKE"
+  },
+  {
+    "date": "2026-04-10",
+    "adjectives": [
+      "ENTICING"
+    ],
+    "noun": "TARTARE"
+  },
+  {
+    "date": "2026-04-11",
+    "adjectives": [
+      "NOSTALGIC"
+    ],
+    "noun": "PANEER"
+  },
+  {
+    "date": "2026-04-12",
+    "adjectives": [
+      "SENSUAL"
+    ],
+    "noun": "FRITTATA"
+  },
+  {
+    "date": "2026-04-13",
+    "adjectives": [
+      "MESMERIZING"
+    ],
+    "noun": "FLAN"
+  },
+  {
+    "date": "2026-04-14",
+    "adjectives": [
+      "ENCHANTING"
+    ],
+    "noun": "DONUT"
+  },
+  {
+    "date": "2026-04-15",
+    "adjectives": [
+      "TRANSCENDENT"
+    ],
+    "noun": "BAO"
+  },
+  {
+    "date": "2026-04-16",
+    "adjectives": [
+      "SUBLIME"
+    ],
+    "noun": "PORRIDGE"
+  },
+  {
+    "date": "2026-04-17",
+    "adjectives": [
+      "ETHEREAL"
+    ],
+    "noun": "TERRINE"
+  },
+  {
+    "date": "2026-04-18",
+    "adjectives": [
+      "INSPIRED"
+    ],
+    "noun": "SOUFFLE"
+  },
+  {
+    "date": "2026-04-19",
+    "adjectives": [
+      "ORIGINAL"
+    ],
+    "noun": "TABOULI"
+  },
+  {
+    "date": "2026-04-20",
+    "adjectives": [
+      "INTRIGUING"
+    ],
+    "noun": "RAMEN"
+  },
+  {
+    "date": "2026-04-21",
+    "adjectives": [
+      "COMPELLING"
+    ],
+    "noun": "SUSHI"
+  },
+  {
+    "date": "2026-04-22",
+    "adjectives": [
+      "LINGERING"
+    ],
+    "noun": "KIMCHI"
+  },
+  {
+    "date": "2026-04-23",
+    "adjectives": [
+      "LEGENDARY"
+    ],
+    "noun": "MUESLI"
+  },
+  {
+    "date": "2026-04-24",
+    "adjectives": [
+      "ICONIC"
+    ],
+    "noun": "GUACAMOLE"
+  },
+  {
+    "date": "2026-04-25",
+    "adjectives": [
+      "SIGNATURE"
+    ],
+    "noun": "YOGURT"
+  },
+  {
+    "date": "2026-04-26",
+    "adjectives": [
+      "PREMIUM"
+    ],
+    "noun": "TIRADITO"
+  },
+  {
+    "date": "2026-04-27",
+    "adjectives": [
+      "SUPREME"
+    ],
+    "noun": "EMPANADA"
+  },
+  {
+    "date": "2026-04-28",
+    "adjectives": [
+      "IMPECCABLE"
     ],
     "noun": "SALSA"
+  },
+  {
+    "date": "2026-04-29",
+    "adjectives": [
+      "DECADENT"
+    ],
+    "noun": "BIRYANI"
+  },
+  {
+    "date": "2026-04-30",
+    "adjectives": [
+      "FILLING"
+    ],
+    "noun": "CONSOMME"
+  },
+  {
+    "date": "2026-05-01",
+    "adjectives": [
+      "FORTIFYING"
+    ],
+    "noun": "GRITS"
+  },
+  {
+    "date": "2026-05-02",
+    "adjectives": [
+      "NOURISHING"
+    ],
+    "noun": "BAGEL"
+  },
+  {
+    "date": "2026-05-03",
+    "adjectives": [
+      "UNIFIED"
+    ],
+    "noun": "DUMPLING"
+  },
+  {
+    "date": "2026-05-04",
+    "adjectives": [
+      "BLENDED"
+    ],
+    "noun": "COLLARDS"
+  },
+  {
+    "date": "2026-05-05",
+    "adjectives": [
+      "SEAMLESS"
+    ],
+    "noun": "PICKLES"
+  },
+  {
+    "date": "2026-05-06",
+    "adjectives": [
+      "GRACEFUL"
+    ],
+    "noun": "OATMEAL"
+  },
+  {
+    "date": "2026-05-07",
+    "adjectives": [
+      "GLOSSY"
+    ],
+    "noun": "ENCHILADA"
+  },
+  {
+    "date": "2026-05-08",
+    "adjectives": [
+      "LUSTROUS"
+    ],
+    "noun": "GRANOLA"
+  },
+  {
+    "date": "2026-05-09",
+    "adjectives": [
+      "BRILLIANT"
+    ],
+    "noun": "MENUDO"
+  },
+  {
+    "date": "2026-05-10",
+    "adjectives": [
+      "SPARKLING"
+    ],
+    "noun": "BISQUE"
+  },
+  {
+    "date": "2026-05-11",
+    "adjectives": [
+      "CHARMING"
+    ],
+    "noun": "SHERBET"
+  },
+  {
+    "date": "2026-05-12",
+    "adjectives": [
+      "DELIGHTFUL"
+    ],
+    "noun": "ROAST"
+  },
+  {
+    "date": "2026-05-13",
+    "adjectives": [
+      "GRATIFYING"
+    ],
+    "noun": "PUREE"
+  },
+  {
+    "date": "2026-05-14",
+    "adjectives": [
+      "BLISSFUL"
+    ],
+    "noun": "GALETTE"
+  },
+  {
+    "date": "2026-05-15",
+    "adjectives": [
+      "DYNAMIC"
+    ],
+    "noun": "BISCUITS"
+  },
+  {
+    "date": "2026-05-16",
+    "adjectives": [
+      "SPIRITED"
+    ],
+    "noun": "TOSTADA"
+  },
+  {
+    "date": "2026-05-17",
+    "adjectives": [
+      "STERLING"
+    ],
+    "noun": "GORDITA"
+  },
+  {
+    "date": "2026-05-18",
+    "adjectives": [
+      "SCRUMPTIOUS"
+    ],
+    "noun": "HASH"
+  },
+  {
+    "date": "2026-05-19",
+    "adjectives": [
+      "ENGAGING"
+    ],
+    "noun": "CHURROS"
+  },
+  {
+    "date": "2026-05-20",
+    "adjectives": [
+      "MEASURED"
+    ],
+    "noun": "PARATHA"
+  },
+  {
+    "date": "2026-05-21",
+    "adjectives": [
+      "RESTRAINED"
+    ],
+    "noun": "PILAF"
+  },
+  {
+    "date": "2026-05-22",
+    "adjectives": [
+      "PRECISE"
+    ],
+    "noun": "CLAMBAKE"
+  },
+  {
+    "date": "2026-05-23",
+    "adjectives": [
+      "DISTINCT"
+    ],
+    "noun": "BORSCHT"
+  },
+  {
+    "date": "2026-05-24",
+    "adjectives": [
+      "PRONOUNCED"
+    ],
+    "noun": "KORMA"
+  },
+  {
+    "date": "2026-05-25",
+    "adjectives": [
+      "ASSERTIVE"
+    ],
+    "noun": "GRATIN"
+  },
+  {
+    "date": "2026-05-26",
+    "adjectives": [
+      "CONFIDENT"
+    ],
+    "noun": "PUPUSA"
+  },
+  {
+    "date": "2026-05-27",
+    "adjectives": [
+      "PLENTIFUL"
+    ],
+    "noun": "PAKORA"
+  },
+  {
+    "date": "2026-05-28",
+    "adjectives": [
+      "NUANCED"
+    ],
+    "noun": "MACARONI"
+  },
+  {
+    "date": "2026-05-29",
+    "adjectives": [
+      "RESILIENT"
+    ],
+    "noun": "MASALA"
+  },
+  {
+    "date": "2026-05-30",
+    "adjectives": [
+      "SPRINGY"
+    ],
+    "noun": "SCRAPPLE"
+  },
+  {
+    "date": "2026-05-31",
+    "adjectives": [
+      "DREAMY"
+    ],
+    "noun": "CORNBREAD"
+  },
+  {
+    "date": "2026-06-01",
+    "adjectives": [
+      "DAINTY"
+    ],
+    "noun": "SCHNITZEL"
+  },
+  {
+    "date": "2026-06-02",
+    "adjectives": [
+      "RIVETING"
+    ],
+    "noun": "STRUDEL"
+  },
+  {
+    "date": "2026-06-03",
+    "adjectives": [
+      "ABSORBING"
+    ],
+    "noun": "DIMSUM"
+  },
+  {
+    "date": "2026-06-04",
+    "adjectives": [
+      "NOTEWORTHY"
+    ],
+    "noun": "BROTH"
+  },
+  {
+    "date": "2026-06-05",
+    "adjectives": [
+      "MONUMENTAL"
+    ],
+    "noun": "SALAD"
+  },
+  {
+    "date": "2026-06-06",
+    "adjectives": [
+      "DEFINITIVE"
+    ],
+    "noun": "AREPA"
+  },
+  {
+    "date": "2026-06-07",
+    "adjectives": [
+      "OPTIMAL"
+    ],
+    "noun": "MOUSSAKA"
+  },
+  {
+    "date": "2026-06-08",
+    "adjectives": [
+      "UNBLEMISHED"
+    ],
+    "noun": "PATE"
+  },
+  {
+    "date": "2026-06-09",
+    "adjectives": [
+      "SPOTLESS"
+    ],
+    "noun": "BULGOGI"
+  },
+  {
+    "date": "2026-06-10",
+    "adjectives": [
+      "PLIABLE"
+    ],
+    "noun": "DOLMADES"
+  },
+  {
+    "date": "2026-06-11",
+    "adjectives": [
+      "FOCUSED"
+    ],
+    "noun": "TORTILLA"
+  },
+  {
+    "date": "2026-06-12",
+    "adjectives": [
+      "FEARLESS"
+    ],
+    "noun": "BANCHAN"
+  },
+  {
+    "date": "2026-06-13",
+    "adjectives": [
+      "STACKED"
+    ],
+    "noun": "BACALHAU"
+  },
+  {
+    "date": "2026-06-14",
+    "adjectives": [
+      "ADAPTABLE"
+    ],
+    "noun": "CONGEE"
+  },
+  {
+    "date": "2026-06-15",
+    "adjectives": [
+      "SINCERE"
+    ],
+    "noun": "MASSAMAN"
+  },
+  {
+    "date": "2026-06-16",
+    "adjectives": [
+      "THRILLING"
+    ],
+    "noun": "COCIDO"
+  },
+  {
+    "date": "2026-06-17",
+    "adjectives": [
+      "PROMINENT"
+    ],
+    "noun": "PASTEL"
+  },
+  {
+    "date": "2026-06-18",
+    "adjectives": [
+      "CERTAIN"
+    ],
+    "noun": "BIBIMBAP"
+  },
+  {
+    "date": "2026-06-19",
+    "adjectives": [
+      "UNABASHED"
+    ],
+    "noun": "TAGINE"
+  },
+  {
+    "date": "2026-06-20",
+    "adjectives": [
+      "PURE"
+    ],
+    "noun": "TARAMASALATA"
+  },
+  {
+    "date": "2026-06-21",
+    "adjectives": [
+      "CONCENTRATED"
+    ],
+    "noun": "DOSA"
+  },
+  {
+    "date": "2026-06-22",
+    "adjectives": [
+      "MULTIFACETED"
+    ],
+    "noun": "IDLI"
+  },
+  {
+    "date": "2026-06-23",
+    "adjectives": [
+      "PUNCHY"
+    ],
+    "noun": "CROSTINI"
+  },
+  {
+    "date": "2026-06-24",
+    "adjectives": [
+      "EUPHORIC"
+    ],
+    "noun": "HARIRA"
+  },
+  {
+    "date": "2026-06-25",
+    "adjectives": [
+      "SOPHISTICATED"
+    ],
+    "noun": "CURD"
+  },
+  {
+    "date": "2026-06-26",
+    "adjectives": [
+      "UNCOMPLICATED"
+    ],
+    "noun": "UDON"
+  },
+  {
+    "date": "2026-06-27",
+    "adjectives": [
+      "UNFORGETTABLE"
+    ],
+    "noun": "SOBA"
+  },
+  {
+    "date": "2026-06-28",
+    "adjectives": [
+      "FINE"
+    ],
+    "noun": "BOUILLABAISSE"
+  },
+  {
+    "date": "2026-06-29",
+    "adjectives": [
+      "TARGETED"
+    ],
+    "noun": "CALDO"
+  },
+  {
+    "date": "2026-06-30",
+    "adjectives": [
+      "SUPERB"
+    ],
+    "noun": "GUMBO"
+  },
+  {
+    "date": "2026-07-01",
+    "adjectives": [
+      "MYTHIC"
+    ],
+    "noun": "TARTE"
+  },
+  {
+    "date": "2026-07-02",
+    "adjectives": [
+      "POTENT"
+    ],
+    "noun": "LASSI"
+  },
+  {
+    "date": "2026-07-03",
+    "adjectives": [
+      "HONEST"
+    ],
+    "noun": "KULFI"
+  },
+  {
+    "date": "2026-07-04",
+    "adjectives": [
+      "FEISTY"
+    ],
+    "noun": "KEBAB"
+  },
+  {
+    "date": "2026-07-05",
+    "adjectives": [
+      "MARKED"
+    ],
+    "noun": "DOLMA"
+  },
+  {
+    "date": "2026-07-06",
+    "adjectives": [
+      "STRONG"
+    ],
+    "noun": "BLINI"
+  },
+  {
+    "date": "2026-07-07",
+    "adjectives": [
+      "LOADED"
+    ],
+    "noun": "TAPAS"
+  },
+  {
+    "date": "2026-07-08",
+    "adjectives": [
+      "REGAL"
+    ],
+    "noun": "MIGAS"
+  },
+  {
+    "date": "2026-07-09",
+    "adjectives": [
+      "SUAVE"
+    ],
+    "noun": "SATAY"
+  },
+  {
+    "date": "2026-07-10",
+    "adjectives": [
+      "SLEEK"
+    ],
+    "noun": "GALBI"
+  },
+  {
+    "date": "2026-07-11",
+    "adjectives": [
+      "PERKY"
+    ],
+    "noun": "MANDU"
+  },
+  {
+    "date": "2026-07-12",
+    "adjectives": [
+      "CLEAR"
+    ],
+    "noun": "SOPA"
+  },
+  {
+    "date": "2026-07-13",
+    "adjectives": [
+      "AMPLE"
+    ],
+    "noun": "MOLE"
+  },
+  {
+    "date": "2026-07-14",
+    "adjectives": [
+      "SUNNY"
+    ],
+    "noun": "NAAN"
+  },
+  {
+    "date": "2026-07-15",
+    "adjectives": [
+      "IDEAL"
+    ],
+    "noun": "ROTI"
+  },
+  {
+    "date": "2026-07-16",
+    "adjectives": [
+      "SHARP"
+    ],
+    "noun": "POHA"
   }
 ]

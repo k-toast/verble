@@ -199,6 +199,7 @@ function initGame() {
         updatePreviousButtonState();
         updateFooterTodayButton();
         startCountdownTimer();
+        if (window.posthog) posthog.capture('game_loaded', { puzzle_date: null });
         return;
     }
 
@@ -226,6 +227,7 @@ function initGame() {
     updatePuzzleLabel();
     updateFooterTodayButton();
     startCountdownTimer();
+    if (window.posthog) posthog.capture('game_loaded', { puzzle_date: puzzleDate });
 }
 
 function updatePuzzleLabel() {
@@ -1011,6 +1013,7 @@ async function processIngredient(ingredient) {
 
     saveGameState();
     if (gameState.isWon || gameState.isLost) {
+        if (window.posthog) posthog.capture('puzzle_completed', { puzzle_date: gameState.puzzleDate, won: gameState.isWon });
         recordGameCompleted();
         const result = recordAttempts();
         lastAttemptWasNewBest = result.isNewBest;
