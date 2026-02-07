@@ -72,21 +72,23 @@
                 </div>
             </div>
 
-            <div class="input-section">
-                <div class="input-wrapper" id="inputWrapper">
-                    <input 
-                        type="text" 
-                        id="ingredientInput" 
-                        placeholder="type an ingredient here"
-                        maxlength="13"
-                        autocomplete="off"
-                        aria-describedby="inputFeedback"
-                        aria-invalid="false"
-                    >
-                    <button id="submitBtn" type="button" aria-label="Submit"><img src="assets/icons/submit.svg" alt="" width="24" height="24" class="submit-icon"></button>
+            <div class="input-section" id="inputSection">
+                <div class="input-section-playing">
+                    <div class="input-wrapper" id="inputWrapper">
+                        <input 
+                            type="text" 
+                            id="ingredientInput" 
+                            placeholder="type an ingredient here"
+                            maxlength="13"
+                            autocomplete="off"
+                            aria-describedby="inputFeedback"
+                            aria-invalid="false"
+                        >
+                        <button id="submitBtn" type="button" aria-label="Submit"><img src="assets/icons/submit.svg" alt="" width="24" height="24" class="submit-icon"></button>
+                    </div>
+                    <div id="inputFeedback" class="input-feedback" role="status" aria-live="polite"></div>
                 </div>
-                <div id="inputFeedback" class="input-feedback" role="status" aria-live="polite"></div>
-                <div id="completionStatus" class="completion-status" aria-live="polite" hidden></div>
+                <div id="completionStatus" class="completion-status" aria-live="polite" aria-hidden="true"></div>
             </div>
 
             <div class="recipe-section" id="recipeSection">

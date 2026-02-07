@@ -615,6 +615,44 @@ h1 {
     overflow: visible;
 }
 
+/* Input bar stays visible; completion buttons show beneath when complete */
+.input-section-playing {
+    display: flex;
+    flex-direction: column;
+}
+/* Reserve space for SHARE/REPLAY so recipe section doesn't move when they appear */
+.input-section #completionStatus {
+    min-height: 40px;
+    box-sizing: border-box;
+}
+#completionStatus[aria-hidden="true"] {
+    visibility: hidden;
+    pointer-events: none;
+}
+#completionStatus[aria-hidden="false"] {
+    visibility: visible;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .completion-stats {
+        transition: none;
+    }
+    .recipe-slot {
+        transition: none;
+    }
+    .recipe-section:not(.recipe-section-complete) .recipe-slot,
+    .recipe-section-complete .recipe-slot.recipe-slot-visible {
+        opacity: 1;
+    }
+    .recipe-section-complete .recipe-slot {
+        opacity: 1; /* show immediately when reduced motion */
+    }
+    .recipe-slot.recipe-slot-fade-out {
+        transition: none;
+        opacity: 0;
+    }
+}
+
 .input-wrapper {
     display: flex;
     gap: 10px;
@@ -735,6 +773,63 @@ h1 {
     letter-spacing: 0.12em;
 }
 
+/* Recipe heading card-flip (YOUR RECIPE → AN ELEGANT DISH) */
+.recipe-heading-flip {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1px 3px;
+    align-items: center;
+}
+.recipe-heading-flip-char {
+    display: inline-block;
+    position: relative;
+    width: 0.6em;
+    height: 1.1em;
+    vertical-align: middle;
+}
+.recipe-heading-flip-inner {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+    transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    transform: perspective(600px) rotateX(180deg);
+    -webkit-transform: perspective(600px) rotateX(180deg);
+}
+.recipe-heading-flip-char.revealed .recipe-heading-flip-inner {
+    transform: perspective(600px) rotateX(0deg);
+    -webkit-transform: perspective(600px) rotateX(0deg);
+}
+.recipe-heading-flip-front,
+.recipe-heading-flip-back {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    font-size: inherit;
+    font-weight: inherit;
+    color: inherit;
+    letter-spacing: inherit;
+}
+.recipe-heading-flip-back {
+    background: var(--color-success);
+    border-radius: 2px;
+    transform: rotateX(180deg);
+    -webkit-transform: rotateX(180deg);
+}
+.recipe-heading-flip-front {
+    background: transparent;
+}
+@media (prefers-reduced-motion: reduce) {
+    .recipe-heading-flip-char.revealed .recipe-heading-flip-inner {
+        transition: none;
+    }
+}
+
 #recipeContainer {
     display: flex;
     flex-direction: column;
@@ -752,6 +847,22 @@ h1 {
     padding: 8px 0;
     min-height: 44px;
     border-bottom: 1px solid var(--color-border-subtle);
+    transition: opacity 0.2s ease;
+}
+/* During gameplay, slots are always visible (no fade). */
+.recipe-section:not(.recipe-section-complete) .recipe-slot {
+    opacity: 1;
+}
+/* In complete state, slots fade in unless already visible. */
+.recipe-section-complete .recipe-slot {
+    opacity: 0;
+}
+.recipe-section-complete .recipe-slot.recipe-slot-visible {
+    opacity: 1;
+}
+.recipe-slot.recipe-slot-fade-out {
+    opacity: 0;
+    transition: opacity 0.18s ease;
 }
 
 .recipe-slot:last-child {
@@ -922,8 +1033,18 @@ h1 {
     }
 }
 
-/* Completion mode: recipe section heading + centered stats */
+/* Completion mode: recipe section heading + centered stats (smooth expand) */
+.completion-stats {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    transition: max-height 0.5s ease, opacity 0.5s ease, margin 0.5s ease;
+}
 .recipe-section-complete .completion-stats {
+    max-height: 80px;
+    opacity: 1;
     text-align: center;
     margin-top: 12px;
     margin-bottom: 4px;
@@ -933,16 +1054,78 @@ h1 {
     display: block;
     margin: 4px 0;
 }
+.completion-stat-icon {
+    font-style: normal;
+}
+.completion-stat-star,
+.completion-stat-trophy {
+    margin-left: 2px;
+}
 
-/* Completion status used for SHARE/REPLAY (win) — no divider, same row as old completion-actions */
+/* Completion stat lines — flip in the letters only (no green back) */
+.completion-stat-flip {
+    display: inline-block;
+    position: relative;
+    perspective: 600px;
+}
+.completion-stat-flip-inner {
+    display: inline-block;
+    position: relative;
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+    transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    transform: perspective(600px) rotateX(180deg);
+    -webkit-transform: perspective(600px) rotateX(180deg);
+}
+.completion-stat-flip.revealed .completion-stat-flip-inner {
+    transform: perspective(600px) rotateX(0deg);
+    -webkit-transform: perspective(600px) rotateX(0deg);
+}
+.completion-stat-flip-front,
+.completion-stat-flip-back {
+    display: block;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    font-size: inherit;
+    font-weight: inherit;
+    color: inherit;
+}
+.completion-stat-flip-back {
+    position: absolute;
+    left: 0;
+    top: 0;
+    min-width: 100%;
+    min-height: 100%;
+    transform: rotateX(180deg);
+    -webkit-transform: rotateX(180deg);
+    background: transparent;
+}
+@media (prefers-reduced-motion: reduce) {
+    .completion-stat-flip.revealed .completion-stat-flip-inner {
+        transition: none;
+    }
+}
+
+/* Completion status used for SHARE/REPLAY (win) — below input bar, fade in like stats */
 .completion-status.completion-status-actions {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 12px;
-    padding: 14px 0 0;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0 0;
     margin: 0 8px;
     font-size: 1rem;
+    min-height: 40px;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+.completion-status.completion-status-actions.completion-status-visible {
+    opacity: 1;
+}
+.completion-status.completion-status-actions .completion-btn {
+    padding: 6px 14px;
+    font-size: 0.7em;
 }
 
 /* Completion actions — SHARE and REPLAY (loss: REPLAY only; win uses completion-status-actions) */

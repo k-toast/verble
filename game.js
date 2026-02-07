@@ -562,11 +562,15 @@ function getKthMatchedPosition(letterStates, k) {
     return null;
 }
 
-// Render "DISH" / "COMPLETE!" as static letters in the puzzle area (e.g. when loading a completed game).
+// Victory message lines for puzzle area: ELEGANT DISH! or EXCELLENT DISH!
+function getVictoryMessageLines() {
+    return gameState.isElegant ? ['ELEGANT', 'DISH!'] : ['EXCELLENT', 'DISH!'];
+}
+
+// Render "ELEGANT DISH!" / "EXCELLENT DISH!" as static letters (e.g. when loading a completed game).
 function renderDishCompleteStatic(stack) {
     stack.innerHTML = '';
-    const line1 = 'DISH';
-    const line2 = 'COMPLETE!';
+    const [line1, line2] = getVictoryMessageLines();
     [line1, line2].forEach((word) => {
         const line = document.createElement('div');
         line.className = 'puzzle-line';
@@ -615,11 +619,10 @@ function flipAllPuzzleToBlank(stack, onDone) {
     if (onDone) setTimeout(onDone, FLIP_MS);
 }
 
-// Reveal "DISH" / "COMPLETE!" in puzzle area with staggered card-flip-in.
+// Reveal "ELEGANT DISH!" / "EXCELLENT DISH!" in puzzle area with staggered card-flip-in.
 function revealDishCompleteInStack(stack) {
     stack.innerHTML = '';
-    const line1 = 'DISH';
-    const line2 = 'COMPLETE!';
+    const [line1, line2] = getVictoryMessageLines();
     const REVEAL_STAGGER_MS = 80;
 
     function buildLine(word) {
@@ -648,6 +651,35 @@ function revealDishCompleteInStack(stack) {
     const tiles = stack.querySelectorAll('.puzzle-flip-tile-reveal');
     tiles.forEach((t, i) => {
         setTimeout(() => t.classList.add('revealed'), i * REVEAL_STAGGER_MS);
+    });
+}
+
+// Card-flip reveal for recipe heading (e.g. "AN ELEGANT DISH")
+const HEADING_REVEAL_STAGGER_MS = 60;
+
+function buildHeadingFlipReveal(headingEl, text) {
+    headingEl.innerHTML = '';
+    const wrap = document.createElement('span');
+    wrap.className = 'recipe-heading-flip';
+    for (const ch of text) {
+        const tile = document.createElement('span');
+        tile.className = 'recipe-heading-flip-char recipe-heading-flip-reveal';
+        const inner = document.createElement('span');
+        inner.className = 'recipe-heading-flip-inner';
+        const front = document.createElement('span');
+        front.className = 'recipe-heading-flip-front';
+        front.textContent = ch;
+        const back = document.createElement('span');
+        back.className = 'recipe-heading-flip-back';
+        inner.appendChild(front);
+        inner.appendChild(back);
+        tile.appendChild(inner);
+        wrap.appendChild(tile);
+    }
+    headingEl.appendChild(wrap);
+    const tiles = wrap.querySelectorAll('.recipe-heading-flip-char');
+    tiles.forEach((t, i) => {
+        setTimeout(() => t.classList.add('revealed'), i * HEADING_REVEAL_STAGGER_MS);
     });
 }
 
@@ -859,17 +891,13 @@ function getWastePercent() {
 
 // Show playing UI (input bar, YOUR RECIPE, hide completion elements)
 function setPlayingView() {
-    const inputWrapper = document.getElementById('inputWrapper');
-    const inputFeedback = document.getElementById('inputFeedback');
     const completionStatus = document.getElementById('completionStatus');
     const recipeHeading = document.getElementById('recipeHeading');
     const completionActions = document.getElementById('completionActions');
     const recipeSection = document.getElementById('recipeSection');
-    if (inputWrapper) inputWrapper.style.display = '';
-    if (inputFeedback) inputFeedback.style.display = '';
     if (completionStatus) {
-        completionStatus.hidden = true;
-        completionStatus.textContent = '';
+        completionStatus.setAttribute('aria-hidden', 'true');
+        completionStatus.innerHTML = '';
     }
     if (recipeHeading) recipeHeading.textContent = 'YOUR RECIPE';
     if (completionActions) {
@@ -879,29 +907,24 @@ function setPlayingView() {
     if (recipeSection) recipeSection.classList.remove('recipe-section-complete');
 }
 
-// Show completion takeover (status line, dynamic heading, stats, SHARE/REPLAY)
+// Show completion takeover (heading, stats, SHARE/REPLAY; input bar stays visible with buttons beneath)
 function showCompletionView() {
     updateFooterTodayButton();
 
-    const inputWrapper = document.getElementById('inputWrapper');
-    const inputFeedback = document.getElementById('inputFeedback');
     const completionStatus = document.getElementById('completionStatus');
     const recipeHeading = document.getElementById('recipeHeading');
     const completionStatsWrap = document.getElementById('completionStatsWrap');
     const completionActions = document.getElementById('completionActions');
-    const recipeSection = document.getElementById('recipeSection');
     const gameStatus = document.getElementById('gameStatus');
     const puzzleStack = document.getElementById('puzzleStack');
 
-    if (inputWrapper) inputWrapper.style.display = 'none';
-    if (inputFeedback) inputFeedback.style.display = 'none';
-
     if (gameState.isWon) {
-        // Win: SHARE + REPLAY go in completionStatus (no divider); DISH COMPLETE! lives in puzzle area.
+        // Win: SHARE + REPLAY go in completionStatus; ELEGANT DISH! / EXCELLENT DISH! in puzzle area.
         if (completionStatus) {
-            completionStatus.hidden = false;
+            completionStatus.setAttribute('aria-hidden', 'false');
             completionStatus.className = 'completion-status completion-status-actions';
             completionStatus.innerHTML = '';
+            completionStatus.classList.remove('completion-status-visible');
             const shareBtn = document.createElement('button');
             shareBtn.type = 'button';
             shareBtn.className = 'completion-btn completion-btn-share';
@@ -916,6 +939,9 @@ function showCompletionView() {
             replayBtn.addEventListener('click', handleRetry);
             completionStatus.appendChild(shareBtn);
             completionStatus.appendChild(replayBtn);
+            requestAnimationFrame(() => {
+                completionStatus.classList.add('completion-status-visible');
+            });
         }
         if (completionActions) {
             completionActions.hidden = true;
@@ -928,13 +954,13 @@ function showCompletionView() {
             });
         }
     } else {
-        // Loss: WHAT A MESS! in completionStatus, REPLAY in completionActions
+        // Loss: HUGE MESS! in completionStatus, REPLAY in completionActions
         if (completionStatus) {
-            completionStatus.hidden = false;
+            completionStatus.setAttribute('aria-hidden', 'false');
             completionStatus.className = 'completion-status';
             completionStatus.innerHTML = '';
             completionStatus.classList.add('completion-status-flip');
-            const text = 'WHAT A MESS!';
+            const text = 'HUGE MESS!';
             for (let i = 0; i < text.length; i++) {
                 const ch = text[i];
                 if (ch === ' ') {
@@ -973,17 +999,18 @@ function showCompletionView() {
         }
     }
 
-    if (gameStatus) gameStatus.textContent = gameState.isWon ? 'DISH COMPLETE!' : 'WHAT A MESS!';
-
-    if (recipeHeading) {
-        if (gameState.isWon) {
-            recipeHeading.textContent = gameState.isElegant ? 'AN ELEGANT DISH' : 'AN EXCELLENT DISH';
-        } else {
-            recipeHeading.textContent = 'YOUR RECIPE';
-        }
+    if (gameStatus) {
+        gameStatus.textContent = gameState.isWon
+            ? (gameState.isElegant ? 'ELEGANT DISH!' : 'EXCELLENT DISH!')
+            : 'HUGE MESS!';
     }
 
-    if (recipeSection) recipeSection.classList.add('recipe-section-complete');
+    if (recipeHeading && !gameState.isWon) {
+        recipeHeading.textContent = 'YOUR RECIPE';
+    }
+    /* when win: leave recipe heading as YOUR RECIPE (unchanged) */
+
+    /* recipe-section-complete is added by loadRecipe (in rAF when isComplete) so stats fade in */
     if (completionStatsWrap) completionStatsWrap.hidden = gameState.isLost;
 }
 
@@ -1249,20 +1276,21 @@ async function processIngredient(ingredient) {
     updateDisplay();
     loadRecipe();
     if (gameState.isWon || gameState.isLost) {
-        setTimeout(showCompletionView, 300);
+        showCompletionView();
     }
     return true;
 }
 
-// Load and display recipe (history) - 5 slots when playing, only used slots when complete
+// Load and display recipe (history) — always show all slots; top ingredient / food waste fade in below when complete
 function loadRecipe() {
     const container = document.getElementById('recipeContainer');
-    container.innerHTML = '';
-
     const historyCount = gameState.history.length;
     const animating = animationState !== null;
     const isComplete = gameState.isWon || gameState.isLost;
-    const maxSlots = isComplete ? historyCount : MAX_MOVES;
+
+    container.innerHTML = '';
+
+    const maxSlots = MAX_MOVES;
     const totalSlots = animating && !isComplete ? historyCount + 1 : historyCount;
 
     for (let i = 0; i < maxSlots; i++) {
@@ -1287,22 +1315,13 @@ function loadRecipe() {
                 itemDiv.appendChild(box);
             });
 
-            const matchCount = (item.result || []).filter(r => r.status === 'adj' || r.status === 'noun').length;
-            if (matchCount >= STAR_MATCH_THRESHOLD) {
-                const starEl = document.createElement('span');
-                starEl.className = 'recipe-row-star';
-                starEl.textContent = '⭐';
-                starEl.setAttribute('aria-label', '6 or more matching letters');
-                itemDiv.appendChild(starEl);
-            }
-
             slotDiv.appendChild(itemDiv);
         } else if (animating && i === historyCount) {
             const placeholder = document.createElement('div');
             placeholder.className = 'recipe-placeholder';
             placeholder.textContent = '???';
             slotDiv.appendChild(placeholder);
-        } else if (!isComplete) {
+        } else {
             const placeholder = document.createElement('div');
             placeholder.className = 'recipe-placeholder';
             placeholder.textContent = '???';
@@ -1312,16 +1331,45 @@ function loadRecipe() {
         container.appendChild(slotDiv);
     }
 
-    const starDiv = document.getElementById('starIngredientDisplay');
-    if (starDiv) {
-        const star = getStarIngredient();
-        starDiv.textContent = 'TOP INGREDIENT: ' + (star || '???');
+    /* Fade in slots only when in complete state. Add recipe-section-complete in same rAF to avoid list blink. */
+    if (isComplete) {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                container.querySelectorAll('.recipe-slot').forEach((el) => el.classList.add('recipe-slot-visible'));
+                const recipeSectionEl = document.getElementById('recipeSection');
+                if (recipeSectionEl) recipeSectionEl.classList.add('recipe-section-complete');
+            });
+        });
+    } else {
+        container.querySelectorAll('.recipe-slot').forEach((el) => el.classList.add('recipe-slot-visible'));
     }
 
+    const hadStar = getHadStarIngredient();
+    const starDiv = document.getElementById('starIngredientDisplay');
     const wasteDiv = document.getElementById('foodWasteDisplay');
+    const wastePercent = getWastePercent();
+    const star = getStarIngredient();
+
+    if (starDiv) {
+        starDiv.textContent = 'TOP INGREDIENT: ' + (star || '???');
+        if (hadStar) {
+            const starIcon = document.createElement('span');
+            starIcon.className = 'completion-stat-icon completion-stat-star';
+            starIcon.textContent = ' ⭐';
+            starIcon.setAttribute('aria-hidden', 'true');
+            starDiv.appendChild(starIcon);
+        }
+    }
+
     if (wasteDiv) {
-        const wastePercent = getWastePercent();
         wasteDiv.textContent = `FOOD WASTE: ${wastePercent}%`;
+        if (hadStar) {
+            const trophyIcon = document.createElement('span');
+            trophyIcon.className = 'completion-stat-icon completion-stat-trophy';
+            trophyIcon.textContent = ' 🏆';
+            trophyIcon.setAttribute('aria-hidden', 'true');
+            wasteDiv.appendChild(trophyIcon);
+        }
     }
 }
 
