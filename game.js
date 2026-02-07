@@ -701,15 +701,13 @@ function getIndefiniteArticle(word) {
     return /[aeiou]/.test(first) ? 'an' : 'a';
 }
 
-// Build victory grid HTML: numbered list, only used cells (green=matched, grey=unmatched), star if 6+ matches
+// Build victory grid HTML: numbered list, only used cells (green=matched, grey=unmatched)
 function buildVictoryGridHTML() {
     let html = '<ol class="victory-grid">';
     for (let r = 0; r < gameState.history.length; r++) {
         const historyItem = gameState.history[r];
         if (!historyItem || !historyItem.result.length) continue;
         const rowNum = r + 1;
-        const matchCount = (historyItem.result || []).filter(c => c.status === 'adj' || c.status === 'noun').length;
-        const starHtml = matchCount >= STAR_MATCH_THRESHOLD ? '<span class="victory-row-star">⭐</span>' : '';
         html += `<li class="victory-grid-row"><span class="victory-row-num">${rowNum}.</span><span class="victory-row-cells">`;
         for (let c = 0; c < historyItem.result.length; c++) {
             const status = historyItem.result[c].status || 'plain';
@@ -718,7 +716,7 @@ function buildVictoryGridHTML() {
                 : 'victory-cell victory-cell-unmatched';
             html += `<span class="${cellClass}"></span>`;
         }
-        html += `</span>${starHtml}</li>`;
+        html += `</span></li>`;
     }
     html += '</ol>';
     return html;
@@ -1021,7 +1019,7 @@ async function processIngredient(ingredient) {
     updateDisplay();
     loadRecipe();
     if (gameState.isWon || gameState.isLost) {
-        showGameOver();
+        setTimeout(showGameOver, 300);
     }
     return true;
 }
@@ -1108,8 +1106,6 @@ function showGameOver() {
         const noun = nounRaw.replace(/\b\w/g, c => c.toUpperCase());
         const wastePercent = getWastePercent();
         const starIngredient = getStarIngredient() || '???';
-        const starMatchCount = getStarIngredientMatchCount();
-        const topIngredientSuffix = starMatchCount >= STAR_MATCH_THRESHOLD ? ' ⭐' : '';
 
         const isReplayPuzzle = currentPuzzle && currentPuzzle.date !== getHelsinkiDate();
         let title;
@@ -1134,7 +1130,7 @@ function showGameOver() {
         const content = `
             <p class="victory-message">${message}</p>
             ${gridHTML}
-            <p class="victory-star">Top ingredient: ${starIngredient}${topIngredientSuffix}</p>
+            <p class="victory-star">Top ingredient: ${starIngredient}</p>
             <p class="victory-waste">${wasteLabel}</p>
             <div class="victory-actions">
                 ${tryAgainBtn}
@@ -1185,8 +1181,6 @@ function generateShareText() {
     const moves = gameState.moves;
     const wastePercent = getWastePercent();
     const starIngredient = getStarIngredient() || '???';
-    const starMatchCount = getStarIngredientMatchCount();
-    const topIngredientSuffix = starMatchCount >= STAR_MATCH_THRESHOLD ? ' ⭐' : '';
 
     let text = `wordish #${puzzleNum}\n\n`;
 
@@ -1204,20 +1198,18 @@ function generateShareText() {
         text += `The dish, she is ruined. (${moves} ingredients)\n\n`;
     }
 
-    // Grid: only matched (green) and unmatched (black), no blanks, numbered rows; star after row if 6+ matches
+    // Grid: only matched (green) and unmatched (black), no blanks, numbered rows
     gameState.history.forEach((item, index) => {
         const boxes = item.result.map(cell => {
             const status = cell.status || 'plain';
             if (status === 'adj' || status === 'noun') return '🟩';
             return '⬛';  // black for unmatched
         }).join('');
-        const matchCount = (item.result || []).filter(c => c.status === 'adj' || c.status === 'noun').length;
-        const rowStar = matchCount >= STAR_MATCH_THRESHOLD ? ' ⭐' : '';
-        text += `${index + 1}. ${boxes}${rowStar}\n`;
+        text += `${index + 1}. ${boxes}\n`;
     });
 
     if (gameState.isWon) {
-        text += `\nTop ingredient: ${starIngredient}${topIngredientSuffix}\n`;
+        text += `\nTop ingredient: ${starIngredient}\n`;
         text += wastePercent <= TROPHY_WASTE_PERCENT ? `Food waste: ${wastePercent}% 🏆` : `Food waste: ${wastePercent}%`;
     }
 
@@ -1731,30 +1723,132 @@ function startCountdownTimer() {
     countdownInterval = setInterval(updateCountdown, 1000);
 }
 
+// Help modal: build puzzle-stack HTML using game tile classes (no images)
+// lines = array of strings (e.g. ['APPEALING', 'CANNOLI']); matchedIndices = set of flat indices to show as green
+function buildHelpPuzzleStack(lines, matchedIndices) {
+    let flatIndex = 0;
+    const lineHtml = lines.map((line) => {
+        const cells = [];
+        for (let i = 0; i < line.length; i++) {
+            const isMatched = matchedIndices && matchedIndices.has(flatIndex);
+            const char = line[i];
+            flatIndex++;
+            if (isMatched) {
+                cells.push('<div class="puzzle-letter puzzle-letter-matched puzzle-matched-box"></div>');
+            } else {
+                const esc = char === ' ' ? '\u00A0' : char;
+                cells.push(`<span class="puzzle-letter puzzle-letter-active">${esc}</span>`);
+            }
+        }
+        return `<div class="puzzle-line">${cells.join('')}</div>`;
+    });
+    return `<div class="puzzle-stack help-puzzle-example" role="img" aria-label="Dish: ${lines.join(' ')}">${lineHtml.join('')}</div>`;
+}
+
 // Help modal content (shared by help button and first-time auto-show)
 function getHelpContent() {
+    const line0 = 'APPEALING';
+    const line1 = 'CANNOLI';
+    const lines = [line0, line1];
+    // BANANA matches left-to-right: B discarded, then A,N,A,N,A → positions 0,7,4,11,10 (flat)
+    const matchedAfterBanana = new Set([0, 4, 7, 10, 11]);
+    const beforeHtml = buildHelpPuzzleStack(lines, null);
+    const afterHtml = buildHelpPuzzleStack(lines, matchedAfterBanana);
+
+    const scoringTileHtml = `
+        <div class="help-example help-archive-example">
+            <div class="archive-cell-wrapper help-archive-tile-wrapper">
+                <div class="archive-calendar-tile archive-calendar-tile-filled help-archive-tile" role="img" aria-label="Example archive tile: 3 ingredients, food waste trophy, star ingredient, puzzle 001">
+                    <span class="archive-tile-main">3</span>
+                    <div class="archive-tile-bottom">
+                        <span class="archive-tile-ll">🏆</span>
+                        <span class="archive-tile-lr">⭐</span>
+                    </div>
+                </div>
+                <span class="archive-tile-num">#001</span>
+            </div>
+        </div>`;
+
     return `
-        <div class="help-content">
-            <p>Complete the puzzle by entering ingredients that share letters with the dish of the day.</p>
-            <p>Each time you submit a valid ingredient, its letters will match against the dish one at a time, left to right.</p>
-            <p>A valid ingredient is a food, a single word, and 12 letters or less.</p>
-            <p class="help-label">Example</p>
-            <p>Adding the ingredient <strong>BANANA</strong> to this:</p>
-            <div class="help-example">
-                <img src="assets/clean-before.png" alt="Challenge dish before: APPEALING CANNOLI" class="help-image">
+        <div class="help-pages">
+            <div class="help-page help-page-1">
+                <div class="help-content">
+                    <p>Complete the puzzle by entering ingredients that share letters with the dish of the day.</p>
+                    <p>Each time you submit a valid ingredient, its letters will match against the dish one at a time, left to right.</p>
+                    <p>A valid ingredient is a food, a single word, and 12 letters or less.</p>
+                    <p class="help-label">Example</p>
+                    <p>Adding the ingredient <strong>BANANA</strong> to this:</p>
+                    <div class="help-example">${beforeHtml}</div>
+                    <p>Would produce this:</p>
+                    <div class="help-example">${afterHtml}</div>
+                    <p>With the <strong>A</strong>, <strong>N</strong>, <strong>A</strong>, <strong>N</strong>, and <strong>A</strong> matching and the <strong>B</strong> discarded.</p>
+                    <p>A dish is prepared successfully if all of its letters are matched using five ingredients or fewer.</p>
+                </div>
+                <div class="help-pagination">
+                    <button type="button" class="help-nav help-nav-prev" disabled aria-label="Previous page">←</button>
+                    <span class="help-page-indicator">1/2</span>
+                    <button type="button" class="help-nav help-nav-next" aria-label="Next page">→</button>
+                </div>
             </div>
-            <p>Would produce this:</p>
-            <div class="help-example">
-                <img src="assets/clean-after.png" alt="Challenge dish after: BANANA letters matched" class="help-image">
+            <div class="help-page help-page-2" hidden>
+                <div class="help-content">
+                    <p>Try to complete the dish using as few ingredients as possible.</p>
+                    <p>Earn a star if at least one ingredient matches 6 or more letters.</p>
+                    <p>Earn a trophy if your food waste (the percent of unmatched letters) is 25% or less.</p>
+                    <p>See your best dishes in the archive, which shows all three judging criteria for every puzzle you've completed.</p>
+                    ${scoringTileHtml}
+                </div>
+                <div class="help-pagination">
+                    <button type="button" class="help-nav help-nav-prev" aria-label="Previous page">←</button>
+                    <span class="help-page-indicator">2/2</span>
+                    <button type="button" class="help-nav help-nav-next" disabled aria-label="Next page">→</button>
+                </div>
             </div>
-            <p>With the <strong>A</strong>, <strong>N</strong>, <strong>A</strong>, <strong>N</strong>, and <strong>A</strong> matching and the <strong>B</strong> discarded.</p>
-            <p>A dish is prepared successfully if all of its letters are matched using five ingredients or fewer.</p>
         </div>
     `;
 }
 
 function showHelpModal() {
     openModal('How to Play', getHelpContent());
+    const modalContent = document.getElementById('modalContent');
+    const modalTitle = document.getElementById('modalTitle');
+    const pagesContainer = modalContent.querySelector('.help-pages');
+    const page1 = modalContent.querySelector('.help-page-1');
+    const page2 = modalContent.querySelector('.help-page-2');
+    const prevBtns = modalContent.querySelectorAll('.help-nav-prev');
+    const nextBtns = modalContent.querySelectorAll('.help-nav-next');
+
+    function setHelpPagesHeight() {
+        if (!pagesContainer || !page1) return;
+        page1.hidden = false;
+        page2.hidden = true;
+        requestAnimationFrame(() => {
+            const h = page1.offsetHeight;
+            pagesContainer.style.height = h + 'px';
+        });
+    }
+
+    function goToPage(page) {
+        if (page === 1) {
+            page1.hidden = false;
+            page2.hidden = true;
+            if (modalTitle) modalTitle.textContent = 'How to Play';
+        } else {
+            page1.hidden = true;
+            page2.hidden = false;
+            if (modalTitle) modalTitle.textContent = 'SCORING';
+        }
+    }
+
+    setHelpPagesHeight();
+    goToPage(1);
+
+    prevBtns.forEach((btn) => {
+        btn.addEventListener('click', () => goToPage(1));
+    });
+    nextBtns.forEach((btn) => {
+        btn.addEventListener('click', () => goToPage(2));
+    });
 }
 
 function getSettingsContent() {
@@ -1976,9 +2070,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    input.addEventListener('input', (e) => {
-        e.target.value = e.target.value.replace(/[^A-Za-z]/g, '').toUpperCase();
+    function normalizeIngredientInput(inputEl) {
+        if (!inputEl) return;
+        inputEl.value = (inputEl.value || '').replace(/[^A-Za-z]/g, '').toUpperCase();
         updateInputValidationState();
+    }
+
+    input.addEventListener('input', (e) => {
+        // Don't overwrite value while IME/composition is active (e.g. iOS spell-check suggestion).
+        // Otherwise tapping a suggestion won't replace the word in the field.
+        if (e.isComposing) return;
+        normalizeIngredientInput(e.target);
+    });
+
+    input.addEventListener('compositionend', (e) => {
+        // After suggestion is committed, normalize (letters only, uppercase).
+        normalizeIngredientInput(e.target);
     });
 
     // Navigation buttons

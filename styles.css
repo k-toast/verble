@@ -1664,12 +1664,96 @@ footer {
     margin: 12px 0;
 }
 
-.help-image {
-    display: block;
-    max-width: 100%;
-    height: auto;
-    border: 1px solid var(--color-border);
+/* Help puzzle uses same tile classes as game; scale down for modal */
+.help-puzzle-example {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-size: clamp(0.75em, 3vw, 0.95em);
+}
+
+/* Help modal: two-page layout — height set by JS from page 1 so both pages match */
+.help-pages {
+    display: flex;
+    flex-direction: column;
+}
+.help-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+}
+.help-page[hidden] {
+    display: none;
+}
+.help-page .help-content {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+.help-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+    flex-shrink: 0;
+    line-height: 1;
+}
+.help-nav {
+    background: var(--color-surface-elevated);
+    border: 1px solid var(--color-border-button);
+    color: var(--color-secondary);
+    font-size: 1.1em;
+    padding: 6px 12px;
     border-radius: 4px;
+    cursor: pointer;
+    line-height: 1;
+}
+.help-nav:hover:not(:disabled),
+.help-nav:focus-visible:not(:disabled) {
+    border-color: var(--color-border-surface);
+    color: var(--color-primary);
+}
+.help-nav:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+.help-page-indicator {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--color-secondary);
+    min-width: 2.5em;
+    text-align: center;
+}
+
+/* Help modal: example archive tile (same structure as game, scaled, centered, no hover) */
+.help-archive-example {
+    margin-top: 4px;
+    display: flex;
+    justify-content: center;
+}
+.help-archive-tile-wrapper {
+    width: 64px;
+}
+.help-archive-tile-wrapper .archive-calendar-tile {
+    min-height: 0;
+    font-size: 0.85em;
+    cursor: default;
+}
+.help-archive-tile-wrapper .archive-calendar-tile-filled:hover,
+.help-archive-tile-wrapper .archive-calendar-tile-filled:focus {
+    background: var(--color-surface);
+    border-color: var(--color-border);
+}
+.help-archive-tile-wrapper .archive-tile-main {
+    font-size: 1.3em;
+}
+.help-archive-tile-wrapper .archive-tile-num {
+    font-size: 0.65em;
 }
 
 /* Victory modal — message, grid, top ingredient, waste */
@@ -1707,11 +1791,6 @@ footer {
     gap: 4px;
     flex-wrap: nowrap;
     justify-content: flex-start;
-}
-
-.victory-row-star {
-    margin-left: 4px;
-    flex-shrink: 0;
 }
 
 .victory-cell {
