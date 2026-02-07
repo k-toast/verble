@@ -578,6 +578,16 @@ h1 {
     line-height: 1.4;
 }
 
+/* Victory: DISH COMPLETE! reveal tiles — start with back (green) visible, then flip to show letter */
+.puzzle-flip-tile-reveal .puzzle-flip-inner {
+    transform: perspective(800px) rotateX(180deg);
+    -webkit-transform: perspective(800px) rotateX(180deg);
+}
+.puzzle-flip-tile-reveal.revealed .puzzle-flip-inner {
+    transform: perspective(800px) rotateX(0deg);
+    -webkit-transform: perspective(800px) rotateX(0deg);
+}
+
 @media (prefers-reduced-motion: reduce) {
     .puzzle-flip-inner,
     .letter-flip-inner {
@@ -586,6 +596,10 @@ h1 {
     .puzzle-flip-tile.flipped .puzzle-flip-inner,
     .letter-box-flip-tile.flipped .letter-flip-inner {
         transform: perspective(800px) rotateX(180deg);
+    }
+    .puzzle-flip-tile-reveal.revealed .puzzle-flip-inner {
+        transform: perspective(800px) rotateX(0deg);
+        -webkit-transform: perspective(800px) rotateX(0deg);
     }
 }
 
@@ -920,7 +934,18 @@ h1 {
     margin: 4px 0;
 }
 
-/* Completion actions — SHARE and REPLAY */
+/* Completion status used for SHARE/REPLAY (win) — no divider, same row as old completion-actions */
+.completion-status.completion-status-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px 0 0;
+    margin: 0 8px;
+    font-size: 1rem;
+}
+
+/* Completion actions — SHARE and REPLAY (loss: REPLAY only; win uses completion-status-actions) */
 .completion-actions {
     display: flex;
     flex-wrap: wrap;

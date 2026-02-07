@@ -562,10 +562,104 @@ function getKthMatchedPosition(letterStates, k) {
     return null;
 }
 
+// Render "DISH" / "COMPLETE!" as static letters in the puzzle area (e.g. when loading a completed game).
+function renderDishCompleteStatic(stack) {
+    stack.innerHTML = '';
+    const line1 = 'DISH';
+    const line2 = 'COMPLETE!';
+    [line1, line2].forEach((word) => {
+        const line = document.createElement('div');
+        line.className = 'puzzle-line';
+        for (const ch of word) {
+            const span = document.createElement('span');
+            span.className = 'puzzle-letter';
+            span.textContent = ch;
+            line.appendChild(span);
+        }
+        stack.appendChild(line);
+    });
+}
+
+// Flip all current puzzle letters to blank (green) at once; then callback after duration.
+function flipAllPuzzleToBlank(stack, onDone) {
+    const letterStates = getLetterStatesForDisplay();
+    stack.innerHTML = '';
+    const FLIP_MS = 550;
+
+    function appendLine(letters) {
+        const line = document.createElement('div');
+        line.className = 'puzzle-line';
+        letters.forEach(({ char }) => {
+            const tile = document.createElement('div');
+            tile.className = 'puzzle-letter puzzle-flip-tile';
+            const inner = document.createElement('div');
+            inner.className = 'puzzle-flip-inner';
+            const front = document.createElement('div');
+            front.className = 'puzzle-flip-front';
+            front.textContent = char === ' ' ? '\u00A0' : char;
+            const back = document.createElement('div');
+            back.className = 'puzzle-flip-back';
+            inner.appendChild(front);
+            inner.appendChild(back);
+            tile.appendChild(inner);
+            line.appendChild(tile);
+        });
+        stack.appendChild(line);
+    }
+    appendLine(letterStates.adj);
+    appendLine(letterStates.noun);
+
+    // Add .flipped immediately so the first paint shows green (avoids flash of puzzle name).
+    const tiles = stack.querySelectorAll('.puzzle-flip-tile');
+    tiles.forEach((t) => t.classList.add('flipped'));
+    if (onDone) setTimeout(onDone, FLIP_MS);
+}
+
+// Reveal "DISH" / "COMPLETE!" in puzzle area with staggered card-flip-in.
+function revealDishCompleteInStack(stack) {
+    stack.innerHTML = '';
+    const line1 = 'DISH';
+    const line2 = 'COMPLETE!';
+    const REVEAL_STAGGER_MS = 80;
+
+    function buildLine(word) {
+        const line = document.createElement('div');
+        line.className = 'puzzle-line';
+        for (const ch of word) {
+            const tile = document.createElement('div');
+            tile.className = 'puzzle-letter puzzle-flip-tile puzzle-flip-tile-reveal';
+            const inner = document.createElement('div');
+            inner.className = 'puzzle-flip-inner';
+            const front = document.createElement('div');
+            front.className = 'puzzle-flip-front';
+            front.textContent = ch;
+            const back = document.createElement('div');
+            back.className = 'puzzle-flip-back';
+            inner.appendChild(front);
+            inner.appendChild(back);
+            tile.appendChild(inner);
+            line.appendChild(tile);
+        }
+        return line;
+    }
+    stack.appendChild(buildLine(line1));
+    stack.appendChild(buildLine(line2));
+
+    const tiles = stack.querySelectorAll('.puzzle-flip-tile-reveal');
+    tiles.forEach((t, i) => {
+        setTimeout(() => t.classList.add('revealed'), i * REVEAL_STAGGER_MS);
+    });
+}
+
 // Build puzzle display: two lines — adjective on line 1, noun on line 2, both centered
 function renderPuzzleStack() {
     const stack = document.getElementById('puzzleStack');
     if (!stack) return;
+
+    if (gameState.isWon && !gameState.justWon) {
+        renderDishCompleteStatic(stack);
+        return;
+    }
 
     const letterStates = getLetterStatesForDisplay();
     const animating = animationState !== null;
@@ -797,38 +891,85 @@ function showCompletionView() {
     const completionActions = document.getElementById('completionActions');
     const recipeSection = document.getElementById('recipeSection');
     const gameStatus = document.getElementById('gameStatus');
+    const puzzleStack = document.getElementById('puzzleStack');
 
     if (inputWrapper) inputWrapper.style.display = 'none';
     if (inputFeedback) inputFeedback.style.display = 'none';
-    if (completionStatus) {
-        completionStatus.hidden = false;
-        completionStatus.className = 'completion-status';
-        completionStatus.innerHTML = '';
-        completionStatus.classList.add('completion-status-flip');
-        const text = gameState.isWon ? 'DISH COMPLETE!' : 'WHAT A MESS!';
-        for (let i = 0; i < text.length; i++) {
-            const ch = text[i];
-            if (ch === ' ') {
-                const space = document.createElement('span');
-                space.className = 'completion-status-space';
-                space.innerHTML = '\u00A0';
-                completionStatus.appendChild(space);
-                continue;
+
+    if (gameState.isWon) {
+        // Win: SHARE + REPLAY go in completionStatus (no divider); DISH COMPLETE! lives in puzzle area.
+        if (completionStatus) {
+            completionStatus.hidden = false;
+            completionStatus.className = 'completion-status completion-status-actions';
+            completionStatus.innerHTML = '';
+            const shareBtn = document.createElement('button');
+            shareBtn.type = 'button';
+            shareBtn.className = 'completion-btn completion-btn-share';
+            shareBtn.textContent = 'SHARE';
+            shareBtn.setAttribute('aria-label', 'Share results');
+            shareBtn.addEventListener('click', handleShare);
+            const replayBtn = document.createElement('button');
+            replayBtn.type = 'button';
+            replayBtn.className = 'completion-btn';
+            replayBtn.textContent = 'REPLAY';
+            replayBtn.setAttribute('aria-label', 'Replay this puzzle');
+            replayBtn.addEventListener('click', handleRetry);
+            completionStatus.appendChild(shareBtn);
+            completionStatus.appendChild(replayBtn);
+        }
+        if (completionActions) {
+            completionActions.hidden = true;
+            completionActions.innerHTML = '';
+        }
+        if (gameState.justWon && puzzleStack) {
+            flipAllPuzzleToBlank(puzzleStack, () => {
+                revealDishCompleteInStack(puzzleStack);
+                gameState.justWon = false;
+            });
+        }
+    } else {
+        // Loss: WHAT A MESS! in completionStatus, REPLAY in completionActions
+        if (completionStatus) {
+            completionStatus.hidden = false;
+            completionStatus.className = 'completion-status';
+            completionStatus.innerHTML = '';
+            completionStatus.classList.add('completion-status-flip');
+            const text = 'WHAT A MESS!';
+            for (let i = 0; i < text.length; i++) {
+                const ch = text[i];
+                if (ch === ' ') {
+                    const space = document.createElement('span');
+                    space.className = 'completion-status-space';
+                    space.innerHTML = '\u00A0';
+                    completionStatus.appendChild(space);
+                    continue;
+                }
+                const card = document.createElement('span');
+                card.className = 'completion-status-char';
+                card.style.animationDelay = `${i * 90}ms`;
+                const inner = document.createElement('span');
+                inner.className = 'completion-status-char-inner';
+                const front = document.createElement('span');
+                front.className = 'completion-status-char-front';
+                front.textContent = ch;
+                const back = document.createElement('span');
+                back.className = 'completion-status-char-back';
+                inner.appendChild(front);
+                inner.appendChild(back);
+                card.appendChild(inner);
+                completionStatus.appendChild(card);
             }
-            const card = document.createElement('span');
-            card.className = 'completion-status-char';
-            card.style.animationDelay = `${i * 90}ms`;
-            const inner = document.createElement('span');
-            inner.className = 'completion-status-char-inner';
-            const front = document.createElement('span');
-            front.className = 'completion-status-char-front';
-            front.textContent = ch;
-            const back = document.createElement('span');
-            back.className = 'completion-status-char-back';
-            inner.appendChild(front);
-            inner.appendChild(back);
-            card.appendChild(inner);
-            completionStatus.appendChild(card);
+        }
+        if (completionActions) {
+            completionActions.hidden = false;
+            completionActions.innerHTML = '';
+            const replayBtn = document.createElement('button');
+            replayBtn.type = 'button';
+            replayBtn.className = 'completion-btn';
+            replayBtn.textContent = 'REPLAY';
+            replayBtn.setAttribute('aria-label', 'Replay this puzzle');
+            replayBtn.addEventListener('click', handleRetry);
+            completionActions.appendChild(replayBtn);
         }
     }
 
@@ -844,25 +985,6 @@ function showCompletionView() {
 
     if (recipeSection) recipeSection.classList.add('recipe-section-complete');
     if (completionStatsWrap) completionStatsWrap.hidden = gameState.isLost;
-
-    if (completionActions) {
-        completionActions.hidden = false;
-        completionActions.innerHTML = '';
-        const shareBtn = document.createElement('button');
-        shareBtn.type = 'button';
-        shareBtn.className = 'completion-btn completion-btn-share';
-        shareBtn.textContent = 'SHARE';
-        shareBtn.setAttribute('aria-label', 'Share results');
-        shareBtn.addEventListener('click', handleShare);
-        const replayBtn = document.createElement('button');
-        replayBtn.type = 'button';
-        replayBtn.className = 'completion-btn';
-        replayBtn.textContent = 'REPLAY';
-        replayBtn.setAttribute('aria-label', 'Replay this puzzle');
-        replayBtn.addEventListener('click', handleRetry);
-        if (gameState.isWon) completionActions.appendChild(shareBtn);
-        completionActions.appendChild(replayBtn);
-    }
 }
 
 // Update display
@@ -1111,6 +1233,7 @@ async function processIngredient(ingredient) {
     const allCleared = allAdjsEmpty && nounEmpty;
     if (allCleared) {
         gameState.isWon = true;
+        gameState.justWon = true;
         gameState.isElegant = gameState.moves <= ELEGANT_MAX_MOVES;
     } else if (gameState.moves >= MAX_MOVES) {
         gameState.isLost = true;
