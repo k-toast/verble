@@ -27,6 +27,7 @@ let archiveCalendarYear = 2026;
 
 // Animation state for letter-by-letter reveal
 let animationState = null; // { ingredient, result, revealedCount, adjArrays, nounArray }
+let lastFadedRecipeCount = -1; // so we only fade in a row once per new ingredient
 const LETTER_REVEAL_MS = 300;
 const MAX_MOVES = 5;
 const ELEGANT_MAX_MOVES = 3;
@@ -221,6 +222,7 @@ function initGame() {
     }
 
     gameState.puzzleDate = puzzleDate;
+    lastFadedRecipeCount = gameState.history.length; /* don't re-fade rows when loading */
     updateReplayViewClass();
     updateDisplay();
     loadRecipe();
@@ -233,14 +235,27 @@ function initGame() {
     if (window.posthog) posthog.capture('game_loaded', { puzzle_date: puzzleDate });
 }
 
+const PUZZLE_DATE_MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+function formatPuzzleDate(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr + 'T12:00:00');
+    const month = PUZZLE_DATE_MONTHS[d.getMonth()] || '???';
+    const day = d.getDate();
+    const year = d.getFullYear();
+    return `${month} ${day}, ${year}`;
+}
+
 function updatePuzzleLabel() {
     const el = document.getElementById('puzzleLabel');
     const countdownWrap = document.getElementById('countdownInLabel');
+    const wrap = document.getElementById('puzzleDateNav') && document.getElementById('puzzleDateNav').parentElement;
     if (!el || !currentPuzzle) return;
     const today = getHelsinkiDate();
     const isToday = currentPuzzle.date === today;
-    el.textContent = isToday ? "DISH OF THE DAY" : 'DISH OF THE PAST';
+    el.textContent = isToday ? 'DISH OF THE DAY' : formatPuzzleDate(currentPuzzle.date);
     if (countdownWrap) countdownWrap.style.display = isToday ? '' : 'none';
+    if (wrap) wrap.classList.toggle('puzzle-date-archive', !isToday);
 }
 
 // Keep body.replay-view in sync so archive puzzles get the parchment theme
@@ -267,15 +282,15 @@ function updateFooterTodayButton() {
     updateFooterReplayControls();
 }
 
-// Show/hide and enable/disable footer prev/next puzzle (when viewing an archive puzzle; REPLAY is in completion section)
+// Show/hide and enable/disable prev/next puzzle arrows (in puzzle section, around date)
 function updateFooterReplayControls() {
-    const container = document.getElementById('footerReplayControls');
     const prevPuzzleBtn = document.getElementById('prevPuzzleBtn');
     const nextPuzzleBtn = document.getElementById('nextPuzzleBtn');
-    if (!container || !prevPuzzleBtn || !nextPuzzleBtn) return;
+    if (!prevPuzzleBtn || !nextPuzzleBtn) return;
 
     const onReplayPuzzle = currentView === 'game' && currentPuzzle && puzzles.length > 0 && currentPuzzle.date !== getRealHelsinkiDate();
-    container.style.display = onReplayPuzzle ? 'flex' : 'none';
+    prevPuzzleBtn.style.display = onReplayPuzzle ? '' : 'none';
+    nextPuzzleBtn.style.display = onReplayPuzzle ? '' : 'none';
     if (!onReplayPuzzle) return;
 
     const idx = puzzles.findIndex(p => p.date === currentPuzzle.date);
@@ -894,6 +909,7 @@ function setPlayingView() {
     const completionStatus = document.getElementById('completionStatus');
     const recipeHeading = document.getElementById('recipeHeading');
     const completionActions = document.getElementById('completionActions');
+    const footerCompletionActions = document.getElementById('footerCompletionActions');
     const recipeSection = document.getElementById('recipeSection');
     if (completionStatus) {
         completionStatus.setAttribute('aria-hidden', 'true');
@@ -903,11 +919,16 @@ function setPlayingView() {
     if (completionActions) {
         completionActions.hidden = true;
         completionActions.innerHTML = '';
+        completionActions.classList.remove('completion-actions-visible');
     }
-    if (recipeSection) recipeSection.classList.remove('recipe-section-complete');
+    if (footerCompletionActions) {
+        footerCompletionActions.innerHTML = '';
+        footerCompletionActions.classList.remove('completion-actions-visible');
+    }
+    if (recipeSection) recipeSection.classList.remove('recipe-section-complete', 'recipe-section-stats-instant');
 }
 
-// Show completion takeover (heading, stats, SHARE/REPLAY; input bar stays visible with buttons beneath)
+// Show completion takeover (heading, stats; SHARE/REPLAY go in footer)
 function showCompletionView() {
     updateFooterTodayButton();
 
@@ -915,38 +936,18 @@ function showCompletionView() {
     const recipeHeading = document.getElementById('recipeHeading');
     const completionStatsWrap = document.getElementById('completionStatsWrap');
     const completionActions = document.getElementById('completionActions');
+    const footerCompletionActions = document.getElementById('footerCompletionActions');
     const gameStatus = document.getElementById('gameStatus');
     const puzzleStack = document.getElementById('puzzleStack');
 
+    if (completionActions) {
+        completionActions.hidden = true;
+        completionActions.innerHTML = '';
+        completionActions.classList.remove('completion-actions-visible');
+    }
+
     if (gameState.isWon) {
-        // Win: SHARE + REPLAY go in completionStatus; ELEGANT DISH! / EXCELLENT DISH! in puzzle area.
-        if (completionStatus) {
-            completionStatus.setAttribute('aria-hidden', 'false');
-            completionStatus.className = 'completion-status completion-status-actions';
-            completionStatus.innerHTML = '';
-            completionStatus.classList.remove('completion-status-visible');
-            const shareBtn = document.createElement('button');
-            shareBtn.type = 'button';
-            shareBtn.className = 'completion-btn completion-btn-share';
-            shareBtn.textContent = 'SHARE';
-            shareBtn.setAttribute('aria-label', 'Share results');
-            shareBtn.addEventListener('click', handleShare);
-            const replayBtn = document.createElement('button');
-            replayBtn.type = 'button';
-            replayBtn.className = 'completion-btn';
-            replayBtn.textContent = 'REPLAY';
-            replayBtn.setAttribute('aria-label', 'Replay this puzzle');
-            replayBtn.addEventListener('click', handleRetry);
-            completionStatus.appendChild(shareBtn);
-            completionStatus.appendChild(replayBtn);
-            requestAnimationFrame(() => {
-                completionStatus.classList.add('completion-status-visible');
-            });
-        }
-        if (completionActions) {
-            completionActions.hidden = true;
-            completionActions.innerHTML = '';
-        }
+        if (completionStatus) completionStatus.setAttribute('aria-hidden', 'true');
         if (gameState.justWon && puzzleStack) {
             flipAllPuzzleToBlank(puzzleStack, () => {
                 revealDishCompleteInStack(puzzleStack);
@@ -954,7 +955,7 @@ function showCompletionView() {
             });
         }
     } else {
-        // Loss: HUGE MESS! in completionStatus, REPLAY in completionActions
+        // Loss: HUGE MESS! in completionStatus
         if (completionStatus) {
             completionStatus.setAttribute('aria-hidden', 'false');
             completionStatus.className = 'completion-status';
@@ -986,17 +987,28 @@ function showCompletionView() {
                 completionStatus.appendChild(card);
             }
         }
-        if (completionActions) {
-            completionActions.hidden = false;
-            completionActions.innerHTML = '';
-            const replayBtn = document.createElement('button');
-            replayBtn.type = 'button';
-            replayBtn.className = 'completion-btn';
-            replayBtn.textContent = 'REPLAY';
-            replayBtn.setAttribute('aria-label', 'Replay this puzzle');
-            replayBtn.addEventListener('click', handleRetry);
-            completionActions.appendChild(replayBtn);
-        }
+    }
+
+    // Footer: SHARE + REPLAY (always show Share; same nav-btn style; share gets border fade later)
+    if (footerCompletionActions) {
+        footerCompletionActions.innerHTML = '';
+        footerCompletionActions.classList.remove('completion-actions-visible');
+        const shareBtn = document.createElement('button');
+        shareBtn.id = 'footerShareBtn';
+        shareBtn.type = 'button';
+        shareBtn.className = 'nav-btn nav-btn-share';
+        shareBtn.textContent = 'SHARE';
+        shareBtn.setAttribute('aria-label', 'Share results');
+        shareBtn.addEventListener('click', handleShare);
+        const replayBtn = document.createElement('button');
+        replayBtn.type = 'button';
+        replayBtn.className = 'nav-btn';
+        replayBtn.textContent = 'REPLAY';
+        replayBtn.setAttribute('aria-label', 'Replay this puzzle');
+        replayBtn.addEventListener('click', handleRetry);
+        footerCompletionActions.appendChild(shareBtn);
+        footerCompletionActions.appendChild(replayBtn);
+        if (!gameState.justCompleted) footerCompletionActions.classList.add('completion-actions-visible');
     }
 
     if (gameStatus) {
@@ -1025,6 +1037,7 @@ function updateDisplay() {
 
     if (gameState.isWon || gameState.isLost) {
         input.disabled = true;
+        input.placeholder = '';
         submitBtn.disabled = true;
         showInputFeedback('');
         if (gameState.isWon) {
@@ -1037,6 +1050,7 @@ function updateDisplay() {
     } else {
         setPlayingView();
         input.disabled = false;
+        input.placeholder = 'type an ingredient here';
         if (submitBtn) submitBtn.disabled = false;
         if (header) header.classList.remove('solved');
         if (gameStatus) gameStatus.textContent = '';
@@ -1211,6 +1225,10 @@ async function processIngredient(ingredient) {
         result: [],
         revealedCount: 0
     };
+    /* First ingredient: loadRecipe() shows one ??? row. 2nd+: leave DOM as-is (slot for next row already shows ??? from previous loadRecipe). */
+    if (gameState.history.length === 0) {
+        loadRecipe();
+    }
 
     for (let i = 0; i < ingredient.length; i++) {
         const letter = ingredient[i];
@@ -1234,11 +1252,11 @@ async function processIngredient(ingredient) {
         } else {
             advancePuzzleFlip();
         }
-        loadRecipe();
 
         const recipeContainer = document.getElementById('recipeContainer');
         if (recipeContainer && i === 0) {
-            recipeContainer.lastElementChild?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            const scrollTarget = recipeContainer.children[gameState.history.length] || recipeContainer.lastElementChild;
+            scrollTarget?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         }
 
         // Only pause for the reveal interval when we triggered a flip; skip the beat for unmatched letters.
@@ -1261,9 +1279,11 @@ async function processIngredient(ingredient) {
     if (allCleared) {
         gameState.isWon = true;
         gameState.justWon = true;
+        gameState.justCompleted = true;
         gameState.isElegant = gameState.moves <= ELEGANT_MAX_MOVES;
     } else if (gameState.moves >= MAX_MOVES) {
         gameState.isLost = true;
+        gameState.justCompleted = true;
     }
 
     saveGameState();
@@ -1288,10 +1308,46 @@ function loadRecipe() {
     const animating = animationState !== null;
     const isComplete = gameState.isWon || gameState.isLost;
 
-    container.innerHTML = '';
+    /* When we just finished adding 2nd+ ingredient: the slot at index (historyCount-1) already shows ???; update only that row in place so existing rows never blink. (First ingredient uses full rebuild.) */
+    let updatedInPlace = false;
+    if (!animating && !isComplete && historyCount >= 2 && container.children.length >= historyCount) {
+        const lastSlot = container.children[historyCount - 1];
+        const contentWrap = lastSlot && lastSlot.querySelector('.recipe-slot-content');
+        const placeholder = contentWrap && contentWrap.querySelector('.recipe-placeholder');
+        if (placeholder && placeholder.textContent.trim() === '???') {
+            const item = gameState.history[historyCount - 1];
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'recipe-item';
+            item.result.forEach(letterData => {
+                const box = document.createElement('div');
+                const statusClass = letterData.status || 'plain';
+                box.className = 'letter-box ' + statusClass;
+                box.textContent = letterData.letter;
+                itemDiv.appendChild(box);
+            });
+            contentWrap.textContent = '';
+            contentWrap.appendChild(itemDiv);
+            contentWrap.classList.add('recipe-slot-content-animate-in', 'recipe-slot-content-fade-pending');
+            contentWrap.classList.remove('recipe-slot-content-visible');
+            lastFadedRecipeCount = historyCount;
+            void contentWrap.offsetHeight; /* force reflow so opacity 0 is committed before rAF */
+            /* Triple rAF so the row is painted one full frame at opacity 0 before adding visible; otherwise the opacity transition doesn't run and it blips in. */
+            requestAnimationFrame(() => {
+                contentWrap.classList.remove('recipe-slot-content-fade-pending');
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        contentWrap.classList.add('recipe-slot-content-visible');
+                    });
+                });
+            });
+            updatedInPlace = true;
+        }
+    }
 
+    if (!updatedInPlace) {
     const maxSlots = MAX_MOVES;
     const totalSlots = animating && !isComplete ? historyCount + 1 : historyCount;
+    const slotNodes = [];
 
     for (let i = 0; i < maxSlots; i++) {
         const slotDiv = document.createElement('div');
@@ -1301,6 +1357,9 @@ function loadRecipe() {
         numberDiv.className = 'recipe-number';
         numberDiv.textContent = `${i + 1}.`;
         slotDiv.appendChild(numberDiv);
+
+        const contentWrap = document.createElement('div');
+        contentWrap.className = 'recipe-slot-content';
 
         if (i < historyCount) {
             const item = gameState.history[i];
@@ -1315,33 +1374,113 @@ function loadRecipe() {
                 itemDiv.appendChild(box);
             });
 
-            slotDiv.appendChild(itemDiv);
+            contentWrap.appendChild(itemDiv);
+            /* New ingredient: only the content (not the number) gets animate-in + fade-pending, rAF adds visible (fade-in). Loading/replay: all content rows get animate-in, rAF adds visible to all. When complete: all content visible immediately. */
+            const isNewIngredientRow = i === historyCount - 1 && historyCount > 0 && !animating && historyCount > lastFadedRecipeCount;
+            const isLoadWithHistory = historyCount > 0 && !animating && historyCount <= lastFadedRecipeCount;
+            if (isComplete) {
+                contentWrap.classList.add('recipe-slot-content-visible');
+            } else if (isNewIngredientRow) {
+                contentWrap.classList.add('recipe-slot-content-animate-in', 'recipe-slot-content-fade-pending');
+            } else if (isLoadWithHistory) {
+                contentWrap.classList.add('recipe-slot-content-animate-in');
+            } else {
+                contentWrap.classList.add('recipe-slot-content-visible');
+            }
         } else if (animating && i === historyCount) {
             const placeholder = document.createElement('div');
             placeholder.className = 'recipe-placeholder';
             placeholder.textContent = '???';
-            slotDiv.appendChild(placeholder);
+            contentWrap.appendChild(placeholder);
         } else {
             const placeholder = document.createElement('div');
             placeholder.className = 'recipe-placeholder';
             placeholder.textContent = '???';
-            slotDiv.appendChild(placeholder);
+            contentWrap.appendChild(placeholder);
         }
 
-        container.appendChild(slotDiv);
+        slotDiv.appendChild(contentWrap);
+        slotNodes.push(slotDiv);
     }
 
-    /* Fade in slots only when in complete state. Add recipe-section-complete in same rAF to avoid list blink. */
-    if (isComplete) {
+    /* Replace in one go so the recipe never flashes empty (avoids previous ingredients disappearing for a frame). */
+    container.replaceChildren(...slotNodes);
+
+    /* New ingredient: one row's content fades in. Double rAF so the row paints one frame at opacity 0 (visibility visible) before adding visible, so the opacity transition actually runs. */
+    if (!isComplete && historyCount > lastFadedRecipeCount && historyCount > 0) {
+        lastFadedRecipeCount = historyCount;
+        const slotIndex = historyCount - 1;
+        const newContent = slotNodes[slotIndex] && slotNodes[slotIndex].querySelector('.recipe-slot-content');
+        if (newContent && newContent.classList.contains('recipe-slot-content-animate-in')) {
+            requestAnimationFrame(() => {
+                const currentContainer = document.getElementById('recipeContainer');
+                if (!currentContainer) return;
+                const currentSlots = currentContainer.querySelectorAll('.recipe-slot');
+                const slot = currentSlots[slotIndex];
+                const content = slot && slot.querySelector('.recipe-slot-content');
+                if (content && content.classList.contains('recipe-slot-content-animate-in')) {
+                    content.classList.remove('recipe-slot-content-fade-pending');
+                }
+                requestAnimationFrame(() => {
+                    const slot2 = currentContainer.querySelectorAll('.recipe-slot')[slotIndex];
+                    const content2 = slot2 && slot2.querySelector('.recipe-slot-content');
+                    if (content2 && content2.classList.contains('recipe-slot-content-animate-in')) {
+                        content2.classList.add('recipe-slot-content-visible');
+                    }
+                });
+            });
+        }
+    }
+
+    /* Loading/replay: all ingredient rows' content fades in. Double rAF so browser paints one frame at opacity 0 before adding visible (same as daily). */
+    if (!isComplete && historyCount > 0 && historyCount <= lastFadedRecipeCount) {
+        const countToShow = historyCount;
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                container.querySelectorAll('.recipe-slot').forEach((el) => el.classList.add('recipe-slot-visible'));
-                const recipeSectionEl = document.getElementById('recipeSection');
-                if (recipeSectionEl) recipeSectionEl.classList.add('recipe-section-complete');
+                const currentContainer = document.getElementById('recipeContainer');
+                if (!currentContainer) return;
+                const currentSlots = currentContainer.querySelectorAll('.recipe-slot');
+                for (let j = 0; j < countToShow && j < currentSlots.length; j++) {
+                    const content = currentSlots[j].querySelector('.recipe-slot-content');
+                    if (content && content.classList.contains('recipe-slot-content-animate-in')) {
+                        content.classList.add('recipe-slot-content-visible');
+                    }
+                }
             });
         });
+    }
+    }
+
+    /* Animation order when just completed: (1) puzzle message, (2) stats fade in, (3) footer buttons fade in, (4) share green border fades in. When viewing already-complete: show all instantly. */
+    const recipeSectionEl = document.getElementById('recipeSection');
+    const footerCompletionActionsEl = document.getElementById('footerCompletionActions');
+    const PUZZLE_REVEAL_MS = 1000;   /* wait for ELEGANT/EXCELLENT DISH to mostly finish */
+    const STATS_FADE_MS = 900;      /* then stats fade in (slower); delay before buttons */
+    const BUTTONS_FADE_MS = 800;    /* then footer buttons fade in; delay before share border */
+    const SHARE_BORDER_MS = 600;    /* then share button green border fades in */
+
+    if (isComplete) {
+        if (gameState.justCompleted) {
+            /* Slots already have recipe-slot-content-visible from build; run victory timing for section + stats + footer only. */
+            setTimeout(() => {
+                if (recipeSectionEl) recipeSectionEl.classList.add('recipe-section-complete');
+                gameState.justCompleted = false;
+                setTimeout(() => {
+                    if (footerCompletionActionsEl) footerCompletionActionsEl.classList.add('completion-actions-visible');
+                    setTimeout(() => {
+                        const shareBtn = document.getElementById('footerShareBtn');
+                        if (shareBtn) shareBtn.classList.add('nav-btn-share-visible');
+                    }, SHARE_BORDER_MS);
+                }, STATS_FADE_MS);
+            }, PUZZLE_REVEAL_MS);
+        } else {
+            if (recipeSectionEl) recipeSectionEl.classList.add('recipe-section-complete', 'recipe-section-stats-instant');
+            if (footerCompletionActionsEl) footerCompletionActionsEl.classList.add('completion-actions-visible');
+            const shareBtn = document.getElementById('footerShareBtn');
+            if (shareBtn) shareBtn.classList.add('nav-btn-share-visible');
+        }
     } else {
-        container.querySelectorAll('.recipe-slot').forEach((el) => el.classList.add('recipe-slot-visible'));
+        /* During play, only the newly added row gets recipe-slot-content-visible (in rAF above); other rows already have it from build. */
     }
 
     const hadStar = getHadStarIngredient();
@@ -1408,7 +1547,8 @@ function generateShareText() {
     });
 
     if (gameState.isWon) {
-        text += `\nTop ingredient: ${starIngredient}\n`;
+        const hadStar = getHadStarIngredient();
+        text += `\nTop ingredient: ${starIngredient}${hadStar ? ' ⭐' : ''}\n`;
         text += wastePercent <= TROPHY_WASTE_PERCENT ? `Food waste: ${wastePercent}% 🏆` : `Food waste: ${wastePercent}%`;
     }
 
@@ -1540,6 +1680,7 @@ function handleRetry() {
     const input = document.getElementById('ingredientInput');
     const submitBtn = document.getElementById('submitBtn');
     input.disabled = false;
+    input.placeholder = 'type an ingredient here';
     submitBtn.disabled = false;
     // Don't auto-focus input - let user tap when ready (avoids mobile keyboard popup)
 }

@@ -64,8 +64,12 @@
             <div class="puzzle-column">
             <div class="puzzle-section">
                 <div class="puzzle-label-wrap">
-                    <span id="puzzleLabel" class="puzzle-label">DISH OF THE DAY</span>
-                    <span id="countdownInLabel" class="countdown-in-label">NEXT IN: <span id="countdownTimer">--:--</span></span>
+                    <div class="puzzle-date-nav" id="puzzleDateNav">
+                        <button type="button" id="prevPuzzleBtn" class="icon-btn puzzle-date-arrow" title="Previous puzzle" aria-label="Previous puzzle" style="display: none;"><img src="assets/icons/arrow-chevron-left.svg" alt="" width="24" height="24" class="icon-btn-img"></button>
+                        <span id="puzzleLabel" class="puzzle-label"></span>
+                        <button type="button" id="nextPuzzleBtn" class="icon-btn puzzle-date-arrow" title="Next puzzle" aria-label="Next puzzle" style="display: none;"><img src="assets/icons/arrow-chevron-right.svg" alt="" width="24" height="24" class="icon-btn-img"></button>
+                    </div>
+                    <span id="countdownInLabel" class="countdown-in-label" style="display: none;">NEXT IN: <span id="countdownTimer">--:--</span></span>
                 </div>
                 <div class="puzzle-display">
                     <div class="puzzle-stack" id="puzzleStack"></div>
@@ -94,11 +98,11 @@
             <div class="recipe-section" id="recipeSection">
                 <h2 id="recipeHeading">YOUR RECIPE</h2>
                 <div id="recipeContainer"></div>
+                <div id="completionActions" class="completion-actions" hidden></div>
                 <div class="completion-stats" id="completionStatsWrap">
                     <div id="starIngredientDisplay" class="star-ingredient"></div>
                     <div id="foodWasteDisplay" class="food-waste"></div>
                 </div>
-                <div id="completionActions" class="completion-actions" hidden></div>
             </div>
             </div>
         </div>
@@ -125,10 +129,7 @@
                 <button id="prevBtn" class="nav-btn" title="Archive" aria-label="Archive">ARCHIVE</button>
                 <button id="retryBtn" class="nav-btn" title="Today" aria-label="Today" style="display: none;">TODAY</button>
             </div>
-            <div class="footer-right footer-replay-controls" id="footerReplayControls" style="display: none;">
-                <button type="button" id="prevPuzzleBtn" class="icon-btn footer-arrow-btn" title="Previous puzzle" aria-label="Previous puzzle"><img src="assets/icons/arrow-chevron-left.svg" alt="" width="24" height="24" class="icon-btn-img"></button>
-                <button type="button" id="nextPuzzleBtn" class="icon-btn footer-arrow-btn" title="Next puzzle" aria-label="Next puzzle"><img src="assets/icons/arrow-chevron-right.svg" alt="" width="24" height="24" class="icon-btn-img"></button>
-            </div>
+            <div class="footer-right" id="footerCompletionActions"></div>
         </footer>
         </div>
     </div>
