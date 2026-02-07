@@ -2071,6 +2071,11 @@ footer {
         -webkit-overflow-scrolling: touch;
     }
 
+    /* Victory: scale DISH COMPLETE! so it stays on one line on phones */
+    .completion-status {
+        font-size: clamp(0.9em, 6.5vw, 1.75em);
+    }
+
     /* Compact layout for phones so whole game fits without scrolling */
     /* Spacing scaled ~0.45× from desktop to maintain proportional rhythm */
     .container {
@@ -2208,6 +2213,10 @@ footer {
         padding: 22px 18px;
     }
 
+    .completion-status {
+        font-size: clamp(0.8em, 5.5vw, 1.35em);
+    }
+
     .puzzle-column {
         max-width: 100%;
     }
@@ -2269,6 +2278,10 @@ footer {
    ========================================================================== */
 
 @media (max-width: 480px), (max-height: 700px) {
+    .completion-status {
+        font-size: clamp(0.7em, 4.8vw, 1.15em);
+    }
+
     body {
         padding: calc(10px + env(safe-area-inset-top, 0px)) calc(10px + env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) calc(10px + env(safe-area-inset-left, 0px));
     }
