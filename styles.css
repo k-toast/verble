@@ -223,6 +223,20 @@ body {
     max-width: 100%;
 }
 
+.game-header-brand {
+    display: flex;
+    align-items: center;
+    gap: 0px;
+    min-width: 0;
+}
+
+.game-header-logo {
+    height: 3.4em;
+    width: auto;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
 .game-header-left {
     display: flex;
     flex-direction: column;
@@ -240,6 +254,10 @@ h1 {
     letter-spacing: -0.02em;
     text-transform: lowercase;
     line-height: 1;
+}
+
+.game-header-left h1 {
+    font-weight: 500;
 }
 
 .game-header-meta {
@@ -806,6 +824,144 @@ h1 {
 
 .input-feedback.highlight .input-feedback-text {
     color: var(--color-muted);
+}
+
+/* Completion takeover — status line (replaces input bar when game complete) */
+.completion-status {
+    font-size: 1.75em;
+    font-weight: 700;
+    line-height: 1.3;
+    padding: 14px 0;
+    margin: 0 8px;
+    color: var(--color-primary);
+    text-align: center;
+}
+
+/* Card-flip animation for DISH COMPLETE! (win only) — matches puzzle tile flip */
+.completion-status-flip {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.2em;
+}
+.completion-status-space {
+    display: inline-block;
+    width: 0.4em;
+    min-width: 4px;
+}
+.completion-status-char {
+    display: inline-block;
+    width: 0.75em;
+    height: 1.35em;
+    position: relative;
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+    animation: completion-card-flip 1.1s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+    transform: perspective(600px) rotateX(180deg);
+}
+.completion-status-char-inner {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+    transform: rotateX(0deg);
+}
+.completion-status-char-front,
+.completion-status-char-back {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    font-size: inherit;
+    font-weight: 700;
+    font-family: inherit;
+}
+.completion-status-char-front {
+    background: transparent;
+    color: var(--color-primary);
+}
+.completion-status-char-back {
+    background: var(--color-background);
+    color: var(--color-primary);
+    transform: rotateX(180deg);
+    -webkit-transform: rotateX(180deg);
+}
+@keyframes completion-card-flip {
+    from {
+        transform: perspective(600px) rotateX(180deg);
+        -webkit-transform: perspective(600px) rotateX(180deg);
+    }
+    to {
+        transform: perspective(600px) rotateX(0deg);
+        -webkit-transform: perspective(600px) rotateX(0deg);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .completion-status-char {
+        animation: none;
+        transform: perspective(600px) rotateX(0deg);
+        -webkit-transform: perspective(600px) rotateX(0deg);
+    }
+}
+
+/* Completion mode: recipe section heading + centered stats */
+.recipe-section-complete .completion-stats {
+    text-align: center;
+    margin-top: 12px;
+    margin-bottom: 4px;
+}
+.recipe-section-complete .completion-stats .star-ingredient,
+.recipe-section-complete .completion-stats .food-waste {
+    display: block;
+    margin: 4px 0;
+}
+
+/* Completion actions — SHARE and REPLAY */
+.completion-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border-subtle);
+}
+.completion-btn {
+    padding: 10px 18px;
+    font-size: 0.75em;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    background: var(--color-surface-elevated);
+    color: var(--color-muted);
+    border: 1px solid var(--color-border-button);
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+}
+.completion-btn:hover {
+    border-color: var(--color-border-button);
+    color: var(--color-secondary);
+}
+.completion-btn:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+}
+.completion-btn:active {
+    background: var(--color-border);
+}
+.completion-btn-share {
+    border: 3px solid var(--color-success);
+}
+.completion-btn-share:hover {
+    border-color: var(--color-success);
+}
+.completion-btn-share:focus-visible {
+    outline: 2px solid var(--color-success);
+    outline-offset: 2px;
 }
 
 /* Header win state */

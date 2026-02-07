@@ -224,6 +224,9 @@ function initGame() {
     updateReplayViewClass();
     updateDisplay();
     loadRecipe();
+    if (gameState.isWon || gameState.isLost) {
+        showCompletionView();
+    }
     updatePuzzleLabel();
     updateFooterTodayButton();
     startCountdownTimer();
@@ -264,17 +267,15 @@ function updateFooterTodayButton() {
     updateFooterReplayControls();
 }
 
-// Show/hide and enable/disable footer prev puzzle, REPLAY, next puzzle (when viewing an archive puzzle)
+// Show/hide and enable/disable footer prev/next puzzle (when viewing an archive puzzle; REPLAY is in completion section)
 function updateFooterReplayControls() {
     const container = document.getElementById('footerReplayControls');
     const prevPuzzleBtn = document.getElementById('prevPuzzleBtn');
     const nextPuzzleBtn = document.getElementById('nextPuzzleBtn');
-    const replayBtn = document.getElementById('replayBtn');
     if (!container || !prevPuzzleBtn || !nextPuzzleBtn) return;
 
     const onReplayPuzzle = currentView === 'game' && currentPuzzle && puzzles.length > 0 && currentPuzzle.date !== getRealHelsinkiDate();
     container.style.display = onReplayPuzzle ? 'flex' : 'none';
-    if (replayBtn) replayBtn.classList.toggle('replay-complete', onReplayPuzzle && (gameState.isWon || gameState.isLost));
     if (!onReplayPuzzle) return;
 
     const idx = puzzles.findIndex(p => p.date === currentPuzzle.date);
@@ -762,6 +763,108 @@ function getWastePercent() {
     return totalLetters > 0 ? Math.round((wasteLetters / totalLetters) * 100) : 0;
 }
 
+// Show playing UI (input bar, YOUR RECIPE, hide completion elements)
+function setPlayingView() {
+    const inputWrapper = document.getElementById('inputWrapper');
+    const inputFeedback = document.getElementById('inputFeedback');
+    const completionStatus = document.getElementById('completionStatus');
+    const recipeHeading = document.getElementById('recipeHeading');
+    const completionActions = document.getElementById('completionActions');
+    const recipeSection = document.getElementById('recipeSection');
+    if (inputWrapper) inputWrapper.style.display = '';
+    if (inputFeedback) inputFeedback.style.display = '';
+    if (completionStatus) {
+        completionStatus.hidden = true;
+        completionStatus.textContent = '';
+    }
+    if (recipeHeading) recipeHeading.textContent = 'YOUR RECIPE';
+    if (completionActions) {
+        completionActions.hidden = true;
+        completionActions.innerHTML = '';
+    }
+    if (recipeSection) recipeSection.classList.remove('recipe-section-complete');
+}
+
+// Show completion takeover (status line, dynamic heading, stats, SHARE/REPLAY)
+function showCompletionView() {
+    updateFooterTodayButton();
+
+    const inputWrapper = document.getElementById('inputWrapper');
+    const inputFeedback = document.getElementById('inputFeedback');
+    const completionStatus = document.getElementById('completionStatus');
+    const recipeHeading = document.getElementById('recipeHeading');
+    const completionStatsWrap = document.getElementById('completionStatsWrap');
+    const completionActions = document.getElementById('completionActions');
+    const recipeSection = document.getElementById('recipeSection');
+    const gameStatus = document.getElementById('gameStatus');
+
+    if (inputWrapper) inputWrapper.style.display = 'none';
+    if (inputFeedback) inputFeedback.style.display = 'none';
+    if (completionStatus) {
+        completionStatus.hidden = false;
+        completionStatus.className = 'completion-status';
+        completionStatus.innerHTML = '';
+        completionStatus.classList.add('completion-status-flip');
+        const text = gameState.isWon ? 'DISH COMPLETE!' : 'WHAT A MESS!';
+        for (let i = 0; i < text.length; i++) {
+            const ch = text[i];
+            if (ch === ' ') {
+                const space = document.createElement('span');
+                space.className = 'completion-status-space';
+                space.innerHTML = '\u00A0';
+                completionStatus.appendChild(space);
+                continue;
+            }
+            const card = document.createElement('span');
+            card.className = 'completion-status-char';
+            card.style.animationDelay = `${i * 90}ms`;
+            const inner = document.createElement('span');
+            inner.className = 'completion-status-char-inner';
+            const front = document.createElement('span');
+            front.className = 'completion-status-char-front';
+            front.textContent = ch;
+            const back = document.createElement('span');
+            back.className = 'completion-status-char-back';
+            inner.appendChild(front);
+            inner.appendChild(back);
+            card.appendChild(inner);
+            completionStatus.appendChild(card);
+        }
+    }
+
+    if (gameStatus) gameStatus.textContent = gameState.isWon ? 'DISH COMPLETE!' : 'WHAT A MESS!';
+
+    if (recipeHeading) {
+        if (gameState.isWon) {
+            recipeHeading.textContent = gameState.isElegant ? 'AN ELEGANT DISH' : 'AN EXCELLENT DISH';
+        } else {
+            recipeHeading.textContent = 'YOUR RECIPE';
+        }
+    }
+
+    if (recipeSection) recipeSection.classList.add('recipe-section-complete');
+    if (completionStatsWrap) completionStatsWrap.hidden = gameState.isLost;
+
+    if (completionActions) {
+        completionActions.hidden = false;
+        completionActions.innerHTML = '';
+        const shareBtn = document.createElement('button');
+        shareBtn.type = 'button';
+        shareBtn.className = 'completion-btn completion-btn-share';
+        shareBtn.textContent = 'SHARE';
+        shareBtn.setAttribute('aria-label', 'Share results');
+        shareBtn.addEventListener('click', handleShare);
+        const replayBtn = document.createElement('button');
+        replayBtn.type = 'button';
+        replayBtn.className = 'completion-btn';
+        replayBtn.textContent = 'REPLAY';
+        replayBtn.setAttribute('aria-label', 'Replay this puzzle');
+        replayBtn.addEventListener('click', handleRetry);
+        if (gameState.isWon) completionActions.appendChild(shareBtn);
+        completionActions.appendChild(replayBtn);
+    }
+}
+
 // Update display
 function updateDisplay() {
     renderPuzzleStack();
@@ -783,7 +886,9 @@ function updateDisplay() {
             if (gameStatus) gameStatus.textContent = 'Game over. Try again or move to next puzzle.';
         }
     } else {
+        setPlayingView();
         input.disabled = false;
+        if (submitBtn) submitBtn.disabled = false;
         if (header) header.classList.remove('solved');
         if (gameStatus) gameStatus.textContent = '';
         updateInputValidationState();
@@ -802,7 +907,7 @@ function updatePreviousButtonState() {
 // style: '' (default), 'error', or 'highlight' (blue)
 const SUBMIT_FOR_REVIEW_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdAPkSeB_acSdPLHas0YJFrj4-nlYGqhXSt72PZpghnTOLMNw/viewform?usp=sharing&ouid=112269985430641044011';
 
-function showInputFeedback(message, style) {
+function showInputFeedback(message, style, includeReviewLink) {
     const el = document.getElementById('inputFeedback');
     if (!el) return;
     el.className = 'input-feedback' + (style ? ' ' + style : '');
@@ -811,8 +916,10 @@ function showInputFeedback(message, style) {
         return;
     }
     const escaped = message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-    const link = `<a href="${SUBMIT_FOR_REVIEW_URL}" target="_blank" rel="noopener noreferrer" class="input-feedback-review-link">Submit for review?</a>`;
-    el.innerHTML = `<span class="input-feedback-text">${escaped}</span> ${link}`;
+    const link = includeReviewLink !== false
+        ? ` <a href="${SUBMIT_FOR_REVIEW_URL}" target="_blank" rel="noopener noreferrer" class="input-feedback-review-link">Submit for review?</a>`
+        : '';
+    el.innerHTML = `<span class="input-feedback-text">${escaped}</span>${link}`;
 }
 
 // Update input validation state (length limit) and submit button
@@ -911,7 +1018,7 @@ async function processIngredient(ingredient) {
 
     const isDuplicate = gameState.history.some(h => (h.ingredient || '').toUpperCase() === ingredient);
     if (isDuplicate) {
-        showInputFeedback('Already used', 'error');
+        showInputFeedback('Ingredient already in the dish.', 'error', false);
         if (input) input.setAttribute('aria-invalid', 'true');
         return false;
     }
@@ -1019,35 +1126,36 @@ async function processIngredient(ingredient) {
     updateDisplay();
     loadRecipe();
     if (gameState.isWon || gameState.isLost) {
-        setTimeout(showGameOver, 300);
+        setTimeout(showCompletionView, 300);
     }
     return true;
 }
 
-// Load and display recipe (history) - 5 slots with food waste
+// Load and display recipe (history) - 5 slots when playing, only used slots when complete
 function loadRecipe() {
     const container = document.getElementById('recipeContainer');
     container.innerHTML = '';
 
-    const maxSlots = MAX_MOVES;
     const historyCount = gameState.history.length;
     const animating = animationState !== null;
-    const totalSlots = animating ? historyCount + 1 : historyCount;
+    const isComplete = gameState.isWon || gameState.isLost;
+    const maxSlots = isComplete ? historyCount : MAX_MOVES;
+    const totalSlots = animating && !isComplete ? historyCount + 1 : historyCount;
 
     for (let i = 0; i < maxSlots; i++) {
         const slotDiv = document.createElement('div');
         slotDiv.className = 'recipe-slot';
-        
+
         const numberDiv = document.createElement('div');
         numberDiv.className = 'recipe-number';
         numberDiv.textContent = `${i + 1}.`;
         slotDiv.appendChild(numberDiv);
-        
+
         if (i < historyCount) {
             const item = gameState.history[i];
             const itemDiv = document.createElement('div');
             itemDiv.className = 'recipe-item';
-            
+
             item.result.forEach(letterData => {
                 const box = document.createElement('div');
                 const statusClass = letterData.status || 'plain';
@@ -1064,29 +1172,27 @@ function loadRecipe() {
                 starEl.setAttribute('aria-label', '6 or more matching letters');
                 itemDiv.appendChild(starEl);
             }
-            
+
             slotDiv.appendChild(itemDiv);
         } else if (animating && i === historyCount) {
-            // During flip animation show nothing here; letters appear all at once when flips are done.
             const placeholder = document.createElement('div');
             placeholder.className = 'recipe-placeholder';
             placeholder.textContent = '???';
             slotDiv.appendChild(placeholder);
-        } else {
+        } else if (!isComplete) {
             const placeholder = document.createElement('div');
             placeholder.className = 'recipe-placeholder';
             placeholder.textContent = '???';
             slotDiv.appendChild(placeholder);
         }
-        
+
         container.appendChild(slotDiv);
     }
 
     const starDiv = document.getElementById('starIngredientDisplay');
     if (starDiv) {
         const star = getStarIngredient();
-        const matchCount = getStarIngredientMatchCount();
-        starDiv.textContent = 'TOP INGREDIENT: ' + (star || '???') + (matchCount >= STAR_MATCH_THRESHOLD ? ' ⭐' : '');
+        starDiv.textContent = 'TOP INGREDIENT: ' + (star || '???');
     }
 
     const wasteDiv = document.getElementById('foodWasteDisplay');
@@ -1096,84 +1202,6 @@ function loadRecipe() {
     }
 }
 
-// Show game over message as modal
-function showGameOver() {
-    updateFooterTodayButton();
-    if (gameState.isWon) {
-        const adjRaw = gameState.adjectives[0] || '';
-        const nounRaw = gameState.noun || '';
-        const adj = adjRaw.replace(/\b\w/g, c => c.toUpperCase());
-        const noun = nounRaw.replace(/\b\w/g, c => c.toUpperCase());
-        const wastePercent = getWastePercent();
-        const starIngredient = getStarIngredient() || '???';
-
-        const isReplayPuzzle = currentPuzzle && currentPuzzle.date !== getHelsinkiDate();
-        let title;
-        let message;
-        if (isReplayPuzzle && lastAttemptWasNewBest) {
-            title = 'A new best!';
-        } else if (gameState.isElegant) {
-            title = 'An elegant dish!';
-        } else {
-            title = 'An excellent dish!';
-        }
-        if (gameState.isElegant) {
-            message = `You prepared an elegant ${adj} ${noun} using only ${gameState.moves} ingredients!`;
-        } else {
-            message = `You prepared an excellent ${adj} ${noun} using ${gameState.moves} ingredients!`;
-        }
-
-        const gridHTML = buildVictoryGridHTML();
-        const wasteLabel = wastePercent <= TROPHY_WASTE_PERCENT ? `Food waste: ${wastePercent}% 🏆` : `Food waste: ${wastePercent}%`;
-        const tryAgainBtn = isReplayPuzzle ? '' : '<button id="modalRetryBtn" class="victory-share-btn">TRY AGAIN</button>';
-        const shareBtn = '<button id="modalShareBtn" class="victory-share-btn">SHARE</button>';
-        const content = `
-            <p class="victory-message">${message}</p>
-            ${gridHTML}
-            <p class="victory-star">Top ingredient: ${starIngredient}</p>
-            <p class="victory-waste">${wasteLabel}</p>
-            <div class="victory-actions">
-                ${tryAgainBtn}
-                ${shareBtn}
-            </div>
-        `;
-        openModal(title, content);
-        
-        setTimeout(() => {
-            const modalRetryBtn = document.getElementById('modalRetryBtn');
-            const modalShareBtn = document.getElementById('modalShareBtn');
-            if (modalRetryBtn) {
-                modalRetryBtn.addEventListener('click', () => {
-                    closeModal();
-                    handleRetry();
-                });
-            }
-            if (modalShareBtn) {
-                modalShareBtn.addEventListener('click', handleShare);
-            }
-        }, 0);
-    } else if (gameState.isLost) {
-        const isReplayPuzzle = currentPuzzle && currentPuzzle.date !== getHelsinkiDate();
-        const tryAgainBtnHtml = isReplayPuzzle ? '' : '<button id="modalRetryBtn" class="victory-share-btn">TRY AGAIN</button>';
-        const content = `
-            <p style="text-align: center; margin-bottom: 20px;">The dish, she is ruined.</p>
-            <div style="text-align: center; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                ${tryAgainBtnHtml}
-            </div>
-        `;
-        openModal('Oof!', content);
-        
-        setTimeout(() => {
-            const modalRetryBtn = document.getElementById('modalRetryBtn');
-            if (modalRetryBtn) {
-                modalRetryBtn.addEventListener('click', () => {
-                    closeModal();
-                    handleRetry();
-                });
-            }
-        }, 0);
-    }
-}
 
 // Generate share text — matches victory modal: message, grid (green/black only, no blanks), top ingredient, food waste
 function generateShareText() {
@@ -1286,6 +1314,9 @@ function loadPuzzle(puzzle) {
     updateReplayViewClass();
     updateDisplay();
     loadRecipe();
+    if (gameState.isWon || gameState.isLost) {
+        showCompletionView();
+    }
     updatePuzzleLabel();
     updateFooterTodayButton();
     updatePreviousButtonState();
@@ -2095,13 +2126,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     prevBtn.addEventListener('click', handleArchive);
     retryBtn.addEventListener('click', handleTodayClick);
 
-    // Footer replay controls (when viewing an archive puzzle)
+    // Footer replay controls (when viewing an archive puzzle; REPLAY is in completion section)
     const prevPuzzleBtn = document.getElementById('prevPuzzleBtn');
     const nextPuzzleBtn = document.getElementById('nextPuzzleBtn');
-    const replayBtn = document.getElementById('replayBtn');
     if (prevPuzzleBtn) prevPuzzleBtn.addEventListener('click', handlePrevPuzzle);
     if (nextPuzzleBtn) nextPuzzleBtn.addEventListener('click', handleNextPuzzle);
-    if (replayBtn) replayBtn.addEventListener('click', handleReplayClick);
 
     // Reset to Today button
     const resetToTodayBtn = document.getElementById('resetToTodayBtn');

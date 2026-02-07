@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
     <title>wordish.</title>
-    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="assets/logo.png" type="image/png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -22,12 +22,15 @@
     <div class="container">
         <div class="content-wrapper">
         <header id="gameHeader" class="game-header">
-            <div class="game-header-left">
-                <h1>wordish</h1>
-                <div class="game-header-meta">
-                    <span id="dateDisplay" class="puzzle-number"></span>
-                    <span class="puzzle-separator">·</span>
-                    <span class="dish-name" id="dishName"></span>
+            <div class="game-header-brand">
+                <img src="assets/logo.png" alt="" class="game-header-logo" width="48" height="48">
+                <div class="game-header-left">
+                    <h1>wordish.</h1>
+                    <div class="game-header-meta">
+                        <span id="dateDisplay" class="puzzle-number"></span>
+                        <span class="puzzle-separator">·</span>
+                        <span class="dish-name" id="dishName"></span>
+                    </div>
                 </div>
             </div>
             <div class="game-header-right">
@@ -70,7 +73,7 @@
             </div>
 
             <div class="input-section">
-                <div class="input-wrapper">
+                <div class="input-wrapper" id="inputWrapper">
                     <input 
                         type="text" 
                         id="ingredientInput" 
@@ -83,13 +86,17 @@
                     <button id="submitBtn" type="button" aria-label="Submit"><img src="assets/icons/submit.svg" alt="" width="24" height="24" class="submit-icon"></button>
                 </div>
                 <div id="inputFeedback" class="input-feedback" role="status" aria-live="polite"></div>
+                <div id="completionStatus" class="completion-status" aria-live="polite" hidden></div>
             </div>
 
-            <div class="recipe-section">
-                <h2>YOUR RECIPE</h2>
+            <div class="recipe-section" id="recipeSection">
+                <h2 id="recipeHeading">YOUR RECIPE</h2>
                 <div id="recipeContainer"></div>
-                <div id="starIngredientDisplay" class="star-ingredient"></div>
-                <div id="foodWasteDisplay" class="food-waste"></div>
+                <div class="completion-stats" id="completionStatsWrap">
+                    <div id="starIngredientDisplay" class="star-ingredient"></div>
+                    <div id="foodWasteDisplay" class="food-waste"></div>
+                </div>
+                <div id="completionActions" class="completion-actions" hidden></div>
             </div>
             </div>
         </div>
@@ -118,7 +125,6 @@
             </div>
             <div class="footer-right footer-replay-controls" id="footerReplayControls" style="display: none;">
                 <button type="button" id="prevPuzzleBtn" class="icon-btn footer-arrow-btn" title="Previous puzzle" aria-label="Previous puzzle"><img src="assets/icons/arrow-chevron-left.svg" alt="" width="24" height="24" class="icon-btn-img"></button>
-                <button type="button" id="replayBtn" class="nav-btn" title="Replay this puzzle" aria-label="Replay this puzzle">REPLAY</button>
                 <button type="button" id="nextPuzzleBtn" class="icon-btn footer-arrow-btn" title="Next puzzle" aria-label="Next puzzle"><img src="assets/icons/arrow-chevron-right.svg" alt="" width="24" height="24" class="icon-btn-img"></button>
             </div>
         </footer>
