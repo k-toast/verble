@@ -554,8 +554,8 @@ h1 {
     inset: 0;
     transform-style: preserve-3d;
     -webkit-transform-style: preserve-3d;
-    transition: transform 0.55s cubic-bezier(0.32, 0.72, 0, 1);
-    -webkit-transition: transform 0.55s cubic-bezier(0.32, 0.72, 0, 1);
+    transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    -webkit-transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
     transform: perspective(800px) rotateX(0deg);
     -webkit-transform: perspective(800px) rotateX(0deg);
 }
@@ -672,18 +672,24 @@ h1 {
     .nav-btn-share {
         transition: none;
     }
-    .recipe-slot-content {
+    .recipe-slot-content,
+    .recipe-slot-content-overlay {
         transition: none;
     }
     .recipe-section:not(.recipe-section-complete) .recipe-slot-content,
     .recipe-section:not(.recipe-section-complete) .recipe-slot-content.recipe-slot-content-animate-in,
-    .recipe-section-complete .recipe-slot-content {
+    .recipe-section-complete .recipe-slot-content,
+    .recipe-section:not(.recipe-section-complete) .recipe-slot-content-overlay,
+    .recipe-section:not(.recipe-section-complete) .recipe-slot-content-overlay.recipe-slot-content-animate-in,
+    .recipe-section-complete .recipe-slot-content-overlay {
         opacity: 1;
     }
-    .recipe-section:not(.recipe-section-complete) .recipe-slot-content.recipe-slot-content-fade-pending {
+    .recipe-section:not(.recipe-section-complete) .recipe-slot-content.recipe-slot-content-fade-pending,
+    .recipe-section:not(.recipe-section-complete) .recipe-slot-content-overlay.recipe-slot-content-fade-pending {
         visibility: visible;
     }
-    .recipe-slot.recipe-slot-fade-out .recipe-slot-content {
+    .recipe-slot.recipe-slot-fade-out .recipe-slot-content,
+    .recipe-slot.recipe-slot-fade-out .recipe-slot-content-overlay {
         transition: none;
         opacity: 0;
     }
@@ -886,9 +892,41 @@ h1 {
 }
 /* Only the slot content (tiles/placeholder) fades in; the number stays visible. */
 .recipe-slot-content {
+    position: relative;
     flex: 1;
     min-width: 0;
     transition: opacity 0.8s ease;
+}
+/* Overlay: word fades in over ??? so placeholder stays in DOM but is covered. */
+.recipe-slot-content-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    transition: opacity 0.8s ease;
+    background: var(--color-background);
+}
+.recipe-slot-content-overlay.recipe-slot-content-no-transition {
+    transition: none;
+}
+.recipe-section:not(.recipe-section-complete) .recipe-slot-content-overlay.recipe-slot-content-animate-in {
+    opacity: 0;
+}
+.recipe-section:not(.recipe-section-complete) .recipe-slot-content-overlay.recipe-slot-content-fade-pending {
+    visibility: hidden;
+}
+.recipe-section:not(.recipe-section-complete) .recipe-slot-content-overlay.recipe-slot-content-visible {
+    opacity: 1;
+}
+.recipe-section:not(.recipe-section-complete) .recipe-slot-content-overlay.recipe-slot-content-fade-pending.recipe-slot-content-visible {
+    visibility: visible;
+}
+.recipe-section-complete .recipe-slot-content-overlay {
+    opacity: 1;
+}
+.recipe-slot.recipe-slot-fade-out .recipe-slot-content-overlay {
+    opacity: 0;
+    transition: opacity 0.18s ease;
 }
 /* In-place ingredient update: snap to opacity 0 so the 0→1 fade actually runs (no blip). */
 .recipe-slot-content.recipe-slot-content-no-transition {

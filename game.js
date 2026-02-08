@@ -28,7 +28,11 @@ let archiveCalendarYear = 2026;
 // Animation state for letter-by-letter reveal
 let animationState = null; // { ingredient, result, revealedCount, adjArrays, nounArray }
 let lastFadedRecipeCount = -1; // so we only fade in a row once per new ingredient
-const LETTER_REVEAL_MS = 300;
+const FLIP_DURATION_MS = 550;  /* matches .puzzle-flip-inner transition in CSS */
+const ANIMATION_OVERLAP = 0.5; /* letter flips: next starts when previous is this fraction done */
+const VICTORY_OVERLAP = 0.75;  /* victory sequence only: next phase starts when previous is 75% done */
+/* Time from starting one flip to starting the next. */
+const INTERVAL_BETWEEN_FLIP_STARTS_MS = Math.round(FLIP_DURATION_MS * ANIMATION_OVERLAP);
 const MAX_MOVES = 5;
 const ELEGANT_MAX_MOVES = 3;
 const STAR_MATCH_THRESHOLD = 6;
@@ -608,11 +612,10 @@ function renderDishCompleteStatic(stack) {
     renderMessageStatic(stack, getVictoryMessageLines());
 }
 
-// Flip all current puzzle letters to blank (green) at once; then callback after duration.
+// Flip all current puzzle letters to blank (green) at once; then callback when ANIMATION_OVERLAP done.
 function flipAllPuzzleToBlank(stack, onDone) {
     const letterStates = getLetterStatesForDisplay();
     stack.innerHTML = '';
-    const FLIP_MS = 550;
 
     function appendLine(letters) {
         const line = document.createElement('div');
@@ -640,7 +643,7 @@ function flipAllPuzzleToBlank(stack, onDone) {
     // Add .flipped immediately so the first paint shows green (avoids flash of puzzle name).
     const tiles = stack.querySelectorAll('.puzzle-flip-tile');
     tiles.forEach((t) => t.classList.add('flipped'));
-    if (onDone) setTimeout(onDone, FLIP_MS);
+    if (onDone) setTimeout(onDone, Math.round(FLIP_DURATION_MS * ANIMATION_OVERLAP));
 }
 
 // Reveal message lines in puzzle area with staggered card-flip-in (win or loss).
@@ -1250,15 +1253,15 @@ async function processIngredient(ingredient) {
             scrollTarget?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         }
 
-        // Only pause for the reveal interval when we triggered a flip; skip the beat for unmatched letters.
+        /* Start next flip when this one is 90% done: wait INTERVAL_BETWEEN_FLIP_STARTS_MS before triggering next. */
         const didFlip = status === 'adj' || status === 'noun';
-        await sleep(didFlip ? LETTER_REVEAL_MS : 0);
+        await sleep(didFlip ? INTERVAL_BETWEEN_FLIP_STARTS_MS : 0);
     }
 
-    const FLIP_DURATION_MS = 550;
     const lastItem = result[result.length - 1];
     const lastLetterFlipped = lastItem && (lastItem.status === 'adj' || lastItem.status === 'noun');
-    await sleep(lastLetterFlipped ? Math.max(0, FLIP_DURATION_MS - LETTER_REVEAL_MS) : 0);
+    /* Let the last flip finish: remaining time after the 90% interval. */
+    await sleep(lastLetterFlipped ? Math.max(0, FLIP_DURATION_MS - INTERVAL_BETWEEN_FLIP_STARTS_MS) : 0);
 
     animationState = null;
     gameState.moves++;
@@ -1316,17 +1319,18 @@ function loadRecipe() {
                 box.textContent = letterData.letter;
                 itemDiv.appendChild(box);
             });
-            contentWrap.textContent = '';
-            contentWrap.appendChild(itemDiv);
-            /* Disable transition so we snap to opacity 0; then restore and add visible so 0→1 fade runs. */
-            contentWrap.classList.add('recipe-slot-content-no-transition', 'recipe-slot-content-animate-in', 'recipe-slot-content-fade-pending');
-            contentWrap.classList.remove('recipe-slot-content-visible');
+            /* Fade the word in over ??? (overlay covers placeholder). */
+            const overlay = document.createElement('div');
+            overlay.className = 'recipe-slot-content-overlay';
+            overlay.appendChild(itemDiv);
+            contentWrap.appendChild(overlay);
+            overlay.classList.add('recipe-slot-content-no-transition', 'recipe-slot-content-animate-in', 'recipe-slot-content-fade-pending');
             lastFadedRecipeCount = historyCount;
-            void contentWrap.offsetHeight; /* force reflow so opacity 0 is committed */
+            void overlay.offsetHeight; /* force reflow so opacity 0 is committed */
             requestAnimationFrame(() => {
-                contentWrap.classList.remove('recipe-slot-content-no-transition', 'recipe-slot-content-fade-pending');
+                overlay.classList.remove('recipe-slot-content-no-transition', 'recipe-slot-content-fade-pending');
                 requestAnimationFrame(() => {
-                    contentWrap.classList.add('recipe-slot-content-visible');
+                    overlay.classList.add('recipe-slot-content-visible');
                 });
             });
             updatedInPlace = true;
@@ -1363,20 +1367,30 @@ function loadRecipe() {
                 itemDiv.appendChild(box);
             });
 
-            contentWrap.appendChild(itemDiv);
-            /* New ingredient: only the content (not the number) gets animate-in + fade-pending, rAF adds visible (fade-in). When just completed: last row fades in too. Otherwise when complete: all visible immediately. */
             const isNewIngredientRow = i === historyCount - 1 && historyCount > 0 && !animating && historyCount > lastFadedRecipeCount;
             const isLastRowJustCompleted = isComplete && gameState.justCompleted && i === historyCount - 1;
             const isLoadWithHistory = historyCount > 0 && !animating && historyCount <= lastFadedRecipeCount;
-            if (isComplete && !isLastRowJustCompleted) {
-                contentWrap.classList.add('recipe-slot-content-visible');
-            } else if (isLastRowJustCompleted) {
-                contentWrap.classList.add('recipe-slot-content-no-transition', 'recipe-slot-content-animate-in', 'recipe-slot-content-fade-pending');
-            } else if (isNewIngredientRow) {
-                contentWrap.classList.add('recipe-slot-content-animate-in', 'recipe-slot-content-fade-pending');
-            } else if (isLoadWithHistory) {
-                contentWrap.classList.add('recipe-slot-content-animate-in');
+            const useOverlayFade = isLastRowJustCompleted || isNewIngredientRow || isLoadWithHistory;
+
+            if (useOverlayFade) {
+                /* Word fades in over ??? (placeholder stays, overlay covers it). */
+                const placeholder = document.createElement('div');
+                placeholder.className = 'recipe-placeholder';
+                placeholder.textContent = '???';
+                contentWrap.appendChild(placeholder);
+                const overlay = document.createElement('div');
+                overlay.className = 'recipe-slot-content-overlay';
+                overlay.appendChild(itemDiv);
+                contentWrap.appendChild(overlay);
+                if (isLastRowJustCompleted) {
+                    overlay.classList.add('recipe-slot-content-no-transition', 'recipe-slot-content-animate-in', 'recipe-slot-content-fade-pending');
+                } else if (isNewIngredientRow) {
+                    overlay.classList.add('recipe-slot-content-animate-in', 'recipe-slot-content-fade-pending');
+                } else {
+                    overlay.classList.add('recipe-slot-content-animate-in');
+                }
             } else {
+                contentWrap.appendChild(itemDiv);
                 contentWrap.classList.add('recipe-slot-content-visible');
             }
         } else if (animating && i === historyCount) {
@@ -1384,8 +1398,6 @@ function loadRecipe() {
             placeholder.className = 'recipe-placeholder';
             placeholder.textContent = '???';
             contentWrap.appendChild(placeholder);
-            /* Start at opacity 0 so in-place update to real ingredient gets a proper 0→1 fade (no blip). */
-            contentWrap.classList.add('recipe-slot-content-animate-in', 'recipe-slot-content-fade-pending');
         } else {
             const placeholder = document.createElement('div');
             placeholder.className = 'recipe-placeholder';
@@ -1403,54 +1415,54 @@ function loadRecipe() {
     /* Just completed: last ingredient row fades in (same as 2nd+ ingredient in-place path). */
     if (isComplete && gameState.justCompleted && historyCount > 0) {
         const lastSlotIndex = historyCount - 1;
-        const lastContent = slotNodes[lastSlotIndex] && slotNodes[lastSlotIndex].querySelector('.recipe-slot-content');
-        if (lastContent && lastContent.classList.contains('recipe-slot-content-animate-in')) {
+        const lastOverlay = slotNodes[lastSlotIndex] && slotNodes[lastSlotIndex].querySelector('.recipe-slot-content-overlay');
+        if (lastOverlay && lastOverlay.classList.contains('recipe-slot-content-animate-in')) {
             requestAnimationFrame(() => {
                 const currentContainer = document.getElementById('recipeContainer');
                 if (!currentContainer) return;
                 const slot = currentContainer.querySelectorAll('.recipe-slot')[lastSlotIndex];
-                const content = slot && slot.querySelector('.recipe-slot-content');
-                if (content && content.classList.contains('recipe-slot-content-animate-in')) {
-                    content.classList.remove('recipe-slot-content-no-transition', 'recipe-slot-content-fade-pending');
+                const overlay = slot && slot.querySelector('.recipe-slot-content-overlay');
+                if (overlay && overlay.classList.contains('recipe-slot-content-animate-in')) {
+                    overlay.classList.remove('recipe-slot-content-no-transition', 'recipe-slot-content-fade-pending');
                 }
                 requestAnimationFrame(() => {
                     const slot2 = currentContainer.querySelectorAll('.recipe-slot')[lastSlotIndex];
-                    const content2 = slot2 && slot2.querySelector('.recipe-slot-content');
-                    if (content2 && content2.classList.contains('recipe-slot-content-animate-in')) {
-                        content2.classList.add('recipe-slot-content-visible');
+                    const overlay2 = slot2 && slot2.querySelector('.recipe-slot-content-overlay');
+                    if (overlay2 && overlay2.classList.contains('recipe-slot-content-animate-in')) {
+                        overlay2.classList.add('recipe-slot-content-visible');
                     }
                 });
             });
         }
     }
 
-    /* New ingredient: one row's content fades in. Double rAF so the row paints one frame at opacity 0 (visibility visible) before adding visible, so the opacity transition actually runs. */
+    /* New ingredient: one row's content fades in (overlay over ???). */
     if (!isComplete && historyCount > lastFadedRecipeCount && historyCount > 0) {
         lastFadedRecipeCount = historyCount;
         const slotIndex = historyCount - 1;
-        const newContent = slotNodes[slotIndex] && slotNodes[slotIndex].querySelector('.recipe-slot-content');
-        if (newContent && newContent.classList.contains('recipe-slot-content-animate-in')) {
+        const newOverlay = slotNodes[slotIndex] && slotNodes[slotIndex].querySelector('.recipe-slot-content-overlay');
+        if (newOverlay && newOverlay.classList.contains('recipe-slot-content-animate-in')) {
             requestAnimationFrame(() => {
                 const currentContainer = document.getElementById('recipeContainer');
                 if (!currentContainer) return;
                 const currentSlots = currentContainer.querySelectorAll('.recipe-slot');
                 const slot = currentSlots[slotIndex];
-                const content = slot && slot.querySelector('.recipe-slot-content');
-                if (content && content.classList.contains('recipe-slot-content-animate-in')) {
-                    content.classList.remove('recipe-slot-content-fade-pending');
+                const overlay = slot && slot.querySelector('.recipe-slot-content-overlay');
+                if (overlay && overlay.classList.contains('recipe-slot-content-animate-in')) {
+                    overlay.classList.remove('recipe-slot-content-fade-pending');
                 }
                 requestAnimationFrame(() => {
                     const slot2 = currentContainer.querySelectorAll('.recipe-slot')[slotIndex];
-                    const content2 = slot2 && slot2.querySelector('.recipe-slot-content');
-                    if (content2 && content2.classList.contains('recipe-slot-content-animate-in')) {
-                        content2.classList.add('recipe-slot-content-visible');
+                    const overlay2 = slot2 && slot2.querySelector('.recipe-slot-content-overlay');
+                    if (overlay2 && overlay2.classList.contains('recipe-slot-content-animate-in')) {
+                        overlay2.classList.add('recipe-slot-content-visible');
                     }
                 });
             });
         }
     }
 
-    /* Loading/replay: all ingredient rows' content fades in. Double rAF so browser paints one frame at opacity 0 before adding visible (same as daily). */
+    /* Loading/replay: all ingredient rows' content fades in (overlay over ???). */
     if (!isComplete && historyCount > 0 && historyCount <= lastFadedRecipeCount) {
         const countToShow = historyCount;
         requestAnimationFrame(() => {
@@ -1459,9 +1471,9 @@ function loadRecipe() {
                 if (!currentContainer) return;
                 const currentSlots = currentContainer.querySelectorAll('.recipe-slot');
                 for (let j = 0; j < countToShow && j < currentSlots.length; j++) {
-                    const content = currentSlots[j].querySelector('.recipe-slot-content');
-                    if (content && content.classList.contains('recipe-slot-content-animate-in')) {
-                        content.classList.add('recipe-slot-content-visible');
+                    const overlay = currentSlots[j].querySelector('.recipe-slot-content-overlay');
+                    if (overlay && overlay.classList.contains('recipe-slot-content-animate-in')) {
+                        overlay.classList.add('recipe-slot-content-visible');
                     }
                 }
             });
@@ -1472,20 +1484,25 @@ function loadRecipe() {
     /* Animation order when just completed: (1) puzzle message, (2) stats fade in, (3) footer buttons fade in, (4) share green border fades in. When viewing already-complete: show all instantly. */
     const recipeSectionEl = document.getElementById('recipeSection');
     const footerCompletionActionsEl = document.getElementById('footerCompletionActions');
-    /* Wait for puzzle-box message to finish (win: ELEGANT/EXCELLENT DISH!; loss: HUGE MESS! — same flip + stagger + flip timing). */
+    /* Wait for puzzle-box message (win/loss); then stats, footer, share border. Each next step starts when previous is ANIMATION_OVERLAP done. */
     let puzzleRevealMs = 1000;
     if (isComplete && gameState.justCompleted) {
         const lines = gameState.isWon ? getVictoryMessageLines() : getLossMessageLines();
         const totalChars = lines.reduce((s, line) => s + line.length, 0);
-        puzzleRevealMs = 550 + (totalChars - 1) * 80 + 550;
+        /* Message starts at 90% of flip-to-green; then stagger + last flip. */
+        puzzleRevealMs = Math.round(FLIP_DURATION_MS * ANIMATION_OVERLAP) + (totalChars - 1) * 80 + 550;
     }
-    const STATS_FADE_MS = 900;      /* then stats fade in (slower); delay before buttons */
-    const BUTTONS_FADE_MS = 800;    /* then footer buttons fade in; delay before share border */
-    const SHARE_BORDER_MS = 600;    /* then share button green border fades in */
+    /* Phase durations (match CSS). Next phase starts when previous is ANIMATION_OVERLAP done. */
+    const STATS_FADE_MS = 900;
+    const BUTTONS_FADE_MS = 800;
 
     if (isComplete) {
         if (gameState.justCompleted) {
-            /* Slots already have recipe-slot-content-visible from build; run victory timing for section + stats + footer only. */
+            /* Waterfall: delay before next = VICTORY_OVERLAP fraction of previous phase duration. */
+            const delayBeforeStats = Math.round(puzzleRevealMs * VICTORY_OVERLAP);
+            const delayBeforeFooter = Math.round(STATS_FADE_MS * VICTORY_OVERLAP);
+            const delayBeforeShare = Math.round(BUTTONS_FADE_MS * VICTORY_OVERLAP);
+
             setTimeout(() => {
                 if (recipeSectionEl) recipeSectionEl.classList.add('recipe-section-complete');
                 gameState.justCompleted = false;
@@ -1494,9 +1511,9 @@ function loadRecipe() {
                     setTimeout(() => {
                         const shareBtn = document.getElementById('footerShareBtn');
                         if (shareBtn) shareBtn.classList.add('nav-btn-share-visible');
-                    }, SHARE_BORDER_MS);
-                }, STATS_FADE_MS);
-            }, puzzleRevealMs);
+                    }, delayBeforeShare);
+                }, delayBeforeFooter);
+            }, delayBeforeStats);
         } else {
             if (recipeSectionEl) recipeSectionEl.classList.add('recipe-section-complete', 'recipe-section-stats-instant');
             if (footerCompletionActionsEl) footerCompletionActionsEl.classList.add('completion-actions-visible');
