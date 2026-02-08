@@ -2462,8 +2462,10 @@ footer {
         margin-bottom: 4px;
     }
 
+    /* Cap recipe list height on mobile so TOP INGREDIENT / FOOD WASTE stay on screen */
     #recipeContainer {
         gap: 2px;
+        max-height: 38vh;
     }
 
     .recipe-slot {
@@ -2676,8 +2678,10 @@ footer {
         margin-bottom: 4px;
     }
 
+    /* Keep recipe list short so completion stats stay visible on small/short screens */
     #recipeContainer {
         gap: 2px;
+        max-height: 32vh;
     }
 
     .recipe-slot {
