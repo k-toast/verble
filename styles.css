@@ -2455,8 +2455,12 @@ footer {
         padding: 14px 12px;
     }
 
+    /* Halve dead space between input box and YOUR RECIPE on mobile */
     .input-section {
-        margin-bottom: 6px;
+        margin-bottom: 3px;
+    }
+    .input-section #completionStatus {
+        min-height: 20px;
     }
 
     .recipe-section h2 {
@@ -2467,6 +2471,7 @@ footer {
     #recipeContainer {
         gap: 2px;
         max-height: 38vh;
+        padding-bottom: calc(var(--section-buffer) / 2 * 0.75);
     }
 
     .recipe-slot {
@@ -2474,9 +2479,13 @@ footer {
         padding: 6px 0;
     }
 
+    .recipe-section-complete .completion-stats {
+        margin-top: 9px;
+    }
+
     .star-ingredient,
     .food-waste {
-        margin-top: 6px;
+        margin-top: 4px;
         margin-bottom: 2px;
     }
 
@@ -2639,7 +2648,7 @@ footer {
     }
 
     .input-section {
-        margin-bottom: 4px;
+        margin-bottom: 2px;
     }
 
     .puzzle-label {
@@ -2683,6 +2692,11 @@ footer {
     #recipeContainer {
         gap: 2px;
         max-height: 32vh;
+        padding-bottom: calc(var(--section-buffer) / 2 * 0.75);
+    }
+
+    .recipe-section-complete .completion-stats {
+        margin-top: 9px;
     }
 
     .recipe-slot {
@@ -2813,6 +2827,11 @@ footer {
 
     #recipeContainer {
         gap: 2px;
+        padding-bottom: calc(var(--section-buffer) / 2 * 0.75);
+    }
+
+    .recipe-section-complete .completion-stats {
+        margin-top: 9px;
     }
 
     .recipe-slot {
@@ -2896,6 +2915,14 @@ footer {
 
     .recipe-section h2 {
         margin-bottom: 3px;
+    }
+
+    #recipeContainer {
+        padding-bottom: calc(var(--section-buffer) / 2 * 0.75);
+    }
+
+    .recipe-section-complete .completion-stats {
+        margin-top: 9px;
     }
 
     .recipe-slot {
