@@ -529,7 +529,9 @@ h1 {
     height: 0.95em;
     min-width: 20px;
     min-height: 20px;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
     vertical-align: middle;
 }
@@ -887,6 +889,10 @@ h1 {
     flex: 1;
     min-width: 0;
     transition: opacity 0.8s ease;
+}
+/* In-place ingredient update: snap to opacity 0 so the 0→1 fade actually runs (no blip). */
+.recipe-slot-content.recipe-slot-content-no-transition {
+    transition: none;
 }
 /* During gameplay: new ingredient row content appears without blinking (hidden until visible added in same frame). */
 .recipe-section:not(.recipe-section-complete) .recipe-slot-content.recipe-slot-content-animate-in {

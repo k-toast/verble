@@ -582,11 +582,15 @@ function getVictoryMessageLines() {
     return gameState.isElegant ? ['ELEGANT', 'DISH!'] : ['EXCELLENT', 'DISH!'];
 }
 
-// Render "ELEGANT DISH!" / "EXCELLENT DISH!" as static letters (e.g. when loading a completed game).
-function renderDishCompleteStatic(stack) {
+// Loss message lines for puzzle area: HUGE MESS!
+function getLossMessageLines() {
+    return ['HUGE', 'MESS!'];
+}
+
+// Render two lines as static letters in the puzzle stack (e.g. when loading a completed game).
+function renderMessageStatic(stack, lines) {
     stack.innerHTML = '';
-    const [line1, line2] = getVictoryMessageLines();
-    [line1, line2].forEach((word) => {
+    (lines || []).forEach((word) => {
         const line = document.createElement('div');
         line.className = 'puzzle-line';
         for (const ch of word) {
@@ -597,6 +601,11 @@ function renderDishCompleteStatic(stack) {
         }
         stack.appendChild(line);
     });
+}
+
+// Render "ELEGANT DISH!" / "EXCELLENT DISH!" as static letters (e.g. when loading a completed game).
+function renderDishCompleteStatic(stack) {
+    renderMessageStatic(stack, getVictoryMessageLines());
 }
 
 // Flip all current puzzle letters to blank (green) at once; then callback after duration.
@@ -634,10 +643,9 @@ function flipAllPuzzleToBlank(stack, onDone) {
     if (onDone) setTimeout(onDone, FLIP_MS);
 }
 
-// Reveal "ELEGANT DISH!" / "EXCELLENT DISH!" in puzzle area with staggered card-flip-in.
-function revealDishCompleteInStack(stack) {
+// Reveal message lines in puzzle area with staggered card-flip-in (win or loss).
+function revealMessageInStack(stack, lines) {
     stack.innerHTML = '';
-    const [line1, line2] = getVictoryMessageLines();
     const REVEAL_STAGGER_MS = 80;
 
     function buildLine(word) {
@@ -660,13 +668,17 @@ function revealDishCompleteInStack(stack) {
         }
         return line;
     }
-    stack.appendChild(buildLine(line1));
-    stack.appendChild(buildLine(line2));
+    (lines || []).forEach((word) => stack.appendChild(buildLine(word)));
 
     const tiles = stack.querySelectorAll('.puzzle-flip-tile-reveal');
     tiles.forEach((t, i) => {
         setTimeout(() => t.classList.add('revealed'), i * REVEAL_STAGGER_MS);
     });
+}
+
+// Reveal "ELEGANT DISH!" / "EXCELLENT DISH!" in puzzle area.
+function revealDishCompleteInStack(stack) {
+    revealMessageInStack(stack, getVictoryMessageLines());
 }
 
 // Card-flip reveal for recipe heading (e.g. "AN ELEGANT DISH")
@@ -705,6 +717,10 @@ function renderPuzzleStack() {
 
     if (gameState.isWon && !gameState.justWon) {
         renderDishCompleteStatic(stack);
+        return;
+    }
+    if (gameState.isLost) {
+        renderMessageStatic(stack, getLossMessageLines());
         return;
     }
 
@@ -955,37 +971,12 @@ function showCompletionView() {
             });
         }
     } else {
-        // Loss: HUGE MESS! in completionStatus
-        if (completionStatus) {
-            completionStatus.setAttribute('aria-hidden', 'false');
-            completionStatus.className = 'completion-status';
-            completionStatus.innerHTML = '';
-            completionStatus.classList.add('completion-status-flip');
-            const text = 'HUGE MESS!';
-            for (let i = 0; i < text.length; i++) {
-                const ch = text[i];
-                if (ch === ' ') {
-                    const space = document.createElement('span');
-                    space.className = 'completion-status-space';
-                    space.innerHTML = '\u00A0';
-                    completionStatus.appendChild(space);
-                    continue;
-                }
-                const card = document.createElement('span');
-                card.className = 'completion-status-char';
-                card.style.animationDelay = `${i * 90}ms`;
-                const inner = document.createElement('span');
-                inner.className = 'completion-status-char-inner';
-                const front = document.createElement('span');
-                front.className = 'completion-status-char-front';
-                front.textContent = ch;
-                const back = document.createElement('span');
-                back.className = 'completion-status-char-back';
-                inner.appendChild(front);
-                inner.appendChild(back);
-                card.appendChild(inner);
-                completionStatus.appendChild(card);
-            }
+        // Loss: HUGE MESS! in puzzle box (same as ELEGANT/EXCELLENT DISH!)
+        if (completionStatus) completionStatus.setAttribute('aria-hidden', 'true');
+        if (gameState.justCompleted && puzzleStack) {
+            flipAllPuzzleToBlank(puzzleStack, () => {
+                revealMessageInStack(puzzleStack, getLossMessageLines());
+            });
         }
     }
 
@@ -1327,17 +1318,15 @@ function loadRecipe() {
             });
             contentWrap.textContent = '';
             contentWrap.appendChild(itemDiv);
-            contentWrap.classList.add('recipe-slot-content-animate-in', 'recipe-slot-content-fade-pending');
+            /* Disable transition so we snap to opacity 0; then restore and add visible so 0→1 fade runs. */
+            contentWrap.classList.add('recipe-slot-content-no-transition', 'recipe-slot-content-animate-in', 'recipe-slot-content-fade-pending');
             contentWrap.classList.remove('recipe-slot-content-visible');
             lastFadedRecipeCount = historyCount;
-            void contentWrap.offsetHeight; /* force reflow so opacity 0 is committed before rAF */
-            /* Triple rAF so the row is painted one full frame at opacity 0 before adding visible; otherwise the opacity transition doesn't run and it blips in. */
+            void contentWrap.offsetHeight; /* force reflow so opacity 0 is committed */
             requestAnimationFrame(() => {
-                contentWrap.classList.remove('recipe-slot-content-fade-pending');
+                contentWrap.classList.remove('recipe-slot-content-no-transition', 'recipe-slot-content-fade-pending');
                 requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        contentWrap.classList.add('recipe-slot-content-visible');
-                    });
+                    contentWrap.classList.add('recipe-slot-content-visible');
                 });
             });
             updatedInPlace = true;
@@ -1375,11 +1364,14 @@ function loadRecipe() {
             });
 
             contentWrap.appendChild(itemDiv);
-            /* New ingredient: only the content (not the number) gets animate-in + fade-pending, rAF adds visible (fade-in). Loading/replay: all content rows get animate-in, rAF adds visible to all. When complete: all content visible immediately. */
+            /* New ingredient: only the content (not the number) gets animate-in + fade-pending, rAF adds visible (fade-in). When just completed: last row fades in too. Otherwise when complete: all visible immediately. */
             const isNewIngredientRow = i === historyCount - 1 && historyCount > 0 && !animating && historyCount > lastFadedRecipeCount;
+            const isLastRowJustCompleted = isComplete && gameState.justCompleted && i === historyCount - 1;
             const isLoadWithHistory = historyCount > 0 && !animating && historyCount <= lastFadedRecipeCount;
-            if (isComplete) {
+            if (isComplete && !isLastRowJustCompleted) {
                 contentWrap.classList.add('recipe-slot-content-visible');
+            } else if (isLastRowJustCompleted) {
+                contentWrap.classList.add('recipe-slot-content-no-transition', 'recipe-slot-content-animate-in', 'recipe-slot-content-fade-pending');
             } else if (isNewIngredientRow) {
                 contentWrap.classList.add('recipe-slot-content-animate-in', 'recipe-slot-content-fade-pending');
             } else if (isLoadWithHistory) {
@@ -1392,6 +1384,8 @@ function loadRecipe() {
             placeholder.className = 'recipe-placeholder';
             placeholder.textContent = '???';
             contentWrap.appendChild(placeholder);
+            /* Start at opacity 0 so in-place update to real ingredient gets a proper 0→1 fade (no blip). */
+            contentWrap.classList.add('recipe-slot-content-animate-in', 'recipe-slot-content-fade-pending');
         } else {
             const placeholder = document.createElement('div');
             placeholder.className = 'recipe-placeholder';
@@ -1405,6 +1399,30 @@ function loadRecipe() {
 
     /* Replace in one go so the recipe never flashes empty (avoids previous ingredients disappearing for a frame). */
     container.replaceChildren(...slotNodes);
+
+    /* Just completed: last ingredient row fades in (same as 2nd+ ingredient in-place path). */
+    if (isComplete && gameState.justCompleted && historyCount > 0) {
+        const lastSlotIndex = historyCount - 1;
+        const lastContent = slotNodes[lastSlotIndex] && slotNodes[lastSlotIndex].querySelector('.recipe-slot-content');
+        if (lastContent && lastContent.classList.contains('recipe-slot-content-animate-in')) {
+            requestAnimationFrame(() => {
+                const currentContainer = document.getElementById('recipeContainer');
+                if (!currentContainer) return;
+                const slot = currentContainer.querySelectorAll('.recipe-slot')[lastSlotIndex];
+                const content = slot && slot.querySelector('.recipe-slot-content');
+                if (content && content.classList.contains('recipe-slot-content-animate-in')) {
+                    content.classList.remove('recipe-slot-content-no-transition', 'recipe-slot-content-fade-pending');
+                }
+                requestAnimationFrame(() => {
+                    const slot2 = currentContainer.querySelectorAll('.recipe-slot')[lastSlotIndex];
+                    const content2 = slot2 && slot2.querySelector('.recipe-slot-content');
+                    if (content2 && content2.classList.contains('recipe-slot-content-animate-in')) {
+                        content2.classList.add('recipe-slot-content-visible');
+                    }
+                });
+            });
+        }
+    }
 
     /* New ingredient: one row's content fades in. Double rAF so the row paints one frame at opacity 0 (visibility visible) before adding visible, so the opacity transition actually runs. */
     if (!isComplete && historyCount > lastFadedRecipeCount && historyCount > 0) {
@@ -1454,7 +1472,13 @@ function loadRecipe() {
     /* Animation order when just completed: (1) puzzle message, (2) stats fade in, (3) footer buttons fade in, (4) share green border fades in. When viewing already-complete: show all instantly. */
     const recipeSectionEl = document.getElementById('recipeSection');
     const footerCompletionActionsEl = document.getElementById('footerCompletionActions');
-    const PUZZLE_REVEAL_MS = 1000;   /* wait for ELEGANT/EXCELLENT DISH to mostly finish */
+    /* Wait for puzzle-box message to finish (win: ELEGANT/EXCELLENT DISH!; loss: HUGE MESS! — same flip + stagger + flip timing). */
+    let puzzleRevealMs = 1000;
+    if (isComplete && gameState.justCompleted) {
+        const lines = gameState.isWon ? getVictoryMessageLines() : getLossMessageLines();
+        const totalChars = lines.reduce((s, line) => s + line.length, 0);
+        puzzleRevealMs = 550 + (totalChars - 1) * 80 + 550;
+    }
     const STATS_FADE_MS = 900;      /* then stats fade in (slower); delay before buttons */
     const BUTTONS_FADE_MS = 800;    /* then footer buttons fade in; delay before share border */
     const SHARE_BORDER_MS = 600;    /* then share button green border fades in */
@@ -1472,7 +1496,7 @@ function loadRecipe() {
                         if (shareBtn) shareBtn.classList.add('nav-btn-share-visible');
                     }, SHARE_BORDER_MS);
                 }, STATS_FADE_MS);
-            }, PUZZLE_REVEAL_MS);
+            }, puzzleRevealMs);
         } else {
             if (recipeSectionEl) recipeSectionEl.classList.add('recipe-section-complete', 'recipe-section-stats-instant');
             if (footerCompletionActionsEl) footerCompletionActionsEl.classList.add('completion-actions-visible');
