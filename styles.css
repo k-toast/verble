@@ -2468,7 +2468,8 @@ footer {
     }
 
     /* Footer: fixed size for all nav buttons so 4 fit comfortably; same size whether 1 or 4 visible */
-    .game-footer .nav-btn {
+    .game-footer .nav-btn,
+    .game-footer .footer-right .nav-btn {
         width: 72px;
         min-width: 72px;
         max-width: 72px;
@@ -2795,7 +2796,8 @@ footer {
     }
 
     /* Footer: fixed size for all nav buttons (same whether 1 or 4 visible) */
-    .game-footer .nav-btn {
+    .game-footer .nav-btn,
+    .game-footer .footer-right .nav-btn {
         width: 68px;
         min-width: 68px;
         max-width: 68px;
@@ -2917,7 +2919,8 @@ footer {
     }
 
     /* Footer: fixed size for all nav buttons */
-    .game-footer .nav-btn {
+    .game-footer .nav-btn,
+    .game-footer .footer-right .nav-btn {
         width: 64px;
         min-width: 64px;
         max-width: 64px;
@@ -3015,7 +3018,8 @@ footer {
     }
 
     /* Footer: fixed size for all nav buttons */
-    .game-footer .nav-btn {
+    .game-footer .nav-btn,
+    .game-footer .footer-right .nav-btn {
         width: 62px;
         min-width: 62px;
         max-width: 62px;
