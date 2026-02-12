@@ -399,6 +399,46 @@ function getHadStarIngredient() {
     });
 }
 
+// Four stars: complete, elegant (≤3 moves), flavorful (6+ match), skillful (≤25% waste)
+function getStarsForCurrentGame() {
+    const complete = gameState.isWon;
+    const elegant = complete && gameState.isElegant;
+    const flavorful = complete && getHadStarIngredient();
+    const waste = getWastePercent();
+    const skillful = complete && waste <= TROPHY_WASTE_PERCENT;
+    return { complete, elegant, flavorful, skillful };
+}
+
+// Sync the four star icons in the recipe section to current game state. Call after any change that affects stars.
+function updateStarsDisplay() {
+    const stars = getStarsForCurrentGame();
+    const wrap = document.getElementById('completionStatsWrap');
+    if (!wrap) return;
+    const rows = wrap.querySelectorAll('.star-stat-row');
+    const keys = ['complete', 'elegant', 'flavorful', 'skillful'];
+    keys.forEach((key, i) => {
+        const icon = rows[i] && rows[i].querySelector('.star-stat-icon');
+        if (icon) {
+            icon.classList.toggle('star-stat-filled', !!stars[key]);
+        }
+    });
+}
+
+function getStarsForDate(dateStr) {
+    const entry = getAttemptEntryForDate(dateStr);
+    if (!entry || !entry.best) return { complete: false, elegant: false, flavorful: false, skillful: false };
+    const complete = true;
+    const elegant = entry.best.moves <= ELEGANT_MAX_MOVES;
+    const flavorful = hadStarIngredientForDate(dateStr);
+    const skillful = entry.best.waste <= TROPHY_WASTE_PERCENT;
+    return { complete, elegant, flavorful, skillful };
+}
+
+function getStarCountForDate(dateStr) {
+    const s = getStarsForDate(dateStr);
+    return (s.complete ? 1 : 0) + (s.elegant ? 1 : 0) + (s.flavorful ? 1 : 0) + (s.skillful ? 1 : 0);
+}
+
 // Record first/best attempt for this puzzle. Call on game end (win or loss). Returns { isNewBest } for wins.
 function recordAttempts() {
     if (!gameState.isWon && !gameState.isLost) return { isNewBest: false };
@@ -478,7 +518,6 @@ function getStats() {
     const averageWastePercent = games.length > 0
         ? Math.round(games.reduce((s, g) => s + (g.wastePercent || 0), 0) / games.length)
         : 0;
-    const totalTrophies = games.filter(g => g.trophy).length;
     const elegantPercent = wins.length > 0
         ? Math.round((wins.filter(g => g.elegant).length / wins.length) * 100)
         : 0;
@@ -506,7 +545,11 @@ function getStats() {
     }
 
     const attemptsData = getAttemptsData();
-    const totalStars = Object.keys(attemptsData).filter(dateStr => hadStarIngredientForDate(dateStr)).length;
+    let totalStars = 0;
+    for (const dateStr of Object.keys(attemptsData)) {
+        const entry = attemptsData[dateStr];
+        if (entry && entry.best) totalStars += getStarCountForDate(dateStr);
+    }
 
     return {
         dishesAttempted,
@@ -514,7 +557,6 @@ function getStats() {
         dishSuccessesPercent,
         successStreak,
         averageWastePercent,
-        totalTrophies,
         totalStars,
         elegantPercent,
         averageIngredients
@@ -1016,8 +1058,8 @@ function showCompletionView() {
     }
     /* when win: leave recipe heading as YOUR RECIPE (unchanged) */
 
-    /* recipe-section-complete is added by loadRecipe (in rAF when isComplete) so stats fade in */
-    if (completionStatsWrap) completionStatsWrap.hidden = gameState.isLost;
+    /* Four-star list always visible; sync star icons when showing completion view */
+    updateStarsDisplay();
 }
 
 // Update display
@@ -1481,118 +1523,72 @@ function loadRecipe() {
     }
     }
 
-    /* Animation order when just completed: (1) puzzle message, (2) stats fade in, (3) footer buttons fade in, (4) share green border fades in. When viewing already-complete: show all instantly. */
+    /* Just completed: after puzzle message, go straight to share/replay (no stats animation). */
     const recipeSectionEl = document.getElementById('recipeSection');
     const footerCompletionActionsEl = document.getElementById('footerCompletionActions');
-    /* Wait for puzzle-box message (win/loss); then stats, footer, share border. Each next step starts when previous is ANIMATION_OVERLAP done. */
     let puzzleRevealMs = 1000;
     if (isComplete && gameState.justCompleted) {
         const lines = gameState.isWon ? getVictoryMessageLines() : getLossMessageLines();
         const totalChars = lines.reduce((s, line) => s + line.length, 0);
-        /* Message starts at 90% of flip-to-green; then stagger + last flip. */
         puzzleRevealMs = Math.round(FLIP_DURATION_MS * ANIMATION_OVERLAP) + (totalChars - 1) * 80 + 550;
     }
-    /* Phase durations (match CSS). Next phase starts when previous is ANIMATION_OVERLAP done. */
-    const STATS_FADE_MS = 900;
     const BUTTONS_FADE_MS = 800;
 
     if (isComplete) {
+        if (recipeSectionEl) recipeSectionEl.classList.add('recipe-section-complete');
         if (gameState.justCompleted) {
-            /* Waterfall: delay before next = VICTORY_OVERLAP fraction of previous phase duration. */
-            const delayBeforeStats = Math.round(puzzleRevealMs * VICTORY_OVERLAP);
-            const delayBeforeFooter = Math.round(STATS_FADE_MS * VICTORY_OVERLAP);
+            gameState.justCompleted = false;
+            const delayBeforeFooter = Math.round(puzzleRevealMs * VICTORY_OVERLAP);
             const delayBeforeShare = Math.round(BUTTONS_FADE_MS * VICTORY_OVERLAP);
-
             setTimeout(() => {
-                if (recipeSectionEl) recipeSectionEl.classList.add('recipe-section-complete');
-                gameState.justCompleted = false;
+                if (footerCompletionActionsEl) footerCompletionActionsEl.classList.add('completion-actions-visible');
                 setTimeout(() => {
-                    if (footerCompletionActionsEl) footerCompletionActionsEl.classList.add('completion-actions-visible');
-                    setTimeout(() => {
-                        const shareBtn = document.getElementById('footerShareBtn');
-                        if (shareBtn) shareBtn.classList.add('nav-btn-share-visible');
-                    }, delayBeforeShare);
-                }, delayBeforeFooter);
-            }, delayBeforeStats);
+                    const shareBtn = document.getElementById('footerShareBtn');
+                    if (shareBtn) shareBtn.classList.add('nav-btn-share-visible');
+                }, delayBeforeShare);
+            }, delayBeforeFooter);
         } else {
-            if (recipeSectionEl) recipeSectionEl.classList.add('recipe-section-complete', 'recipe-section-stats-instant');
             if (footerCompletionActionsEl) footerCompletionActionsEl.classList.add('completion-actions-visible');
             const shareBtn = document.getElementById('footerShareBtn');
             if (shareBtn) shareBtn.classList.add('nav-btn-share-visible');
         }
-    } else {
-        /* During play, only the newly added row gets recipe-slot-content-visible (in rAF above); other rows already have it from build. */
     }
 
-    const hadStar = getHadStarIngredient();
-    const starDiv = document.getElementById('starIngredientDisplay');
-    const wasteDiv = document.getElementById('foodWasteDisplay');
-    const wastePercent = getWastePercent();
-    const star = getStarIngredient();
-
-    if (starDiv) {
-        starDiv.textContent = 'TOP INGREDIENT: ' + (star || '???');
-        if (hadStar) {
-            const starIcon = document.createElement('span');
-            starIcon.className = 'completion-stat-icon completion-stat-star';
-            starIcon.textContent = ' ⭐';
-            starIcon.setAttribute('aria-hidden', 'true');
-            starDiv.appendChild(starIcon);
-        }
-    }
-
-    if (wasteDiv) {
-        wasteDiv.textContent = `FOOD WASTE: ${wastePercent}%`;
-        if (hadStar) {
-            const trophyIcon = document.createElement('span');
-            trophyIcon.className = 'completion-stat-icon completion-stat-trophy';
-            trophyIcon.textContent = ' 🏆';
-            trophyIcon.setAttribute('aria-hidden', 'true');
-            wasteDiv.appendChild(trophyIcon);
-        }
-    }
+    updateStarsDisplay();
 }
 
 
-// Generate share text — matches victory modal: message, grid (green/black only, no blanks), top ingredient, food waste
+// Generate share text — star count, puzzle name, secret ingredients, grid, wordishgame.com
 function generateShareText() {
     const puzzleNum = getPuzzleNumber(currentPuzzle);
     const moves = gameState.moves;
-    const wastePercent = getWastePercent();
-    const starIngredient = getStarIngredient() || '???';
+    const stars = getStarsForCurrentGame();
+    const starCount = (stars.complete ? 1 : 0) + (stars.elegant ? 1 : 0) + (stars.flavorful ? 1 : 0) + (stars.skillful ? 1 : 0);
+    const starLine = '⭐'.repeat(starCount) || '☆';
 
-    let text = `wordish #${puzzleNum}\n\n`;
+    let text = `dish #${puzzleNum}\n\n`;
 
     if (gameState.isWon) {
         const adjRaw = gameState.adjectives[0] || '';
         const nounRaw = gameState.noun || '';
         const adj = adjRaw.replace(/\b\w/g, c => c.toUpperCase());
         const noun = nounRaw.replace(/\b\w/g, c => c.toUpperCase());
-        if (gameState.isElegant) {
-            text += `I prepared an elegant ${adj} ${noun} using only ${moves} ingredients!\n\n`;
-        } else {
-            text += `I prepared an excellent ${adj} ${noun} using ${moves} ingredients!\n\n`;
-        }
+        const puzzleName = `${adj} ${noun}`.trim();
+        text += `I prepared a ${starLine} ${puzzleName} using ${moves} secret ingredients!\n\n`;
     } else {
         text += `The dish, she is ruined. (${moves} ingredients)\n\n`;
     }
 
-    // Grid: only matched (green) and unmatched (black), no blanks, numbered rows
     gameState.history.forEach((item, index) => {
         const boxes = item.result.map(cell => {
             const status = cell.status || 'plain';
             if (status === 'adj' || status === 'noun') return '🟩';
-            return '⬛';  // black for unmatched
+            return '⬛';
         }).join('');
         text += `${index + 1}. ${boxes}\n`;
     });
 
-    if (gameState.isWon) {
-        const hadStar = getHadStarIngredient();
-        text += `\nTop ingredient: ${starIngredient}${hadStar ? ' ⭐' : ''}\n`;
-        text += wastePercent <= TROPHY_WASTE_PERCENT ? `Food waste: ${wastePercent}% 🏆` : `Food waste: ${wastePercent}%`;
-    }
-
+    text += '\nwordishgame.com';
     return text;
 }
 
@@ -1929,10 +1925,8 @@ function renderArchiveCalendar() {
             tile.classList.add('archive-calendar-tile-filled');
             const num = getPuzzleNumber(puzzle);
             const entry = getAttemptEntryForDate(dateStr);
-            const completed = !!entry;
-            const won = entry && entry.first && (entry.best || entry.first.won);
-            const trophy = earnedTrophyForDate(dateStr);
-            const star = hadStarIngredientForDate(dateStr);
+            const completed = !!entry && entry.best;
+            const starCount = completed ? getStarCountForDate(dateStr) : 0;
 
             if (!completed) {
                 const q = document.createElement('span');
@@ -1940,36 +1934,22 @@ function renderArchiveCalendar() {
                 q.textContent = '?';
                 tile.appendChild(q);
             } else {
-                const main = document.createElement('span');
-                main.className = 'archive-tile-main';
-                const movesVal = entry.first ? (won ? (entry.best ? entry.best.moves : entry.first.moves) : 'X') : '?';
-                main.textContent = String(movesVal);
-                tile.appendChild(main);
-                if (won && (trophy || star)) {
-                    const bottom = document.createElement('div');
-                    bottom.className = 'archive-tile-bottom';
-                    if (trophy) {
-                        const ll = document.createElement('span');
-                        ll.className = 'archive-tile-ll';
-                        ll.textContent = '🏆';
-                        bottom.appendChild(ll);
-                    }
-                    if (star) {
-                        const lr = document.createElement('span');
-                        lr.className = 'archive-tile-lr';
-                        lr.textContent = '⭐';
-                        bottom.appendChild(lr);
-                    }
-                    tile.appendChild(bottom);
+                const starGrid = document.createElement('div');
+                starGrid.className = 'archive-tile-stars';
+                for (let s = 0; s < 4; s++) {
+                    const starEl = document.createElement('span');
+                    starEl.className = 'archive-tile-star' + (s < starCount ? ' archive-tile-star-filled' : '');
+                    starEl.setAttribute('aria-hidden', 'true');
+                    starGrid.appendChild(starEl);
                 }
+                tile.appendChild(starGrid);
             }
             tile.dataset.date = dateStr;
             tile.setAttribute('role', 'button');
             tile.setAttribute('tabindex', '0');
             const ariaParts = [`Puzzle ${num}`];
-            if (completed) ariaParts.push(entry.first ? (won ? `${entry.best ? entry.best.moves : entry.first.moves} ingredients` : 'Not completed') : '?');
-            if (trophy) ariaParts.push('food waste trophy');
-            if (star) ariaParts.push('star ingredient');
+            if (completed) ariaParts.push(`${starCount} of 4 stars`);
+            else ariaParts.push('Not completed');
             tile.setAttribute('aria-label', ariaParts.join(', '));
             tile.addEventListener('click', () => {
                 if (dateStr === today) {
@@ -2139,20 +2119,6 @@ function getHelpContent() {
     const beforeHtml = buildHelpPuzzleStack(lines, null);
     const afterHtml = buildHelpPuzzleStack(lines, matchedAfterBanana);
 
-    const scoringTileHtml = `
-        <div class="help-example help-archive-example">
-            <div class="archive-cell-wrapper help-archive-tile-wrapper">
-                <div class="archive-calendar-tile archive-calendar-tile-filled help-archive-tile" role="img" aria-label="Example archive tile: 3 ingredients, food waste trophy, star ingredient, puzzle 001">
-                    <span class="archive-tile-main">3</span>
-                    <div class="archive-tile-bottom">
-                        <span class="archive-tile-ll">🏆</span>
-                        <span class="archive-tile-lr">⭐</span>
-                    </div>
-                </div>
-                <span class="archive-tile-num">#001</span>
-            </div>
-        </div>`;
-
     return `
         <div class="help-pages">
             <div class="help-page help-page-1">
@@ -2168,25 +2134,6 @@ function getHelpContent() {
                     <p>With the <strong>A</strong>, <strong>N</strong>, <strong>A</strong>, <strong>N</strong>, and <strong>A</strong> matching and the <strong>B</strong> discarded.</p>
                     <p>A dish is prepared successfully if all of its letters are matched using five ingredients or fewer.</p>
                 </div>
-                <div class="help-pagination">
-                    <button type="button" class="help-nav help-nav-prev" disabled aria-label="Previous page">←</button>
-                    <span class="help-page-indicator">1/2</span>
-                    <button type="button" class="help-nav help-nav-next" aria-label="Next page">→</button>
-                </div>
-            </div>
-            <div class="help-page help-page-2" hidden>
-                <div class="help-content">
-                    <p>Try to complete the dish using as few ingredients as possible.</p>
-                    <p>Earn a star if at least one ingredient matches 6 or more letters.</p>
-                    <p>Earn a trophy if your food waste (the percent of unmatched letters) is 25% or less.</p>
-                    <p>See your best dishes in the archive, which shows all three judging criteria for every puzzle you've completed.</p>
-                    ${scoringTileHtml}
-                </div>
-                <div class="help-pagination">
-                    <button type="button" class="help-nav help-nav-prev" aria-label="Previous page">←</button>
-                    <span class="help-page-indicator">2/2</span>
-                    <button type="button" class="help-nav help-nav-next" disabled aria-label="Next page">→</button>
-                </div>
             </div>
         </div>
     `;
@@ -2195,44 +2142,13 @@ function getHelpContent() {
 function showHelpModal() {
     openModal('How to Play', getHelpContent());
     const modalContent = document.getElementById('modalContent');
-    const modalTitle = document.getElementById('modalTitle');
     const pagesContainer = modalContent.querySelector('.help-pages');
     const page1 = modalContent.querySelector('.help-page-1');
-    const page2 = modalContent.querySelector('.help-page-2');
-    const prevBtns = modalContent.querySelectorAll('.help-nav-prev');
-    const nextBtns = modalContent.querySelectorAll('.help-nav-next');
-
-    function setHelpPagesHeight() {
-        if (!pagesContainer || !page1) return;
-        page1.hidden = false;
-        page2.hidden = true;
+    if (pagesContainer && page1) {
         requestAnimationFrame(() => {
-            const h = page1.offsetHeight;
-            pagesContainer.style.height = h + 'px';
+            pagesContainer.style.height = page1.offsetHeight + 'px';
         });
     }
-
-    function goToPage(page) {
-        if (page === 1) {
-            page1.hidden = false;
-            page2.hidden = true;
-            if (modalTitle) modalTitle.textContent = 'How to Play';
-        } else {
-            page1.hidden = true;
-            page2.hidden = false;
-            if (modalTitle) modalTitle.textContent = 'SCORING';
-        }
-    }
-
-    setHelpPagesHeight();
-    goToPage(1);
-
-    prevBtns.forEach((btn) => {
-        btn.addEventListener('click', () => goToPage(1));
-    });
-    nextBtns.forEach((btn) => {
-        btn.addEventListener('click', () => goToPage(2));
-    });
 }
 
 function getSettingsContent() {
@@ -2315,10 +2231,6 @@ function getStatsContent() {
                 <div class="stats-cell">
                     <div class="stats-label">Win Streak</div>
                     <div class="stats-value">${s.successStreak}</div>
-                </div>
-                <div class="stats-cell">
-                    <div class="stats-label">Total Trophies</div>
-                    <div class="stats-value">${s.totalTrophies} 🏆</div>
                 </div>
                 <div class="stats-cell">
                     <div class="stats-label">Total Stars</div>

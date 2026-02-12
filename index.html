@@ -99,9 +99,11 @@
                 <h2 id="recipeHeading">YOUR RECIPE</h2>
                 <div id="recipeContainer"></div>
                 <div id="completionActions" class="completion-actions" hidden></div>
-                <div class="completion-stats" id="completionStatsWrap">
-                    <div id="starIngredientDisplay" class="star-ingredient"></div>
-                    <div id="foodWasteDisplay" class="food-waste"></div>
+                <div class="completion-stats" id="completionStatsWrap" role="list">
+                    <div class="star-stat-row" role="listitem"><span class="star-stat-icon" aria-hidden="true"></span><span class="star-stat-label">COMPLETE</span></div>
+                    <div class="star-stat-row" role="listitem"><span class="star-stat-icon" aria-hidden="true"></span><span class="star-stat-label">ELEGANT (3 ingredients or less)</span></div>
+                    <div class="star-stat-row" role="listitem"><span class="star-stat-icon" aria-hidden="true"></span><span class="star-stat-label">FLAVORFUL (an ingredient matched 6+ letters)</span></div>
+                    <div class="star-stat-row" role="listitem"><span class="star-stat-icon" aria-hidden="true"></span><span class="star-stat-label">SKILLFUL (25% or fewer unmatched letters)</span></div>
                 </div>
             </div>
             </div>

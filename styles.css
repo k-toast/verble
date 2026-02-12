@@ -664,9 +664,6 @@ h1 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .completion-stats {
-        transition: none;
-    }
     .completion-actions,
     #footerCompletionActions,
     .nav-btn-share {
@@ -1126,37 +1123,47 @@ h1 {
     }
 }
 
-/* Completion mode: recipe section heading + centered stats (smooth expand, slower fade) */
+/* Four-star list: always visible, left-aligned */
 .completion-stats {
-    max-height: 0;
-    overflow: hidden;
-    opacity: 0;
-    margin-top: 0;
-    margin-bottom: 0;
-    transition: max-height 0.9s ease, opacity 0.9s ease, margin 0.9s ease;
-}
-.recipe-section-complete .completion-stats {
-    max-height: 80px;
-    opacity: 1;
-    text-align: center;
-    margin-top: 12px;
+    margin-top: 10px;
     margin-bottom: 4px;
+    text-align: left;
+    list-style: none;
+    padding: 0;
+    overflow: visible; /* ensure all four star lines are visible on mobile (no clip) */
 }
-.recipe-section-complete .completion-stats .star-ingredient,
-.recipe-section-complete .completion-stats .food-waste {
-    display: block;
+.star-stat-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin: 4px 0;
+    font-size: 0.75em;
+    color: var(--color-secondary);
+    min-width: 0; /* allow flex child to shrink so label can wrap on narrow screens */
 }
-/* When viewing already-complete game: show stats instantly (no fade) */
-.recipe-section-stats-instant .completion-stats {
-    transition: none;
+.star-stat-icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1em;
+    font-size: 1em;
+    color: var(--color-muted);
 }
-.completion-stat-icon {
-    font-style: normal;
+.star-stat-icon::before {
+    content: '☆';
 }
-.completion-stat-star,
-.completion-stat-trophy {
-    margin-left: 2px;
+.star-stat-icon.star-stat-filled {
+    color: var(--color-border-focus);
+}
+.star-stat-icon.star-stat-filled::before {
+    content: '★';
+}
+.star-stat-label {
+    flex: 1;
+    min-width: 0;
+    font-weight: 500;
+    word-wrap: break-word;
 }
 
 /* Completion stat lines — flip in the letters only (no green back) */
@@ -1560,6 +1567,31 @@ footer {
     color: var(--color-muted);
 }
 
+.archive-tile-stars {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 2px;
+    width: 100%;
+    height: 100%;
+    min-height: 2em;
+    place-items: center;
+}
+.archive-tile-star {
+    font-size: 0.9em;
+    line-height: 1;
+    color: var(--color-muted);
+}
+.archive-tile-star::before {
+    content: '☆';
+}
+.archive-tile-star-filled {
+    color: var(--color-border-focus);
+}
+.archive-tile-star-filled::before {
+    content: '★';
+}
+
 .archive-tile-bottom {
     display: flex;
     align-items: center;
@@ -1590,6 +1622,10 @@ footer {
 .archive-calendar-tile-filled {
     cursor: pointer;
     transition: border-color 0.15s, background 0.15s;
+}
+.archive-calendar-tile-filled:has(.archive-tile-stars),
+.archive-calendar-tile-filled:has(.archive-tile-q) {
+    justify-content: center;
 }
 
 .archive-calendar-tile-filled:hover {
@@ -2523,8 +2559,12 @@ footer {
         padding: 2px;
         min-height: 36px;
     }
-    .archive-tile-main {
+    .archive-tile-main,
+    .archive-tile-q {
         font-size: 1.1em;
+    }
+    .archive-tile-stars {
+        font-size: 0.9em;
     }
     .archive-tile-bottom {
         font-size: 0.65em;
@@ -2769,8 +2809,12 @@ footer {
         min-height: 32px;
         padding: 2px;
     }
-    .archive-tile-main {
+    .archive-tile-main,
+    .archive-tile-q {
         font-size: 1em;
+    }
+    .archive-tile-stars {
+        font-size: 0.8em;
     }
     .archive-tile-bottom {
         font-size: 0.6em;
