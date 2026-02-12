@@ -2467,20 +2467,32 @@ footer {
         display: none !important;
     }
 
-    /* Footer: SHARE/REPLAY same height as ARCHIVE/TODAY on mobile; date arrows in puzzle section */
-    .game-footer .footer-left .nav-btn {
+    /* Footer: all four buttons (ARCHIVE, TODAY, SHARE, REPLAY) same size and spacing on mobile */
+    .game-footer .nav-btn {
+        height: 36px;
         min-height: 36px;
+        padding: 0 12px;
+        font-size: 0.7em;
+        box-sizing: border-box;
+    }
+    .game-footer .footer-left,
+    #footerCompletionActions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+    .game-footer .footer-left .nav-btn,
+    #footerCompletionActions .nav-btn {
+        flex: 1 1 0;
+        min-width: 0;
     }
     .puzzle-date-nav .icon-btn {
         width: 18px;
         height: 18px;
         min-width: 18px;
         min-height: 18px;
-    }
-    .game-footer .footer-right .nav-btn {
-        height: 36px;
-        padding-top: 0;
-        padding-bottom: 0;
     }
 
     .puzzle-section {
@@ -2503,16 +2515,16 @@ footer {
         margin-bottom: 4px;
     }
 
-    /* Cap recipe list height on mobile so TOP INGREDIENT / FOOD WASTE stay on screen */
+    /* Cap recipe list height on mobile so TOP INGREDIENT / FOOD WASTE stay on screen; allow 5 slots to fit */
     #recipeContainer {
         gap: 2px;
-        max-height: 38vh;
+        max-height: 42vh;
         padding-bottom: calc(var(--section-buffer) / 2 * 0.75);
     }
 
     .recipe-slot {
-        min-height: 32px;
-        padding: 6px 0;
+        min-height: 28px;
+        padding: 4px 0;
     }
 
     .recipe-section-complete .completion-stats {
@@ -2728,10 +2740,10 @@ footer {
         margin-bottom: 4px;
     }
 
-    /* Keep recipe list short so completion stats stay visible on small/short screens */
+    /* Keep recipe list short so completion stats stay visible; ensure 5 slots fit in view */
     #recipeContainer {
         gap: 2px;
-        max-height: 32vh;
+        max-height: 36vh;
         padding-bottom: calc(var(--section-buffer) / 2 * 0.75);
     }
 
@@ -2740,9 +2752,9 @@ footer {
     }
 
     .recipe-slot {
-        padding: 4px 0;
-        gap: 8px;
-        min-height: 28px;
+        padding: 3px 0;
+        gap: 6px;
+        min-height: 24px;
     }
 
     .recipe-number {
@@ -2784,24 +2796,24 @@ footer {
         font-size: 0.9em;
     }
 
-    .footer-left .nav-btn {
-        padding: 8px 14px;
-        font-size: 0.75em;
+    /* Footer: normalize all four buttons (ARCHIVE, TODAY, SHARE, REPLAY) */
+    .game-footer .nav-btn {
+        height: 32px;
         min-height: 32px;
+        padding: 0 10px;
+        font-size: 0.68em;
+        box-sizing: border-box;
     }
-    .game-footer .footer-left .nav-btn {
-        font-size: 1em;
+    .game-footer .footer-left .nav-btn,
+    #footerCompletionActions .nav-btn {
+        flex: 1 1 0;
+        min-width: 0;
     }
     .puzzle-date-nav .icon-btn {
         width: 16px;
         height: 16px;
         min-width: 16px;
         min-height: 16px;
-    }
-    .game-footer .footer-right .nav-btn {
-        height: 32px;
-        padding-top: 0;
-        padding-bottom: 0;
     }
 
     /* Archive tiles: extra compact */
@@ -2903,24 +2915,24 @@ footer {
         font-size: 0.8em;
     }
 
-    .footer-left .nav-btn {
-        padding: 6px 12px;
-        font-size: 0.75em;
+    /* Footer: normalize all four buttons */
+    .game-footer .nav-btn {
+        height: 28px;
         min-height: 28px;
+        padding: 0 8px;
+        font-size: 0.65em;
+        box-sizing: border-box;
     }
-    .game-footer .footer-left .nav-btn {
-        font-size: 1em;
+    .game-footer .footer-left .nav-btn,
+    #footerCompletionActions .nav-btn {
+        flex: 1 1 0;
+        min-width: 0;
     }
     .puzzle-date-nav .icon-btn {
         width: 14px;
         height: 14px;
         min-width: 14px;
         min-height: 14px;
-    }
-    .game-footer .footer-right .nav-btn {
-        height: 28px;
-        padding-top: 0;
-        padding-bottom: 0;
     }
 }
 
@@ -2969,6 +2981,7 @@ footer {
 
     #recipeContainer {
         padding-bottom: calc(var(--section-buffer) / 2 * 0.75);
+        max-height: 34vh;
     }
 
     .recipe-section-complete .completion-stats {
@@ -2977,7 +2990,8 @@ footer {
 
     .recipe-slot {
         padding: 2px 0;
-        min-height: 24px;
+        min-height: 22px;
+        gap: 4px;
     }
 
     .letter-box {
@@ -2996,24 +3010,24 @@ footer {
         height: 28px;
     }
 
-    .footer-left .nav-btn {
-        padding: 6px 12px;
-        font-size: 0.75em;
+    /* Footer: normalize all four buttons */
+    .game-footer .nav-btn {
+        height: 28px;
         min-height: 28px;
+        padding: 0 6px;
+        font-size: 0.62em;
+        box-sizing: border-box;
     }
-    .game-footer .footer-left .nav-btn {
-        font-size: 1em;
+    .game-footer .footer-left .nav-btn,
+    #footerCompletionActions .nav-btn {
+        flex: 1 1 0;
+        min-width: 0;
     }
     .puzzle-date-nav .icon-btn {
         width: 14px;
         height: 14px;
         min-width: 14px;
         min-height: 14px;
-    }
-    .game-footer .footer-right .nav-btn {
-        height: 28px;
-        padding-top: 0;
-        padding-bottom: 0;
     }
 }
 
