@@ -2467,26 +2467,24 @@ footer {
         display: none !important;
     }
 
-    /* Footer: all four buttons (ARCHIVE, TODAY, SHARE, REPLAY) same size and spacing on mobile */
+    /* Footer: fixed size for all nav buttons so 4 fit comfortably; same size whether 1 or 4 visible */
     .game-footer .nav-btn {
+        width: 72px;
+        min-width: 72px;
+        max-width: 72px;
         height: 36px;
         min-height: 36px;
-        padding: 0 12px;
+        padding: 0 6px;
         font-size: 0.7em;
         box-sizing: border-box;
+        flex: 0 0 auto;
     }
     .game-footer .footer-left,
     #footerCompletionActions {
         display: flex;
         gap: 8px;
         align-items: center;
-        flex: 1 1 auto;
-        min-width: 0;
-    }
-    .game-footer .footer-left .nav-btn,
-    #footerCompletionActions .nav-btn {
-        flex: 1 1 0;
-        min-width: 0;
+        flex: 0 0 auto;
     }
     .puzzle-date-nav .icon-btn {
         width: 18px;
@@ -2796,18 +2794,21 @@ footer {
         font-size: 0.9em;
     }
 
-    /* Footer: normalize all four buttons (ARCHIVE, TODAY, SHARE, REPLAY) */
+    /* Footer: fixed size for all nav buttons (same whether 1 or 4 visible) */
     .game-footer .nav-btn {
+        width: 68px;
+        min-width: 68px;
+        max-width: 68px;
         height: 32px;
         min-height: 32px;
-        padding: 0 10px;
-        font-size: 0.68em;
+        padding: 0 4px;
+        font-size: 0.65em;
         box-sizing: border-box;
+        flex: 0 0 auto;
     }
-    .game-footer .footer-left .nav-btn,
-    #footerCompletionActions .nav-btn {
-        flex: 1 1 0;
-        min-width: 0;
+    .game-footer .footer-left,
+    #footerCompletionActions {
+        flex: 0 0 auto;
     }
     .puzzle-date-nav .icon-btn {
         width: 16px;
@@ -2915,18 +2916,21 @@ footer {
         font-size: 0.8em;
     }
 
-    /* Footer: normalize all four buttons */
+    /* Footer: fixed size for all nav buttons */
     .game-footer .nav-btn {
+        width: 64px;
+        min-width: 64px;
+        max-width: 64px;
         height: 28px;
         min-height: 28px;
-        padding: 0 8px;
-        font-size: 0.65em;
+        padding: 0 4px;
+        font-size: 0.6em;
         box-sizing: border-box;
+        flex: 0 0 auto;
     }
-    .game-footer .footer-left .nav-btn,
-    #footerCompletionActions .nav-btn {
-        flex: 1 1 0;
-        min-width: 0;
+    .game-footer .footer-left,
+    #footerCompletionActions {
+        flex: 0 0 auto;
     }
     .puzzle-date-nav .icon-btn {
         width: 14px;
@@ -3010,18 +3014,21 @@ footer {
         height: 28px;
     }
 
-    /* Footer: normalize all four buttons */
+    /* Footer: fixed size for all nav buttons */
     .game-footer .nav-btn {
+        width: 62px;
+        min-width: 62px;
+        max-width: 62px;
         height: 28px;
         min-height: 28px;
-        padding: 0 6px;
-        font-size: 0.62em;
+        padding: 0 2px;
+        font-size: 0.58em;
         box-sizing: border-box;
+        flex: 0 0 auto;
     }
-    .game-footer .footer-left .nav-btn,
-    #footerCompletionActions .nav-btn {
-        flex: 1 1 0;
-        min-width: 0;
+    .game-footer .footer-left,
+    #footerCompletionActions {
+        flex: 0 0 auto;
     }
     .puzzle-date-nav .icon-btn {
         width: 14px;
