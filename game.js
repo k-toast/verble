@@ -1025,7 +1025,7 @@ function showCompletionView() {
         }
     }
 
-    // Footer: SHARE + REPLAY (always show Share; same nav-btn style; share gets border fade later)
+    // Footer: SHARE + REPLAY on puzzle page (game view). Hidden only on the archive selector screen (cleared in showArchiveView).
     if (footerCompletionActions) {
         footerCompletionActions.innerHTML = '';
         footerCompletionActions.classList.remove('completion-actions-visible');
@@ -1541,14 +1541,14 @@ function loadRecipe() {
             const delayBeforeFooter = Math.round(puzzleRevealMs * VICTORY_OVERLAP);
             const delayBeforeShare = Math.round(BUTTONS_FADE_MS * VICTORY_OVERLAP);
             setTimeout(() => {
-                if (footerCompletionActionsEl) footerCompletionActionsEl.classList.add('completion-actions-visible');
+                if (footerCompletionActionsEl && footerCompletionActionsEl.children.length) footerCompletionActionsEl.classList.add('completion-actions-visible');
                 setTimeout(() => {
                     const shareBtn = document.getElementById('footerShareBtn');
                     if (shareBtn) shareBtn.classList.add('nav-btn-share-visible');
                 }, delayBeforeShare);
             }, delayBeforeFooter);
         } else {
-            if (footerCompletionActionsEl) footerCompletionActionsEl.classList.add('completion-actions-visible');
+            if (footerCompletionActionsEl && footerCompletionActionsEl.children.length) footerCompletionActionsEl.classList.add('completion-actions-visible');
             const shareBtn = document.getElementById('footerShareBtn');
             if (shareBtn) shareBtn.classList.add('nav-btn-share-visible');
         }
@@ -1730,10 +1730,22 @@ function showArchiveView() {
     document.getElementById('noPuzzleMessage').style.display = 'none';
     document.getElementById('gameContainer').style.display = 'none';
     document.getElementById('archiveContainer').style.display = 'flex';
+    const footerCompletionActions = document.getElementById('footerCompletionActions');
+    if (footerCompletionActions) {
+        footerCompletionActions.innerHTML = '';
+        footerCompletionActions.classList.remove('completion-actions-visible');
+    }
     const today = getRealHelsinkiDate();
     const [y, m] = today.split('-').map(Number);
-    archiveCalendarYear = y;
-    archiveCalendarMonth = m;
+    const yearOpts = getArchiveYearOptions();
+    if (yearOpts.length) {
+        archiveCalendarYear = yearOpts.includes(y) ? y : yearOpts[yearOpts.length - 1];
+        const monthOpts = getMonthsWithPuzzlesForYear(archiveCalendarYear);
+        archiveCalendarMonth = monthOpts.length ? (monthOpts.includes(m) ? m : monthOpts[monthOpts.length - 1]) : m;
+    } else {
+        archiveCalendarYear = y;
+        archiveCalendarMonth = m;
+    }
     renderArchiveCalendar();
     updateFooterTodayButton();
 }
@@ -1766,11 +1778,18 @@ function getFirstDayOfMonth(year, month) {
 }
 
 function getArchiveYearOptions() {
-    const currentYear = new Date().getFullYear();
-    if (!puzzles.length) return [currentYear - 1, currentYear, currentYear + 1];
+    if (!puzzles.length) return [];
     const fromPuzzles = [...new Set(puzzles.map(p => (p.date || '').slice(0, 4)).filter(Boolean))].map(Number).sort((a, b) => a - b);
-    const combined = new Set([...fromPuzzles, currentYear]);
-    return [...combined].sort((a, b) => a - b);
+    return fromPuzzles;
+}
+
+// Months (1–12) that have at least one puzzle in the given year
+function getMonthsWithPuzzlesForYear(year) {
+    const yearStr = String(year);
+    const months = puzzles
+        .filter(p => (p.date || '').startsWith(yearStr + '-'))
+        .map(p => parseInt((p.date || '').slice(5, 7), 10));
+    return [...new Set(months)].filter(Boolean).sort((a, b) => a - b);
 }
 
 // Earliest and latest (year, month) that have puzzles; null if no puzzles
@@ -1786,6 +1805,18 @@ function getArchiveMonthRange() {
         maxYear: parseInt(maxDate.slice(0, 4), 10),
         maxMonth: parseInt(maxDate.slice(5, 7), 10)
     };
+}
+
+// Sorted list of { year, month } that have at least one puzzle (for prev/next navigation)
+function getArchiveMonthSequence() {
+    const pairs = new Set();
+    puzzles.forEach(p => {
+        const d = (p.date || '').trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+            pairs.add(JSON.stringify({ year: parseInt(d.slice(0, 4), 10), month: parseInt(d.slice(5, 7), 10) }));
+        }
+    });
+    return [...pairs].map(s => JSON.parse(s)).sort((a, b) => a.year !== b.year ? a.year - b.year : a.month - b.month);
 }
 
 function earnedTrophyForDate(dateStr) {
@@ -1829,26 +1860,28 @@ function renderArchiveCalendar() {
     const nextBtn = document.getElementById('archiveNextMonthBtn');
     if (!monthSelect || !yearSelect || !gridEl) return;
 
-    let yearOpts = getArchiveYearOptions();
-    if (!yearOpts.includes(archiveCalendarYear)) {
-        yearOpts = [...yearOpts, archiveCalendarYear].sort((a, b) => a - b);
+    const yearOpts = getArchiveYearOptions();
+    if (yearOpts.length && !yearOpts.includes(archiveCalendarYear)) {
+        archiveCalendarYear = yearOpts[yearOpts.length - 1];
+    }
+    const monthOpts = getMonthsWithPuzzlesForYear(archiveCalendarYear);
+    if (monthOpts.length && !monthOpts.includes(archiveCalendarMonth)) {
+        archiveCalendarMonth = monthOpts[0];
     }
     const attempts = getAttemptsData();
 
-    const range = getArchiveMonthRange();
-    const canGoPrev = range && (archiveCalendarYear > range.minYear || (archiveCalendarYear === range.minYear && archiveCalendarMonth > range.minMonth));
-    const canGoNext = range && (archiveCalendarYear < range.maxYear || (archiveCalendarYear === range.maxYear && archiveCalendarMonth < range.maxMonth));
+    const sequence = getArchiveMonthSequence();
+    const currentIndex = sequence.findIndex(p => p.year === archiveCalendarYear && p.month === archiveCalendarMonth);
+    const canGoPrev = currentIndex > 0;
+    const canGoNext = currentIndex >= 0 && currentIndex < sequence.length - 1;
 
     if (prevBtn) {
         prevBtn.disabled = !canGoPrev;
         prevBtn.onclick = () => {
             if (!canGoPrev) return;
-            if (archiveCalendarMonth === 1) {
-                archiveCalendarMonth = 12;
-                archiveCalendarYear--;
-            } else {
-                archiveCalendarMonth--;
-            }
+            const prev = sequence[currentIndex - 1];
+            archiveCalendarYear = prev.year;
+            archiveCalendarMonth = prev.month;
             renderArchiveCalendar();
         };
     }
@@ -1856,21 +1889,18 @@ function renderArchiveCalendar() {
         nextBtn.disabled = !canGoNext;
         nextBtn.onclick = () => {
             if (!canGoNext) return;
-            if (archiveCalendarMonth === 12) {
-                archiveCalendarMonth = 1;
-                archiveCalendarYear++;
-            } else {
-                archiveCalendarMonth++;
-            }
+            const next = sequence[currentIndex + 1];
+            archiveCalendarYear = next.year;
+            archiveCalendarMonth = next.month;
             renderArchiveCalendar();
         };
     }
 
     monthSelect.innerHTML = '';
-    MONTH_NAMES.forEach((name, i) => {
+    monthOpts.forEach(month => {
         const opt = document.createElement('option');
-        opt.value = String(i + 1);
-        opt.textContent = name;
+        opt.value = String(month);
+        opt.textContent = MONTH_NAMES[month - 1];
         monthSelect.appendChild(opt);
     });
     monthSelect.value = String(archiveCalendarMonth);
